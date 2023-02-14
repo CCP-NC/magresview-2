@@ -3,12 +3,19 @@ MagresView 2.0 - NMR crystallography visualisation app
 
 ### Running a local copy
 
-If you want to run MagresView 2.0 (offline) on your local machine, you need to get the `gh-pages` branch of the code. For example, to clone only this branch, use this command:
+If you want to run MagresView 2.0 (offline) on your local machine, you need to get the `gh-pages` branch of the code as this contains the pre-built app. 
 
-`git clone -b gh-pages git@github.com:CCP-NC/magresview-2.git`
+You can get the current version here:
+
+https://github.com/CCP-NC/magresview-2/archive/refs/heads/gh-pages.zip
+
+Once downloaded, you no longer need an internet conection. You simply unzip the file, which will create a directory called `magresview-2-gh-pages`; in that you'll find an `index.html` file. Opening this in the browser of your choice starts the app. 
+
+**Alternatively**, if you prefer, you can instead use [git](https://github.com/git-guides/install-git) to download the `gh-pages` branch:
+
+`git clone -b gh-pages https://github.com/CCP-NC/magresview-2.git`
  
-Within the created magresview-2 directory, there is an index.html file. Opening this in your browser of choice starts the app. 
-
+This will create a directory called `magresview-2` within which you'll find the `index.html` file.
 
 
 
