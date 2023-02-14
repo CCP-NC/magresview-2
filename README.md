@@ -9,7 +9,7 @@ You can get the current version here:
 
 https://github.com/CCP-NC/magresview-2/archive/refs/heads/gh-pages.zip
 
-Once downloaded, you no longer need an internet conection. You simply unzip the file, which will create a directory called `magresview-2-gh-pages`; in that you'll find an `index.html` file. Opening this in the browser of your choice starts the app. 
+Once downloaded, you no longer need an internet connection. You simply unzip the file, which will create a directory called `magresview-2-gh-pages`; in that you'll find an `index.html` file. Opening this in the browser of your choice starts the app. 
 
 **Alternatively**, if you prefer, you can instead use [git](https://github.com/git-guides/install-git) to download the `gh-pages` branch:
 
