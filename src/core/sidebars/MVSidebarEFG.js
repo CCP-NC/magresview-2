@@ -48,8 +48,6 @@ function MVSidebarEFG(props) {
                 <MVRadioButton value='none'>None</MVRadioButton>
                 <MVRadioButton value='Q'>Quadrupole Coupling</MVRadioButton>
                 <MVRadioButton value='e_z'>Vzz (au)</MVRadioButton>
-                <MVRadioButton value='aniso'>Anisotropy (au)</MVRadioButton>
-                <MVRadioButton value='redaniso'>Reduced Anisotropy (au)</MVRadioButton>
                 <MVRadioButton value='asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
              <MVRange min={0} max={6} step={1} value={efgint.precision} onChange={(p) => { efgint.precision = p; }} disabled={efgint.labelsMode === 'none'}>Label Precision</MVRange>
@@ -58,8 +56,6 @@ function MVSidebarEFG(props) {
                 <MVRadioButton value='none'>None</MVRadioButton>
                 <MVRadioButton value='efg_Q'>|Quadrupole Coupling|</MVRadioButton>
                 <MVRadioButton value='efg_e_z'>Vzz</MVRadioButton>
-                <MVRadioButton value='efg_aniso'>Anisotropy</MVRadioButton>
-                <MVRadioButton value='efg_redaniso'>Reduced Anisotropy</MVRadioButton>
                 <MVRadioButton value='efg_asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
         {/* hide scalebar if msintcolorScaleType is 'none' */}

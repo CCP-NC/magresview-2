@@ -104,6 +104,7 @@ function MVSidebarMS(props) {
                 <MVRadioButton value='iso'>Isotropy (ppm)</MVRadioButton>
                 <MVRadioButton value='cs'>Chemical Shifts (ppm, uses references)</MVRadioButton>
                 <MVRadioButton value='aniso'>Anisotropy (ppm)</MVRadioButton>
+                <MVRadioButton value='redaniso'>Reduced Anisotropy (ppm)</MVRadioButton>
                 <MVRadioButton value='asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
              <MVRange min={0} max={6} step={1} value={msint.precision} onChange={(p) => { msint.precision = p; }} disabled={msint.labelsMode === 'none'}>Label Precision</MVRange>
