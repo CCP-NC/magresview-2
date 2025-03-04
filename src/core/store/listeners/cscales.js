@@ -27,7 +27,7 @@ function colorScaleListener(state) {
     if (cstype !== 'none') {
 
         // Split in prefix and mode
-        const [prefix, mode] = cstype.split('_', 2);
+        const [, prefix, mode] = cstype.match(/^([^_]*)_(.*)$/);
         const ref_table = state[prefix + '_references'];
 
         next_greyed = displayed.xor(next_view);

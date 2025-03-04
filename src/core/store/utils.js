@@ -48,6 +48,10 @@ function getNMRData(view, datatype, tenstype='ms', reftable=null) {
         case 'aniso':
             values = tensors.map((T) => T.anisotropy);
             units = tens_units;
+            break;
+        case 'redaniso':
+            values = tensors.map((T) => T.reduced_anisotropy);
+            units = tens_units;
             break;            
         case 'asymm':
             values = tensors.map((T) => T.asymmetry);

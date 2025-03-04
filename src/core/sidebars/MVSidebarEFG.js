@@ -46,17 +46,21 @@ function MVSidebarEFG(props) {
              <MVButton onClick={() => { efgint.ellipsoidScale = 0; }} disabled={!efgint.hasEllipsoids}>Auto scale</MVButton>
              <MVRadioGroup label='Show labels' onSelect={(v) => { efgint.labelsMode = v; }} selected={efgint.labelsMode} name='efg_label_radio' color={'var(--efg-color-2)'}>
                 <MVRadioButton value='none'>None</MVRadioButton>
-                {/* <MVRadioButton value='aniso'>Anisotropy (au)</MVRadioButton> */}
-                <MVRadioButton value='asymm'>Asymmetry</MVRadioButton>
                 <MVRadioButton value='Q'>Quadrupole Coupling</MVRadioButton>
+                <MVRadioButton value='e_z'>Vzz (au)</MVRadioButton>
+                <MVRadioButton value='aniso'>Anisotropy (au)</MVRadioButton>
+                <MVRadioButton value='redaniso'>Reduced Anisotropy (au)</MVRadioButton>
+                <MVRadioButton value='asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
              <MVRange min={0} max={6} step={1} value={efgint.precision} onChange={(p) => { efgint.precision = p; }} disabled={efgint.labelsMode === 'none'}>Label Precision</MVRange>
              <MVRadioGroup label='Use color scale' onSelect={(v) => { efgint.colorScaleType = v; }} selected={ efgint.colorScaleType } disabled={!efgint.colorScaleAvailable}
                            name='efg_cscale_radio' color={'var(--efg-color-2)'}>
                 <MVRadioButton value='none'>None</MVRadioButton>
-                <MVRadioButton value='efg_aniso'>Anisotropy</MVRadioButton>
-                <MVRadioButton value='efg_asymm'>Asymmetry</MVRadioButton>
                 <MVRadioButton value='efg_Q'>|Quadrupole Coupling|</MVRadioButton>
+                <MVRadioButton value='efg_e_z'>Vzz</MVRadioButton>
+                <MVRadioButton value='efg_aniso'>Anisotropy</MVRadioButton>
+                <MVRadioButton value='efg_redaniso'>Reduced Anisotropy</MVRadioButton>
+                <MVRadioButton value='efg_asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
         {/* hide scalebar if msintcolorScaleType is 'none' */}
         <MVCScaleBar label={efgint.colorScaleType} 
