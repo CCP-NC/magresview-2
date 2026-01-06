@@ -3,9 +3,8 @@
  */
 
 import { addPrefix, getSel, getNMRData, formatNumber } from '../utils';
-import { selColor, msColor, efgColor } from './colors';
 
-function makeLabelListener(name, color, shiftfunc) {
+function makeLabelListener(name, shiftfunc) {
     // Factory for a function that will be used for both MS and EFG with
     // minimal differences
     
@@ -18,6 +17,11 @@ function makeLabelListener(name, color, shiftfunc) {
         let app = state.app_viewer;
         let current_view = state[pre_view];
         let ref_table = state[pre_references];
+
+        
+        // color from theme
+        let color = state.app_theme[name + 'Color1'];
+        
 
         // Current view holds the LAST one used; we need to update that
         // What would be the "new" view?
@@ -60,7 +64,7 @@ function makeLabelListener(name, color, shiftfunc) {
             next_view.addLabels(label_texts, name, (a, i) => ({ 
                 color: color,  
                 shift: shiftfunc(a.radius),
-                height: 0.02
+                height: 0.0225
             }));
         }
 
@@ -73,8 +77,8 @@ function makeLabelListener(name, color, shiftfunc) {
 }
 
 // Make specific instances of the listener
-const selLabelListener = makeLabelListener('sel_sites', selColor, (r) => ([r, r, 0]));
-const msLabelListener = makeLabelListener('ms', msColor, (r) => ([1.414*r, 0.0, 0.0]));
-const efgLabelListener = makeLabelListener('efg', efgColor, (r) => ([r, -r, 0.0]));
+const selLabelListener = makeLabelListener('sel_sites', (r) => ([r, r, 0]));
+const msLabelListener = makeLabelListener('ms', (r) => ([1.414*r, 0.0, 0.0]));
+const efgLabelListener = makeLabelListener('efg', (r) => ([r, -r, 0.0]));
 
 export { selLabelListener, msLabelListener, efgLabelListener };

@@ -29,7 +29,8 @@ import React, { useState } from 'react';
  */
 
 import _ from 'lodash';
-import { tooltip_molecular_crystal, tooltip_nmr_active } from './tooltip_messages';
+import { tooltip_molecular_crystal, tooltip_nmr_active, tooltip_vdw_scaling } from './tooltip_messages';
+import MVRange from '../../controls/MVRange';
 
 // Accepted file formats
 const file_formats = ['.cif', '.xyz', '.magres', '.cell'];
@@ -97,7 +98,7 @@ function MVSidebarLoad(props) {
                 <div className='mv-sidebar-tooltip-grid'>
                     <div>Display unwrapped molecular units?&nbsp;</div>
                     <MVTooltip tooltipText={tooltip_molecular_crystal} />
-                    <MVCustomSelect onSelect={(v) => { appint.loadAsMol = v; }} selected={appint.loadAsMol} name='loadasmol_dropdown'>
+                    <MVCustomSelect onSelect={(v) => { appint.loadAsMol = v; }} selected={appint.loadAsMol} name='loadasmol_dropdown' zorder="2">
                         <MVCustomSelectOption value={null}>Auto</MVCustomSelectOption>
                         <MVCustomSelectOption value={true}>Yes</MVCustomSelectOption>
                         <MVCustomSelectOption value={false}>No</MVCustomSelectOption>
@@ -109,6 +110,13 @@ function MVSidebarLoad(props) {
                 <div className='mv-sidebar-tooltip-grid'>
                     <MVCheckBox onCheck={(v) => { appint.useNMRIsotopes = v }} checked={appint.useNMRIsotopes}>Use only NMR active isotopes</MVCheckBox>
                     <MVTooltip tooltipText={tooltip_nmr_active} />
+                </div>
+                <div className='mv-sidebar-tooltip-grid'>
+                    <MVRange min={0.5} max={1.5} step={0.05} value={appint.vdwScaling}
+                        onChange={(s) => { appint.vdwScaling = s; }}>
+                            vdW scale
+                    </MVRange>
+                    <MVTooltip tooltipText={tooltip_vdw_scaling} />
                 </div>
             </div>
         </div>

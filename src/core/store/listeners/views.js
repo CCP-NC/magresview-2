@@ -1,4 +1,4 @@
-// import { centerDisplayed } from '../../../utils';
+import { centerDisplayed } from '../../../utils';
 
 function viewsListener(state) {
 
@@ -31,8 +31,12 @@ function viewsListener(state) {
     app.displayed = displ;
     displ.setProperty('opacity', 1.0);
 
-    // Center model
-    // centerDisplayed(app);
+    // Center model   
+    if (sel && sel === displ) {
+        console.log('centering');
+        // Center on the displayed view
+        centerDisplayed(app);
+    }
 
     // We now update all visualizations that may be changed as a result of this
     return  {};

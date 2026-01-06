@@ -1,6 +1,6 @@
 import { chainClasses } from './utils-react';
 import { CallbackMerger, getColorScale, mergeOnly, Enum, averagePosition } from './utils-generic';
-import { dipolarCoupling } from './utils-nmr';
+import { dipolarCoupling, dipolarTensor } from './utils-nmr';
 import { rotationBetween, eulerFromRotation, rotationMatrixFromZYZ } from './utils-rotation';
 
 test('chains classes', () => {
@@ -118,6 +118,66 @@ test('computes dipolar couplings', () => {
         expect(r2[i]).toBeCloseTo(r2targ[i]);
     }
 });
+
+test('computes the full dipolar tensor ', () => {
+
+    // A mock class with the same interface for our purposes
+    // as a regular AtomImage
+    class MockAtomImage {
+
+        constructor(position, gamma) {
+            this.position = position;
+            this.gamma = gamma;
+        }
+
+        get xyz() {
+            return this.position;
+        }
+
+        get isotopeData() {
+            return {
+                gamma: this.gamma
+            };
+        }
+    }
+
+    // Water molecule with 17O and 1H
+    const O =  new MockAtomImage([ 0. ,  0.      ,  0.119262], -36280800.0);
+    const H1 = new MockAtomImage([ 0. ,  0.763239, -0.477047], 267522128.0);
+    const H2 = new MockAtomImage([ 0. , -0.763239, -0.477047], 267522128.0);
+
+    // what the dipolar tensors should be (calculated using Soprano 0.8.13)
+    const D1targ = [
+        [-17928.60584372,      0.        ,      0.        ],
+        [     0.        ,  15470.22950511, -26094.08862496],
+        [     0.        , -26094.08862496,   2458.37633861]
+    ];
+    const D2targ = [
+        [-17928.60584372,      0.        ,      0.        ],
+        [     0.        ,  15470.22950511,  26094.08862496],
+        [     0.        ,  26094.08862496,   2458.37633861]
+    ];
+    const D3targ = [
+        [ 33771.01122259,      0.        ,      0.        ],
+        [     0.        , -67542.02244518,      0.        ],
+        [     0.        ,      0.        ,  33771.01122259]
+    ];
+
+    const D1 = dipolarTensor(O, H1);
+    const D2 = dipolarTensor(O, H2);
+    const D3 = dipolarTensor(H1, H2);
+
+    for (let i = 0; i < 3; ++i) {
+        for (let j = 0; j < 3; ++j) {
+            expect(D1[i][j]).toBeCloseTo(D1targ[i][j]);
+            expect(D2[i][j]).toBeCloseTo(D2targ[i][j]);
+            expect(D3[i][j]).toBeCloseTo(D3targ[i][j]);
+        }
+    }
+});
+
+
+
 
 test('calculates rotation matrices and Euler angles', () => {
 

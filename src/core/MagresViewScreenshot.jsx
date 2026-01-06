@@ -26,10 +26,6 @@ function MagresViewScreenshot(props) {
     let transparent = props.transparent || true;
     function takeScreenshot() {
         let data = appint.viewer.getScreenshotData(transparent, scale_pixels);
-        // // Display the screenshot data in the browser - useful for debugging
-        // const img = new Image();
-        // img.src = data;
-        // document.body.appendChild(img);
         saveImage(data, 'MagresViewScreenshot.png');
     }
 

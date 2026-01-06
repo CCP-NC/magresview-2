@@ -1,0 +1,30 @@
+.mv-plots-agrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 10px;
+    width: 80%;
+}
+
+.mv-plots-agrid span {
+    text-align: right;
+}
+
+.mv-plots-agrid .header {
+    font-weight: bold;
+    text-align: left;
+}
+
+.mv-plots-agrid-switch {
+    grid-column: 1 / span 2;
+
+    font-weight: normal;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.mv-plots-agrid-switch span {
+    padding: 0 10px;
+}

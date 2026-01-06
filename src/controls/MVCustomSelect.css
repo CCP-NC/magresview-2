@@ -1,11 +1,26 @@
 .mv-cselect {
   --cselect-opt-height: 40px;
   --cselect-icon-size: 40px;
-
+  --cselect-z-index: 999;
   max-height: var(--cselect-opt-height);
 
-  z-index: 9999;
+  z-index: var(--cselect-z-index);
 }
+
+/* If we have several on one page, we want to order the z-index */
+.mv-cselect-1 {
+  z-index: var(--cselect-z-index);
+}
+.mv-cselect-2 {
+  z-index: calc(var(--cselect-z-index) - 1);
+}
+.mv-cselect-3 {
+  z-index: calc(var(--cselect-z-index) - 2);
+}
+.mv-cselect-4 {
+  z-index: calc(var(--cselect-z-index) - 3);
+}
+
 
 .mv-cselect-closed {
   pointer-events: none;
@@ -51,6 +66,7 @@
   display: grid;
   align-items: center;
   grid-template-columns: 30px auto;
+  position: relative;
 }
 
 .mv-cselect-opt:hover {

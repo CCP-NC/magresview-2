@@ -8,6 +8,9 @@ function get_colorbar(min, max, units, cmap, hidden=false) {
     if (hidden) {
         return null;
     }
+    if (min === undefined || max === undefined) {
+        return null;
+    }
 
     // ncolors must be odd to display correctly
     const nshades = 11;

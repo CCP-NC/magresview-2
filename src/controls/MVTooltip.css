@@ -1,5 +1,11 @@
 /*  'tooltip-container' */
 
+.mv-tooltip {
+    display: inline-flex;
+    justify-content: flex-start;
+  width: 100%;
+}
+
 .tooltip-container {
     z-index: 10000;
 }

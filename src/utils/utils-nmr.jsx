@@ -27,6 +27,51 @@ function dipolarCoupling(a1, a2) {
     return [-MU0_HBAR_E30*g1*g2/(8*Math.PI*Math.PI*Math.pow(R, 3)), rnorm];    
 }
 
+/** 
+ * Given a pair of atoms, return the full dipolar coupling tensor in Hz.
+ * 
+ * The dipolar coupling is given by:
+
+    .. math::
+
+        d_{ij} = -\\frac{\\mu_0\\hbar\\gamma_i\\gamma_j}{8\\pi^2r_{ij}^3}
+
+    where the gammas represent the gyromagnetic ratios of the nuclei and the
+    r is their distance. 
+
+    This is computed in the dipolarCoupling function. 
+    
+    The full tensor of the interaction is then defined as
+
+    .. math::
+
+         D_{ij} = d_{ij}(3\\hat{r}_{ij}\\otimes \\hat{r}_{ij}-\\mathbb{I})
+
+    where :math:`\\hat{r}_{ij} = r_{ij}/|r_{ij}|` and the Kronecker product is
+    used.
+
+    This function returns the tensor in the form of a 3x3 array.
+ * 
+ * @param  {AtomImage} a1 First atom
+ * @param  {AtomImage} a2 Second atom
+ * 
+ * @return {Array}      3x3 Dipolar coupling tensor
+ */
+function dipolarTensor(a1, a2) {
+
+    // Get the dipolar coupling and the unit vector
+    const [d,rnorm] = dipolarCoupling(a1, a2);
+
+    let D = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (let i=0; i<3; i++) {
+        for (let j=0; j<3; j++) {
+            D[i][j] = d*(3*rnorm[i]*rnorm[j] - (i===j ? 1 : 0));
+        }
+    }
+    // Return the tensor
+    return D;
+}
+
 /**
  * J coupling constant in Hz between two atoms. Will return
  * a value only if the ISC tensor data is available
@@ -59,4 +104,4 @@ function jCoupling(a1, a2) {
     return T.isotropy;
 }
 
-export { dipolarCoupling, jCoupling };
+export { dipolarCoupling, dipolarTensor, jCoupling };

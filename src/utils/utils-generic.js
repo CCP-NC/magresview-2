@@ -156,10 +156,10 @@ function tableRow(values, width=20, precision=5) {
  * @param  {[type]} filename The name of the file to download
  */
 function saveContents(data, filename) {
-
+    const encodedData = encodeURIComponent(data);
     const download = document.createElement('a');
     download.setAttribute('download', filename);
-    download.setAttribute('href', data);
+    download.setAttribute('href', `data:text/plain,${encodedData}`);
     download.click();
 }
 

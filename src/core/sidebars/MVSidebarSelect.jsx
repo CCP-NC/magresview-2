@@ -24,6 +24,8 @@ import MVButton from '../../controls/MVButton';
 import MVRadioButton, { MVRadioGroup } from '../../controls/MVRadioButton';
 import MVText from '../../controls/MVText';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
+import MVTooltip from '../../controls/MVTooltip';
+import { tooltip_label_by, tooltip_selection_mode, tooltip_isotopes} from './tooltip_messages';
 
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -89,8 +91,9 @@ function MVIsotopeSelection(props) {
 
     // This component handles specifically just the selection of isotopes
     return (<>
-        <h3>Isotope selection</h3>
-        <MVCustomSelect disabled={!el} onSelect={(A) => { selint.setIsotope(A); setState(-state); }} selected={currentOption}>{selOptions}</MVCustomSelect>
+            <h3>Isotope selection</h3>
+            <MVTooltip tooltipText={tooltip_isotopes} />    
+            <MVCustomSelect disabled={!el} onSelect={(A) => { selint.setIsotope(A); setState(-state); }} selected={currentOption}>{selOptions}</MVCustomSelect>
     </>);
 }
 
@@ -132,7 +135,10 @@ function MVSidebarSelect(props) {
             <MVCheckBox checked={selint.showCell} onCheck={(v) => { selint.showCell = v }}>Show unit cell</MVCheckBox>        
             <span className='sep-1' />  
             {/* drop down for label by mode */}
-            <h4>Label by</h4>
+            <div className='mv-sidebar-tooltip-grid'>
+                <h4>Label by</h4>
+                <MVTooltip tooltipText={tooltip_label_by} />
+            </div>
             {/* default is none */}
             <MVCustomSelect onSelect={(v) => { labelMode(v); }} selected={selint.labelMode} name='label_mode_dropdown'>
                 <MVCustomSelectOption value='none'>None</MVCustomSelectOption>
@@ -141,18 +147,21 @@ function MVSidebarSelect(props) {
                 <MVCustomSelectOption value='isotope'>Isotope</MVCustomSelectOption>
             </MVCustomSelect>
             <span className='sep-1' />
-            <MVRadioGroup label='Selection mode' onSelect={selectMode} selected={selint.selectionMode} name='selec_mode_radio'>
-                <MVRadioButton value='atom'>Atom</MVRadioButton>
-                <MVRadioButton value='element'>Element</MVRadioButton>
-                <MVRadioButton value='label'>Crystallographic label</MVRadioButton>
-                <MVRadioButton value='sphere'>Sphere, radius =&nbsp;
-                    <MVText size='5' value={selint.selectionSphereR} filter='[0-9]*(?:\.[0-9]*)?' onChange={setR} onSubmit={setR} />&nbsp;  &#8491;
-                </MVRadioButton>
-                <MVRadioButton value='molecule'>Molecule</MVRadioButton>
-                <MVRadioButton value='bonds'>Bonds, max distance = &nbsp;
-                    <MVText size='3' value={ selint.selectionBondN } filter='[0-9]*' onChange={setN} onSubmit={setN} />
-                </MVRadioButton>
-            </MVRadioGroup>
+            <div className='mv-sidebar-tooltip-grid'>
+                <MVRadioGroup label='Selection mode' onSelect={selectMode} selected={selint.selectionMode} name='selec_mode_radio'>
+                    <MVRadioButton value='atom'>Atom</MVRadioButton>
+                    <MVRadioButton value='element'>Element</MVRadioButton>
+                    <MVRadioButton value='label'>Crystallographic label</MVRadioButton>
+                    <MVRadioButton value='sphere'>Sphere, radius =&nbsp;
+                        <MVText size='5' value={selint.selectionSphereR} filter='[0-9]*(?:\.[0-9]*)?' onChange={setR} onSubmit={setR} />&nbsp;  &#8491;
+                    </MVRadioButton>
+                    <MVRadioButton value='molecule'>Molecule</MVRadioButton>
+                    <MVRadioButton value='bonds'>Bonds, max distance = &nbsp;
+                        <MVText size='3' value={ selint.selectionBondN } filter='[0-9]*' onChange={setN} onSubmit={setN} />
+                    </MVRadioButton>
+                </MVRadioGroup>
+                <MVTooltip tooltipText={tooltip_selection_mode} />
+            </div>
         </div>
         <span className='sep-1' />
         <div className='mv-sidebar-block'>
@@ -164,7 +173,7 @@ function MVSidebarSelect(props) {
             </div>
         </div>
         <span className='sep-1' />
-        <div className='mv-sidebar-block'>
+        <div className='mv-sidebar-tooltip-grid'>
             <MVIsotopeSelection />
         </div>
         <div className='mv-sidebar-block'>
@@ -172,7 +181,7 @@ function MVSidebarSelect(props) {
             <ul>
                 <li><tt>CLICK</tt> to select an atom/element/etc.</li>
                 <li><tt>SHIFT+CLICK</tt> to add to the current selection</li>
-                <li><tt>CTRL+CLICK</tt> to add or remove (XOR) from the current selection</li>
+                <li><tt>CTRL+CLICK</tt> to remove from the current selection</li>
             </ul>
         </div>
     </MagresViewSidebar>);

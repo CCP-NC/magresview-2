@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 import { regularExpressions, useId } from '../utils';
 import MVText from './MVText';
+import MVTooltip from './MVTooltip';
 
 function MVRange(props) {
 
@@ -42,6 +43,11 @@ function MVRange(props) {
         style['--thumb-color'] = props.color;
     }
 
+    let tooltip = <></>;
+    if (props.tooltip) {
+        tooltip = <MVTooltip tooltipText={props.tooltip}/>;
+    }
+
     function acceptValue(v) {
         v = toNumber(v);
 
@@ -63,7 +69,12 @@ function MVRange(props) {
 
     return (
         <div className='mv-control'>
-            {props.children? <label htmlFor={id} className='mv-rangelabel'>{props.children}</label> : <></>}            
+            {/* label and tooltip if there is one */}
+           <span className='mv-tooltip'>
+                {props.children? <label htmlFor={id} className='mv-rangelabel'>{props.children}</label> : <></>}
+                &nbsp;
+                {tooltip}
+            </span>
             <span className='mv-control mv-range' style={style}>
                 <input className='mv-range-slider' type='range' id={id} onInput={(e) => { acceptValue(e.target.value); }}
                  min={min} max={max} step={step} value={in_val} disabled={props.disabled}/>

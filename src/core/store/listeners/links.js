@@ -1,6 +1,5 @@
 import { addPrefix } from '../utils';
 
-import { dipColor, jcColor } from './colors';
 import { getLinkLabel } from '../utils';
 
 
@@ -72,7 +71,7 @@ function makeCalculateLinksListener(name) {
 
 }
 
-function makeDisplayLinksListener(name, color) {
+function makeDisplayLinksListener(name) {
 
     // Factory for a function that will be used for both DIP and JCOUP with
     // minimal differences, with the goal of actually drawing the links  
@@ -99,6 +98,10 @@ function makeDisplayLinksListener(name, color) {
         const sphere = state[pre_sph];
 
         const model = app.model;
+        
+        // Colors 
+        const color = state.app_theme[name + 'Color1'];
+        const sphere_color = state.app_theme['FwdColor1'];
 
 
         if (!model) {
@@ -129,7 +132,8 @@ function makeDisplayLinksListener(name, color) {
                 model.addLink(catom, a2, lname, label, {
                     color: color,
                     dashed: true,
-                    onOverlay: true
+                    onOverlay: true,
+                    height: 0.0225,
                 });
                 current_link_names.push(lname);
             });
@@ -140,7 +144,8 @@ function makeDisplayLinksListener(name, color) {
             model.addSphere(catom.xyz, radius, name + '_sphere', {
                 opacity: 0.25,
                 showAxes: false,
-                showCircles: true
+                showCircles: true,
+                color: sphere_color,
             });
         }
         else {
@@ -155,10 +160,10 @@ function makeDisplayLinksListener(name, color) {
 }
 
 const dipCalculateLinksListener = makeCalculateLinksListener('dip');
-const dipDisplayLinksListener = makeDisplayLinksListener('dip', dipColor);
+const dipDisplayLinksListener = makeDisplayLinksListener('dip');
 
 const jcCalculateLinksListener = makeCalculateLinksListener('jc');
-const jcDisplayLinksListener = makeDisplayLinksListener('jc', jcColor);
+const jcDisplayLinksListener = makeDisplayLinksListener('jc');
 
 
 export { dipCalculateLinksListener, dipDisplayLinksListener, 

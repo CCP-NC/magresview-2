@@ -19,15 +19,16 @@ const MVTooltip = ({tooltipText}) => {
         setTriggerRef,
         visible,
       } = usePopperTooltip({
-        trigger: 'hover',
-        closeOnOutsideClick: false,
+        trigger: 'click',
+        closeOnOutsideClick: true,
         visible: isVisible,
-        onVisibleChange: setIsVisible
+        onVisibleChange: setIsVisible,
+        interactive: true
       })
     return (
         <>
             <div className="field-info" ref={setTriggerRef}>
-                <BsFillInfoSquareFill size={16} style={{color: 'var(--ms-color-2)'}}/ >
+            <BsFillInfoSquareFill size={16} style={{color: 'var(--fwd-color-2)'}}/ >
             </div>
             {visible && (
             <div

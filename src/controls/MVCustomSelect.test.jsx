@@ -37,6 +37,12 @@ test('render MVCustomSelect', () => {
     userEvent.click(firstOption);
     expect(value).toBe('opt1');
 
+    // the dropdown should close,
+    // when we click on the option above
+    // so we need to reopen it
+    userEvent.click(mainElement);
+    userEvent.hover(ddownElement);
+
     userEvent.click(secondOption);
     expect(value).toBe('opt2');
 

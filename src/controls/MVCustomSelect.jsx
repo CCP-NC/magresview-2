@@ -38,8 +38,12 @@ function MVCustomSelect(props) {
             setShow(false);
     }, [props.disabled]);
 
+    const zorder = props.zorder || 1;
+    const zorder_class = 'mv-cselect-' + zorder;
+    
+
     return (
-        <div style={tstyle} className={chainClasses('mv-control', 'mv-cselect', show? null : 'mv-cselect-closed', 
+        <div style={tstyle} className={chainClasses('mv-control', 'mv-cselect', zorder_class, show? null : 'mv-cselect-closed', 
                                                     props.disabled? 'mv-cselect-disabled' : null )} 
             onMouseLeave={(e) => { setShow(false); }} title={props.title}>
             <div className='mv-control mv-cselect-main' onClick={() => { setShow(true && (!props.disabled)); }}>

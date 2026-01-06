@@ -49,10 +49,6 @@ function MVReferenceTable(props) {
 
     const elements = _.keys(refTable).sort();
 
-    function copyAll(v) {
-        setRefTable(_.fromPairs(elements.map((el) => [el, v])));
-    }
-
     return (
     <MVModal title='References for chemical shifts, by element (ppm)' display={props.display} hasOverlay={true}
              onClose={props.close} onAccept={() => { msint.updateReferenceTable(refTable); props.close(); }}>
@@ -64,9 +60,6 @@ function MVReferenceTable(props) {
                             <div className='mv-msref-table-el'>{el}</div>
                             <div className='mv-msref-table-ref'>
                                 <MVText value={ref} onChange={(v) => { setRefTable({...refTable, [el]: v}) }} size={5}/>
-                            </div>
-                            <div className='mv-msref-table-copy'>
-                                <MVButton onClick={() => { copyAll(ref); }}>Apply to all</MVButton>
                             </div>
                         </div>);
             })}
