@@ -84,13 +84,12 @@ function MVPlot1D(props) {
     if (!pltint.showAxes)
         layers = _.without(layers, 'axes');
 
-    const show = (pltint.mode !== 'none') && (pltint.hasData);
-    // set the default element to the first one in the list
-    useEffect(() => {
-        if (show) {
-            pltint.setDefaultElement();
-        }
-    }, [show, pltint]);
+    const show = (pltint.mode !== 'none') && (pltint.hasData) && (pltint.element);
+
+    // if not showing, return null
+    if (!show) {
+        return null;
+    }
 
     let lineprops = {};
     // y axis properties

@@ -74,24 +74,26 @@ class PlotsInterface extends DataCheckInterface {
     get elements() {
         let elements = this.state.app_viewer.selected.elements
         // if there current selection is empty (i.e. if not elements ), use all the elements
-        if (!elements) {
+        if (elements.length === 0) {
             elements = _.uniq(this.state.app_viewer.model.symbols);
         }
         return elements;
     }
 
     setDefaultElement() {
-        if (this.hasData) {
-            if (this.state.plots_element === null) {
-                // set the default element to the first one
-                this.element = this.elements[0];
-                
-            }
-            if (!this.elements.includes(this.state.plots_element)) {
-                // the currently chosen element is not in the current selection anymore
-                // set the default element to the first one
-                this.element = this.elements[0];
-            }
+        if (!this.hasData) {
+            return;
+        }
+        if (!this.state.element) {
+            // set the default element to the first one
+            this.element = this.elements[0];
+            return;
+        }
+        if (!this.elements.includes(this.element)) {
+            // the currently chosen element is not in the current selection anymore
+            // set the default element to the first one
+            this.element = this.elements[0];
+            return;
         }
     }
 

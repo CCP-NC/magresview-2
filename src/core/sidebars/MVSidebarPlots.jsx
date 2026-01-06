@@ -65,6 +65,7 @@ function MVSidebarPlots(props) {
         let pltint = pltRef.current;
         if (pltint.hasData) {
             pltint.mode = 'line1d';
+            pltint.setDefaultElement();
         }
     }, [props.show, pltint.app]); // The dependency on app guarantees this is executed AFTER the app itself is loaded
 
