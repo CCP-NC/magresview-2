@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import './index.scss';
 
 import MagresViewApp from './core/MagresViewApp';
@@ -8,17 +8,15 @@ import reportWebVitals from './reportWebVitals';
 import { Provider } from 'react-redux';
 import magresStore from './core/store';
 
-// TODO: migrate to the new createRoot API
-// Note that I tried, but when left in strict mode, the re-rendering caused issues
-// with loading the three.js canvas. 
+const container = document.getElementById('root');
+const root = createRoot(container);
 
-ReactDOM.render(
+root.render(
   <React.StrictMode>
     <Provider store={magresStore}>
       <MagresViewApp />
     </Provider>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
 
 // If you want to start measuring performance in your app, pass a function

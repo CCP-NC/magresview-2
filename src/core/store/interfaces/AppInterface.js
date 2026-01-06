@@ -210,7 +210,7 @@ class AppInterface extends BaseInterface {
     initialise(elem) {
         console.log('Initialising CrystVis app on element ' + elem);
         // Initialise app but only if it's not already there
-        const vis = new CrystVis(elem);
+        const vis = new CrystVis(elem, 0, 0, {preserveDrawingBuffer: true});
         vis.highlightSelected = true; // Our default
         
         const handler = new ClickHandler(vis, [

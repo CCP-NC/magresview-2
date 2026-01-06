@@ -11,7 +11,7 @@
 .mv-background {
   width: 100vw;
   height: 100vh;
-  background-color: #333333;
+  background-color: var(--dark-color-2);
 }
 
 .mv-main-page .drag-overlay {

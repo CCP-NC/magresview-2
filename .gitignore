@@ -30,3 +30,6 @@ yalc.lock
 # docs
 docs/*.html
 docs/*.pdf
+
+.nx
+dist

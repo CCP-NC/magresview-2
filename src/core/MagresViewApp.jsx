@@ -42,9 +42,24 @@ function MagresViewPage() {
     let appint = useAppInterface();
 
     const appRef = useRef(appint);
+    const appWindowRef = useRef(null); // reference to the DOM element
 
     useEffect(() => {
-        appRef.current.initialise('#mv-appwindow');
+        // Clear any existing canvases before initializing
+        if (appWindowRef.current) {
+            while (appWindowRef.current.firstChild) {
+                appWindowRef.current.removeChild(appWindowRef.current.firstChild);
+            }
+        }
+        
+        appRef.current.initialise(appWindowRef.current);
+
+        return () => {
+            console.log('Destroying app');
+            if (appRef.current && typeof appRef.current.destroy === 'function') {
+                appRef.current.destroy();
+            }
+        }
     }, []);
 
 
@@ -76,24 +91,90 @@ function MagresViewPage() {
         setHovered(false);
     }
 
-    return (<div className={chainClasses('mv-main-page', 'theme-' + appint.theme, hovered? 'has-drag' : '' )}
-                 onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
-                <MagresViewHeader />
-                <MVSidebarLoad show={appint.sidebar === 'load'} />
-                <MVSidebarSelect show={appint.sidebar === 'select'} />
-                <MVSidebarMS show={appint.sidebar === 'ms'} />
-                <MVSidebarEFG show={appint.sidebar === 'efg'} />
-                <MVSidebarDip show={appint.sidebar === 'dip'} />
-                <MVSidebarJCoup show={appint.sidebar === 'jcoup'} />
-                <MVSidebarEuler show={appint.sidebar === 'euler'} />
-                <MVSidebarPlots show={appint.sidebar === 'plots'} />
-                <MVSidebarFiles show={appint.sidebar === 'files'} />
-                <div id='mv-appwindow' className='mv-background'/>
-                <MagresViewScreenshot />
-                <div className='drag-overlay' />
-            { /* Modals */ }
-                <MVPlot1D />
-            </div>);
+    // keyboad shortcuts
+    // TODO: move elsewhere!
+    useEffect(() => {
+        // keyboard
+        function handleKeyDown(e) {
+            // let sidebarList = ['load', 'select', 'ms', 'efg', 'dip', 'jcoup', 'euler', 'plots', 'files'];
+            if (e.key === 'Escape') {
+                appRef.current.sidebar = 'none';
+            }
+            // // number keys index the sidebars
+            // else if (e.key >= '1' && e.key <= '9') {
+            //     let idx = parseInt(e.key) - 1;
+            //     if (idx < sidebarList.length) {
+            //         appRef.current.sidebar = sidebarList[idx];
+            //     }
+            // }
+            else if (e.key === 'l') {
+                appRef.current.sidebar = 'load';
+            }
+            else if (e.key === 's') {
+                appRef.current.sidebar = 'select';
+            }
+            else if (e.key === 'm') {
+                appRef.current.sidebar = 'ms';
+            }
+            else if (e.key === 'e') {
+                appRef.current.sidebar = 'efg';
+            }
+            else if (e.key === 'd') {
+                appRef.current.sidebar = 'dip';
+            }
+            else if (e.key === 'j') {
+                appRef.current.sidebar = 'jcoup';
+            }
+            else if (e.key === 'u') {
+                appRef.current.sidebar = 'euler';
+            }
+            else if (e.key === 'p') {
+                appRef.current.sidebar = 'plots';
+            }
+            else if (e.key === 'f') {
+                appRef.current.sidebar = 'files';
+            }
+
+        }
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        }
+        // disable es lint warning
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+
+    return (
+      <div
+        className={chainClasses(
+          "mv-main-page",
+          "theme-" + appint.theme,
+          hovered ? "has-drag" : ""
+        )}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <MagresViewHeader />
+        <MVSidebarLoad show={appint.sidebar === "load"} />
+        <MVSidebarSelect show={appint.sidebar === "select"} />
+        <MVSidebarMS show={appint.sidebar === "ms"} />
+        <MVSidebarEFG show={appint.sidebar === "efg"} />
+        <MVSidebarDip show={appint.sidebar === "dip"} />
+        <MVSidebarJCoup show={appint.sidebar === "jcoup"} />
+        <MVSidebarEuler show={appint.sidebar === "euler"} />
+        <MVSidebarPlots show={appint.sidebar === "plots"} />
+        <MVSidebarFiles show={appint.sidebar === "files"} />
+        <div id="mv-appwindow" className="mv-background" ref={appWindowRef} />
+        <MagresViewScreenshot />
+        <div className="drag-overlay" />
+        {/* Modals */}
+        <MVPlot1D />
+      </div>
+    );
 }
 
 function MagresViewApp() {
