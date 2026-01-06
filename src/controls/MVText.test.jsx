@@ -3,7 +3,8 @@ import MVText from './MVText';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
-test('renders MVText', () => {
+test('renders MVText', async () => {
+    const user = userEvent.setup();
 
     // Container component
     var submitted = '';
@@ -17,19 +18,19 @@ test('renders MVText', () => {
     const mainElement = screen.getByTitle('text');
     const inputElement = screen.getByRole('textbox');
 
-    userEvent.click(inputElement); // Select
-    userEvent.keyboard('test');
+    await user.click(inputElement); // Select
+    await user.keyboard('test');
 
     expect(inputElement).toHaveProperty('value', 'test');
 
     // Now try invalid values
-    userEvent.keyboard('012@#');
+    await user.keyboard('012@#');
 
     // Should not have changed
     expect(inputElement).toHaveProperty('value', 'test');
 
     // And finally, submission
-    userEvent.keyboard('[Enter]');
+    await user.keyboard('[Enter]');
 
     expect(submitted).toBe('test');
 

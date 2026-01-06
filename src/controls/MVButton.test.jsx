@@ -2,7 +2,8 @@ import { cleanup, render, screen } from '@testing-library/react';
 import MVButton from './MVButton';
 import userEvent from '@testing-library/user-event';
 
-test('renders MVButton', () => {    
+test('renders MVButton', async () => {
+    const user = userEvent.setup();
     var tvar = 0;
     function tinc() {
         tvar += 1;
@@ -16,7 +17,7 @@ test('renders MVButton', () => {
     expect(buttonElement).toBeInTheDocument();
     expect(buttonLabel).toBeInTheDocument();
 
-    userEvent.click(buttonElement);
+    await user.click(buttonElement);
 
     expect(tvar).toBe(1);
     cleanup()
@@ -28,7 +29,7 @@ test('renders MVButton', () => {
 
     expect(disabledButtonElement).toBeInTheDocument();
 
-    userEvent.click(disabledButtonElement);
+    await user.click(disabledButtonElement);
     expect(tvar).toBe(0);
 
     cleanup();

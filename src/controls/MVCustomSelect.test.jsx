@@ -1,9 +1,10 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import MVCustomSelect, { MVCustomSelectOption } from './MVCustomSelect';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-test('render MVCustomSelect', () => {
+test('render MVCustomSelect', async () => {
+    const user = userEvent.setup();
     
     var value = null;
     render(<MVCustomSelect title='mv-cselect' onSelect={(v) => {value = v;}}>
@@ -30,26 +31,24 @@ test('render MVCustomSelect', () => {
     const thirdOption = secondOption.nextSibling;
     expect(thirdOption).not.toBeInTheDocument();
 
-    // Now test selecting
-    userEvent.click(mainElement);
-    userEvent.hover(ddownElement);
+    // Now test selecting - use fireEvent for dropdown options since they have pointer-events: none when closed
+    await user.click(mainElement);
 
-    userEvent.click(firstOption);
+    fireEvent.click(firstOption);
     expect(value).toBe('opt1');
 
     // the dropdown should close,
     // when we click on the option above
     // so we need to reopen it
-    userEvent.click(mainElement);
-    userEvent.hover(ddownElement);
+    await user.click(mainElement);
 
-    userEvent.click(secondOption);
+    fireEvent.click(secondOption);
     expect(value).toBe('opt2');
 
     // Test opening and closing
-    userEvent.click(mainElement);
+    await user.click(mainElement);
     expect(cselElement.classList.contains('mv-cselect-closed')).toBe(false);
-    userEvent.unhover(cselElement);
+    fireEvent.mouseLeave(cselElement);
     expect(cselElement.classList.contains('mv-cselect-closed')).toBe(true);    
 
     cleanup();

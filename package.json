@@ -16,7 +16,6 @@
     "@nivo/line": "^0.99.0",
     "@popperjs/core": "^2.11.8",
     "@swc/helpers": "~0.5.18",
-    "@testing-library/user-event": "^14.6.1",
     "canvas-to-image": "^2.2.5",
     "color-scales": "^3.0.2",
     "colormap": "^2.3.2",
@@ -44,8 +43,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "react-app"
     ]
   },
   "browserslist": {
@@ -71,8 +69,10 @@
     "@swc-node/register": "^1.11.1",
     "@swc/cli": "~0.7.9",
     "@swc/core": "^1.15.8",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -90,7 +90,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "gh-pages": "^6.3.0",
-    "jest-watch-typeahead": "^3.0.1",
     "jsdom": "^27.4.0",
     "nx": "^22.3.3",
     "prettier": "^3.7.4",

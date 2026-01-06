@@ -3,7 +3,8 @@ import MVListSelect, { MVListSelectOption } from './MVListSelect';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-test('render MVListSelect', () => {
+test('render MVListSelect', async () => {
+    const user = userEvent.setup();
 
     var value = null;
 
@@ -26,7 +27,7 @@ test('render MVListSelect', () => {
     expect(thirdOption).not.toBeInTheDocument();
 
     // Now test selecting
-    userEvent.click(firstOption);
+    await user.click(firstOption);
 
     expect(value).toBe('opt1');
 

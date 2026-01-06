@@ -3,7 +3,8 @@ import MVCheckBox from './MVCheckBox';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
-test('renders MVCheckBox', () => {
+test('renders MVCheckBox', async () => {
+    const user = userEvent.setup();
 
     // Container component
     function TestComp(props) {
@@ -24,10 +25,10 @@ test('renders MVCheckBox', () => {
     expect(inputElement).toBeInTheDocument();
     expect(checkLabelElement).toBeInTheDocument();
 
-    userEvent.click(inputElement);
+    await user.click(inputElement);
     expect(inputElement).toHaveProperty('checked', false);
 
-    userEvent.click(inputElement);
+    await user.click(inputElement);
     expect(inputElement).toHaveProperty('checked', true);
 
     cleanup();
