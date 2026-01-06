@@ -44,7 +44,22 @@ function MagresViewPage() {
     const appRef = useRef(appint);
 
     useEffect(() => {
+        // Clear any existing canvases before initializing (prevents double canvas in StrictMode)
+        const container = document.getElementById('mv-appwindow');
+        if (container) {
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+        }
+        
         appRef.current.initialise('#mv-appwindow');
+
+        return () => {
+            console.log('Destroying app');
+            if (appRef.current && appRef.current.viewer && typeof appRef.current.viewer.destroy === 'function') {
+                appRef.current.viewer.destroy();
+            }
+        };
     }, []);
 
 
