@@ -14,6 +14,7 @@
 
 import './MVSidebarFiles.css';
 
+import React, { useEffect } from 'react';
 import MagresViewSidebar from './MagresViewSidebar';
 
 import MVButton from '../../controls/MVButton';
@@ -37,10 +38,7 @@ const mergeOption = (fileint) => {
             <MVTooltip tooltipText={tooltip_files_merge} />
             </MVCheckBox>);
     } else {
-        // force the mergeByLabel to be false
-        // if there are no CIF labels
-        fileint.mergeByLabel = false;
-        // blank return
+        // State update moved to useEffect in main component
         return (<></>);
     }
 }
@@ -148,6 +146,13 @@ function iscTableOptions(fileint) {
 function MVSidebarFiles(props) {
 
     const fileint = useFilesInterface();
+
+    // Handle mergeByLabel state when there are no CIF labels
+    useEffect(() => {
+        if (!fileint.hasCIFLabels && fileint.mergeByLabel) {
+            fileint.mergeByLabel = false;
+        }
+    }, [fileint.hasCIFLabels, fileint.mergeByLabel]);
 
     return (<MagresViewSidebar title='Report files' show={props.show}>
         <div className='mv-sidebar-block'>
