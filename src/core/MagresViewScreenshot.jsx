@@ -22,9 +22,14 @@ import { saveImage } from '../utils';
 function MagresViewScreenshot(props) {
 
     const appint = useAppInterface();
-
+    let scale_pixels = props.scale_pixels || 2;
+    let transparent = props.transparent || true;
     function takeScreenshot() {
-        let data = appint.viewer.getScreenshotData();
+        let data = appint.viewer.getScreenshotData(transparent, scale_pixels);
+        // // Display the screenshot data in the browser - useful for debugging
+        // const img = new Image();
+        // img.src = data;
+        // document.body.appendChild(img);
         saveImage(data, 'MagresViewScreenshot.png');
     }
 

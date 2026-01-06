@@ -31,8 +31,8 @@ function ThemeSwitcher() {
         light: 'dark'
     };
 
-    return (<div id='mv-themeswitch' onClick={() => { appint.theme = other[appint.theme]; }}>
-        <div id='mv-themeicons' className={appint.theme}>
+    return (<div id='mv-themeswitch' onClick={() => { appint.themeName = other[appint.themeName]; }}>
+        <div id='mv-themeicons' className={appint.themeName}>
             <FaMoon id='mv-themedark'/>
             <FaSun id='mv-themelight'/>
         </div>
