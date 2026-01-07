@@ -31,12 +31,13 @@ jobs:
         continue-on-error: true
       
       - name: Run tests
-        run: npm test -- --coverage --watchAll=false
+        run: npm test -- --coverage --run
       
       - name: Build
         run: npm run build
       
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        if: matrix.node-version == '22.x'
-        continue-on-error: true
+        # TODO: enable code coverage upload
+      # - name: Upload coverage
+      #   uses: codecov/codecov-action@v4
+      #   if: matrix.node-version == '22.x'
+      #   continue-on-error: true
