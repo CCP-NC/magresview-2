@@ -68,8 +68,13 @@ function getNMRData(view, datatype, tenstype='ms', reftable=null) {
             }
             values = tensors.map((T, i) => {
                 let el = view.atoms[i].element;
-                let ref = reftable[el] || 0.0;
-                return ref-T.isotropy;
+                let ref = reftable[el];
+                let cs = null;
+                // only return a value if the reference is defined correctly
+                if (ref !== null && ref !== undefined && ref !== '') {
+                    cs = ref - T.isotropy;
+                }
+                return cs;
             });
             units = tens_units;
             break;
@@ -96,6 +101,11 @@ function getNMRData(view, datatype, tenstype='ms', reftable=null) {
     return [units, values];
 }
 function formatNumber(value, unit, precision=2) {
+
+    // if value is null, return empty string
+    if (value === null) {
+        return '';
+    }
     // function to adapt metric prefix to number given a unit string
     // and a precision
     // returns a string with the number and the unit

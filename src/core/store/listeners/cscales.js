@@ -34,6 +34,17 @@ function colorScaleListener(state) {
 
         const nmrdata = getNMRData(next_view, mode, prefix, ref_table);
         const values = nmrdata[1];
+
+        // if there any any null values, reset colors and throw error
+        if (values.indexOf(null) >= 0) {
+            if (current_view)
+                current_view.setProperty('color', null);
+            // reset color scale limits
+            state.cscale_lims = [0, 1];
+            state.cscale_units = '';
+            throw Error('Cannot plot color scale because there are null values. ');
+        }
+
         if (cstype === 'efg_Q') {
             // Special case for EFG Q
             // convert all to absolute values

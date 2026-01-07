@@ -238,6 +238,9 @@ class SelInterface extends BaseInterface {
         // Selector functions
         let selFunc = null;
 
+        const dd = this.state.app_default_displayed;
+        const dd_indices = dd? this.state.app_default_displayed._indices : null;
+
         if (options.on) {
             switch(mode) {
                 case 'atom':
@@ -249,6 +252,10 @@ class SelInterface extends BaseInterface {
                     // Selector function
                     selFunc = ((a, e) => {
                         var found = app.model._queryElements(a.element);
+                        // We don't want periodic images here, so exclude:
+                        if (dd_indices) {
+                            found = found.filter((a, i) => dd_indices.includes(a));
+                        }
                         return app.model.view(found);
                     });
                     break;
@@ -256,6 +263,10 @@ class SelInterface extends BaseInterface {
                     // Selector function
                     selFunc = ((a, e) => {
                         var found = app.model._queryLabels([a.crystLabel]);
+                        // We don't want periodic images here, so exclude:
+                        if (dd_indices) {
+                            found = found.filter((a, i) => dd_indices.includes(a));
+                        }
                         return app.model.view(found);
                     });
                     break;
@@ -263,12 +274,26 @@ class SelInterface extends BaseInterface {
                     const r = options.r;
                     selFunc = ((a, e) => {
                         var found = app.model._querySphere(a, r); 
+                        // update displayed view if necessary
+                        if (this.displayed !== app.model.view(found)) {
+                            // union of displayed._indices and found lists
+                            let new_indices = [...new Set([...this.displayed._indices, ...found])];
+
+                            this.displayed = app.model.view(new_indices);
+                        }
                         return app.model.view(found);
                     });
                     break;
                 case 'molecule': 
                     selFunc = ((a, e) => {
                         var found = app.model._queryMolecule(a);
+                        // update displayed view if necessary
+                        if (this.displayed !== app.model.view(found)) {
+                            // union of displayed._indices and found lists
+                            let new_indices = [...new Set([...this.displayed._indices, ...found])];
+
+                            this.displayed = app.model.view(new_indices);
+                        }
                         return app.model.view(found);
                     });
                     break;
@@ -277,6 +302,13 @@ class SelInterface extends BaseInterface {
                     selFunc = ((a, e) => {
                         var found = app.model._queryBonded(a, n, false);
                         found = found.concat([a.imgIndex]); // Crystvis excludes the original atom
+                        // update displayed view if necessary
+                        if (this.displayed !== app.model.view(found)) {
+                            // union of displayed._indices and found lists
+                            let new_indices = [...new Set([...this.displayed._indices, ...found])];
+
+                            this.displayed = app.model.view(new_indices);
+                        }
                         return app.model.view(found);
                     });
                     break;
@@ -289,14 +321,13 @@ class SelInterface extends BaseInterface {
         // We use this to guarantee that the selection still doesn't go out of
         // the default display (e.g. the main cell). Everything else remains
         // hidden or can be used as ghost for other purposes
-        const dd = this.state.app_default_displayed;
         const intf = this;
         const handler = this.state.app_click_handler;
 
         if (selFunc) {
-            handler.setCallback('sel', LC, (a, e) => { intf.selected = dd.and(selFunc(a, e)); });
-            handler.setCallback('sel', SLC, (a, e) => { intf.selected = dd.and(app.selected.or(selFunc(a, e))); });
-            handler.setCallback('sel', CLC, (a, e) => { intf.selected = dd.and(app.selected.xor(selFunc(a, e))); });
+            handler.setCallback('sel', LC, (a, e) => { intf.selected = selFunc(a, e); });
+            handler.setCallback('sel', SLC, (a, e) => { intf.selected = app.selected.or(selFunc(a, e)); });
+            handler.setCallback('sel', CLC, (a, e) => { intf.selected = app.selected.remove(selFunc(a, e)); });
         }
         else {
             // Free the events

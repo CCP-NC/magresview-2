@@ -1,4 +1,4 @@
-// import { centerDisplayed } from '../../../utils';
+import { centerDisplayed } from '../../../utils';
 
 function displayListener(state) {
 
@@ -6,6 +6,9 @@ function displayListener(state) {
     const toDisplay = state.app_model_queued;
 
     let data = {};
+
+    // Apply theme
+    app.theme = state.app_theme;
 
     if (app && toDisplay) {
         app.displayModel(toDisplay);
@@ -15,7 +18,10 @@ function displayListener(state) {
         };
 
         // Center model
-        // centerDisplayed(app);
+        centerDisplayed(app);
+        
+        // fix cell color to match theme
+        app.model.box.color = state.app_theme.FwdColor3;
     }
 
     return data;

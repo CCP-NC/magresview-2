@@ -17,9 +17,12 @@ import { Events } from '../listeners';
 import { loadImage } from '../../../utils';
 import { makeSelector, DataCheckInterface } from '../utils';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
+// lodash
+import _ from 'lodash';
 
 const initialPlotsState = {
     plots_mode: 'none',
+    plots_element: null, // what species' spectrum to plot
     plots_use_refs: false,
     plots_q2_shifts: true,
     plots_show_axes: true,
@@ -27,14 +30,16 @@ const initialPlotsState = {
     plots_bkg_img_url: null,
     plots_bkg_img_w: 0,
     plots_bkg_img_h: 0,
+    plots_auto_x: true, // if this are true, ignore the min/max values
+    plots_auto_y: true, // if this are true, ignore the min/max values
     plots_min_x: 0,
     plots_max_x: 100.0,
     plots_min_y: 0,
     plots_max_y: 5.0,
-    plots_peak_width: 2.0,
-    plots_x_steps: 100,
+    plots_peak_width: 0.5,
+    plots_x_steps: 801,
     plots_data: null,
-    plots_show_labels: true,
+    plots_show_labels: false,
 };
 
 function makePlotAction(data) {
@@ -49,12 +54,55 @@ function makePlotAction(data) {
 
 class PlotsInterface extends DataCheckInterface {
 
+    get app() {
+        return this.state.app_viewer;
+    }
+
+    get hasData() {
+        let app = this.state.app_viewer;
+        return (app && app.model && (app.model.hasArray('ms')));        
+    }
+
     get mode() {
         return this.state.plots_mode;
     }
 
     set mode(v) {
         this.dispatch(makePlotAction({ plots_mode: v }));
+    }
+
+    get elements() {
+        let elements = this.state.app_viewer.selected.elements
+        // if there current selection is empty (i.e. if not elements ), use all the elements
+        if (elements.length === 0) {
+            elements = _.uniq(this.state.app_viewer.model.symbols);
+        }
+        return elements;
+    }
+
+    setDefaultElement() {
+        if (!this.hasData) {
+            return;
+        }
+        if (!this.state.element) {
+            // set the default element to the first one
+            this.element = this.elements[0];
+            return;
+        }
+        if (!this.elements.includes(this.element)) {
+            // the currently chosen element is not in the current selection anymore
+            // set the default element to the first one
+            this.element = this.elements[0];
+            return;
+        }
+    }
+
+    get element() {
+        return this.state.plots_element;
+    }
+
+    set element(v) {
+        this.dispatch(makePlotAction({ plots_element: v }));
     }
 
     get useQ2Shift() {
@@ -119,8 +167,34 @@ class PlotsInterface extends DataCheckInterface {
     }
 
     set peakW(v) {
+        if (isNaN(v)) {
+            v = 0.0;
+            alert('Peak width must be a number. Setting to 0.');
+        }
+        v = parseFloat(v);
+        if (v < 0.0) {
+            v = -1.0*v;
+            alert('Peak width cannot be negative. Setting to absolute value.');
+        }
         this.dispatch(makePlotAction({ plots_peak_width: v }));
     }
+
+    get autoScaleX() {
+        return this.state.plots_auto_x;
+    }
+
+    set autoScaleX(v) {
+        this.dispatch(makePlotAction({ plots_auto_x: v }));
+    }
+
+    get autoScaleY() {
+        return this.state.plots_auto_y;
+    }
+
+    set autoScaleY(v) {
+        this.dispatch(makePlotAction({ plots_auto_y: v }));
+    }
+
 
     get rangeX() {
         return [this.state.plots_min_x, this.state.plots_max_x];
@@ -132,6 +206,13 @@ class PlotsInterface extends DataCheckInterface {
 
         xmin = isNaN(xmin)? 0.0 : xmin;
         xmax = isNaN(xmax)? xmin+100.0 : xmax;
+
+        // make sure xmin < xmax
+        if (xmin > xmax) {
+            let tmp = xmin;
+            xmin = xmax;
+            xmax = tmp;
+        }
 
         return [xmin, xmax];
     }
@@ -204,10 +285,9 @@ class PlotsInterface extends DataCheckInterface {
         let csvContent = "data:text/csv;charset=utf-8,";
         // x header depends on if use_refs is true
         let xlabel = this.useRefTable? "Chemical shift /ppm" : "Shielding /ppm";
-        let factor = this.useRefTable? -1 : 1;
         csvContent += xlabel + ", Intensity \n";
         data.forEach(function(r) {
-            let row = factor*r.x + ", " + r.y + "\n";
+            let row = r.x + ", " + r.y + "\n";
             csvContent += row;
         });
         let encodedUri = encodeURI(csvContent);

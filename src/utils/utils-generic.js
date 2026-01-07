@@ -131,12 +131,20 @@ function mergeOnly(a, b) {
  * Make a single row of an ASCII table with a fixed field width
  * 
  * @param  {Array}  values      Values to include in the row
- * @param  {Number} width       Width of each field of the row
- * @param  {Number} precision   Digits used for numerical values
+ * @param  {Object} options     Options for the table
+ *                               - width: Width of each field of the row (default: 20) 
+ *                               - precision: Digits used for numerical values (default: 5)
  * 
  * @return {String}        Compiled row
  */
-function tableRow(values, width=20, precision=5) {
+function tableRow(values, options) {
+    let defaults = {
+        width: 20,
+        precision: 5,
+        format: 'fixed' // or CSV or Tab separated
+    };
+    let {width, precision, format} = mergeOnly(defaults, options);
+
     return values.reduce((s, v) => {        
         if (Number.isFinite(v) && !Number.isInteger(v)) {
             v = v.toFixed(precision);
@@ -145,8 +153,42 @@ function tableRow(values, width=20, precision=5) {
             v = v.toString();
         }
         const ns = width-v.length;
-        return s + ' '.repeat(ns > 0? ns : 0) + v;
-    }, '') + '\n';
+
+        if (format === 'csv') {
+            return s + ',' + v;
+        }
+        else if (format === 'fixed') {
+            return s + ' '.repeat(ns > 0? ns : 0) + v;
+        }
+        else if (format === 'tsv') {
+            return s + '\t' + v;
+        }
+        else {
+            throw Error('Unknown format: ' + format);
+        }
+
+    }, '').slice(1) + '\n';
+
+}
+
+/** 
+ * Make a single row of a comma-separated values table
+ * 
+ * @param  {Array}  values      Values to include in the row
+ * @param  {Number} precision   Digits used for numerical values
+ * 
+ * @return {String}        Compiled row
+ */
+function csvRow(values, precision=5) {
+    return values.reduce((s, v) => {
+        if (Number.isFinite(v) && !Number.isInteger(v)) {
+            v = v.toFixed(precision);
+        }
+        else {
+            v = v.toString();
+        }
+        return s + ',' + v;
+    }, '').slice(1) + '\n';
 }
 
 /**
@@ -156,10 +198,19 @@ function tableRow(values, width=20, precision=5) {
  * @param  {[type]} filename The name of the file to download
  */
 function saveContents(data, filename) {
+    let mimeType = 'text/plain';
+    let encodedData;
+
+    if (data.startsWith('data:image/png;base64,')) {
+        mimeType = 'image/png';
+        encodedData = data;
+    } else {
+        encodedData = `data:${mimeType},${encodeURIComponent(data)}`;
+    }
 
     const download = document.createElement('a');
     download.setAttribute('download', filename);
-    download.setAttribute('href', data);
+    download.setAttribute('href', encodedData);
     download.click();
 }
 
@@ -170,7 +221,6 @@ function saveContents(data, filename) {
  * @param  {[type]} filename Filename to save
  */
 function saveImage(data, filename='image.png') {
-    data = data.replace('image/png', 'image/octet-stream');
     saveContents(data, filename);
 }
 
@@ -210,4 +260,5 @@ function copyContents(data) {
 
 export { CallbackMerger, Enum, getColorScale, mergeOnly, 
          averagePosition, centerDisplayed,
-         saveImage, loadImage, saveContents, copyContents, tableRow };
+         saveImage, loadImage, saveContents, copyContents, tableRow, csvRow,
+        };

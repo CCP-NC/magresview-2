@@ -112,7 +112,7 @@ class MSInterface extends CScaleInterface {
         // Find the elements, then return the respective references as pairs
         const elements = _.uniq(this.state.app_viewer.model.symbols);
         const refs = this.state.ms_references;
-        return _.fromPairs(elements.map((el) => [el, refs[el] || 0]));
+        return _.fromPairs(elements.map((el) => [el, refs[el] || '']));
     }
 
     updateReferenceTable(data) {
@@ -124,7 +124,7 @@ class MSInterface extends CScaleInterface {
     }
 
     getReference(el) {
-        return this.state.ms_references[el] || 0.0;
+        return this.state.ms_references[el] || '';
     }
 
     // reset 

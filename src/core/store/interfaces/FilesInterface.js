@@ -19,11 +19,17 @@ import { tableRow, eulerFromRotation, dipolarCoupling, jCoupling } from '../../.
 
 const initialFilesState = {
     files_seltype: 'ms',
-    files_includeJ: false,
-    files_includeD: false,
+    files_includeJ: true,
+    files_includeD: true,
     files_includeEFG: true,
     files_includeMS: true,
+    files_includeEuler: false,
     files_quadrupole_order: 2,
+    files_mergeByLabel: false, // If true, merge results for all sites with the same label
+    files_multiplicity: {},
+    files_fileFormat: 'csv',
+    files_tabWidth: 16, // Width for the fixed-width format
+    files_precision: 5, // Number of decimal places for the floats
 };
 
 class FilesInterface extends BaseInterface {
@@ -44,9 +50,9 @@ class FilesInterface extends BaseInterface {
         let app = this.state.app_viewer;
         let mname = app.modelName;
         let type = this.state.files_seltype;
-
+        const ext = this.state.files_fileFormat === 'csv' ? 'csv' : 'txt';
         if (mname) {
-            return `mvtable_${mname}_${type}.txt`;
+            return `mvtable_${mname}_${type}.${ext}`;
         }
         else {
             return 'N/A';
@@ -67,7 +73,7 @@ class FilesInterface extends BaseInterface {
             case 'isc':
                 return this.hasISCData;
             case 'spinsys':
-                return (this.hasMSData && this.spinSysIncludeMS) || (this.hasEFGData && this.spinSysIncludeEFG) || this.spinSysIncludeD || (this.hasISCData && this.spinSysIncludeJ);
+                return (this.hasMSData && this.includeMS) || (this.hasEFGData && this.includeEFG) || this.includeD || (this.hasISCData && this.includeJ);
             default:
                 break;
         }
@@ -90,11 +96,16 @@ class FilesInterface extends BaseInterface {
         return (app && app.model && (app.model.hasArray('isc')));        
     }
 
-    get spinSysIncludeD() {
+    get hasCIFLabels() {
+        let app = this.state.app_viewer;
+        return (app && app.model && (app.model._has_cif_labels));            
+    }
+
+    get includeD() {
         return this.state.files_includeD;
     }
 
-    set spinSysIncludeD(v) {
+    set includeD(v) {
         this.dispatch({
             type: 'update',
             data: {
@@ -103,11 +114,11 @@ class FilesInterface extends BaseInterface {
         });
     }
 
-    get spinSysIncludeJ() {
+    get includeJ() {
         return this.state.files_includeJ;
     }
 
-    set spinSysIncludeJ(v) {
+    set includeJ(v) {
         this.dispatch({
             type: 'update',
             data: {
@@ -116,11 +127,11 @@ class FilesInterface extends BaseInterface {
         });
     }
     
-    get spinSysIncludeEFG() {
+    get includeEFG() {
         return this.state.files_includeEFG;
     }
 
-    set spinSysIncludeEFG(v) {
+    set includeEFG(v) {
         this.dispatch({
             type: 'update',
             data: {
@@ -129,11 +140,11 @@ class FilesInterface extends BaseInterface {
         });
     }
 
-    get spinSysIncludeMS() {
+    get includeMS() {
         return this.state.files_includeMS;
     }
 
-    set spinSysIncludeMS(v) {
+    set includeMS(v) {
         this.dispatch({
             type: 'update',
             data: {
@@ -141,6 +152,73 @@ class FilesInterface extends BaseInterface {
             }
         });
     }
+
+    get includeEuler() {
+        return this.state.files_includeEuler;
+    }
+
+    set includeEuler(v) {
+        this.dispatch({
+            type: 'update',
+            data: {
+                files_includeEuler: v
+            }
+        });
+    }
+
+
+    get mergeByLabel() {
+        return this.state.files_mergeByLabel;
+    }
+
+    set mergeByLabel(v) {
+        this.dispatch({
+            type: 'update',
+            data: {
+                files_mergeByLabel: v
+            }
+        });
+    }
+
+    get fileFormat() {
+        return this.state.files_fileFormat;
+    }
+
+    set fileFormat(v) {
+        this.dispatch({
+            type: 'update',
+            data: {
+                files_fileFormat: v
+            }
+        });
+    }
+
+    get tabWidth() {
+        return this.state.files_tabWidth;
+    }
+
+    set tabWidth(v) {
+        this.dispatch({
+            type: 'update',
+            data: {
+                files_tabWidth: v
+            }
+        });
+    }
+
+    get precision() {
+        return this.state.files_precision;
+    }
+
+    set precision(v) {
+        this.dispatch({
+            type: 'update',
+            data: {
+                files_precision: v
+            }
+        });
+    }
+
 
     get spinSysQuadrupoleOrder() {
         return this.state.files_quadrupole_order;
@@ -179,23 +257,33 @@ class FilesInterface extends BaseInterface {
         if (app && app.model) {
             view = getSel(app);
         }
-
+        
         if (!view) {
             return null;
         }
 
+        // get/update the multiplicities of the current selection
+        // note this can't be called after the view is merged!
+        let multiplicity = view.unique_labels_multiplicity;
+
+        // should we merge equivalent atoms?
+        if (this.mergeByLabel) {
+            view = view.uniqueSites();
+         }
+
         switch(this.state.files_seltype) {
+
             case 'ms':
-                contents = this._msMakeTable(view);
+                contents = this._msMakeTable(view, multiplicity);
                 break;
             case 'efg':
-                contents = this._efgMakeTable(view);
+                contents = this._efgMakeTable(view, multiplicity);
                 break;
             case 'dip':
-                contents = this._dipMakeTable(view);
+                contents = this._dipMakeTable(view, multiplicity);
                 break;
             case 'isc':
-                contents = this._iscMakeTable(view);
+                contents = this._iscMakeTable(view, multiplicity);
                 break;
             case 'spinsys':
                 contents = this._spinsysMakeTable(view, this.spinSysOptions);
@@ -207,20 +295,58 @@ class FilesInterface extends BaseInterface {
         return contents;
     }
 
-    // Table generators
-    _msMakeTable(view) {
+    _get_labels(view) {
+        // if we have CIF labels, use them
+        if (view._model._has_cif_labels) {
+            return view.atoms.map((a) => a.crystLabel);
+        }
 
-        const tabW = 20;
-        const prec = 5;
+        // otherwise just use the element
+        return view.atoms.map((a) => a.element);
+    }
+
+    _get_indices(view) {
+        // The global index of the atom would be this:
+        // return view.atoms.map((a) => a.index);
+        // But we want the index within the species label
+        // to be more in line with the .magres specification
+        // we also want the indices to start at 1
+        
+        // if we have CIF labels, we'll use the label index
+        if (view._model._has_cif_labels) {
+            return view.atoms.map((a) => a.labelIndex + 1);
+        }
+        // otherwise use the species index
+        return view.atoms.map((a) => a.speciesIndex + 1);
+    }
+
+
+    // Table generators
+    _msMakeTable(view, multiplicity) {
+
+        const tabW = this.tabWidth;
+        const prec = this.precision;
+        const fileFormat = this.fileFormat;
+        const rowOptions = {width:tabW, precision:prec, format:fileFormat};
         const conv = this.state.eul_convention;
 
-        let table = 'MS Table generated by MagresView 2\n';
-        table += `Euler angles convention: ${conv}\n\n`;
+        let table = '# MS Table generated by MagresView 2\n';
+        if (this.includeEuler)
+            table += `# Euler angles convention: ${conv}\n`;
 
         // Header
-        table += tableRow(['Label', 'Element', 'Index', 's_iso/ppm', 
-                           'Anisotropy/ppm', 'Asymmetry', 
-                           'alpha', 'beta', 'gamma'], tabW);
+        let header = ['Label', 'Isotope', 'No. in label']
+        if (this.mergeByLabel) {
+            header = header.concat(['Multiplicity']);
+        }
+        if (this.includeMS) { 
+            header = header.concat(['s_iso/ppm', 'Anisotropy/ppm', 'Asymmetry']);
+        }
+
+        if (this.includeEuler) {
+            header = header.concat(['alpha', 'beta', 'gamma']);
+        }
+        table += tableRow(header, rowOptions);
 
         // Get the NMR data
         const iso = getNMRData(view, 'iso', 'ms')[1];
@@ -233,42 +359,72 @@ class FilesInterface extends BaseInterface {
             return eulerFromRotation(T.haeberlen_eigenvectors, conv).map((x) => (x*180.0/Math.PI));
         });
 
+        const species_labels = this._get_labels(view);
+        const indices = this._get_indices(view);
+
+
         view.atoms.forEach((a, i) => {
-            table += tableRow([
-                a.crystLabel,
+            let table_values = [
+                species_labels[i],
                 a.isotope + a.element,
-                a.index + 1, // 1-indexed
-                iso[i],
-                aniso[i],
-                asymm[i],
-                euler[i][0],
-                euler[i][1],
-                euler[i][2]
-            ], tabW, prec);
+                indices[i],
+            ];
+
+            if (this.mergeByLabel) {
+                // if the multiplicity is not defined, throw an error
+                if (multiplicity[a.crystLabel] === undefined) {
+                    throw new Error(`Multiplicity of ${a.crystLabel} is not defined`);
+                }
+                table_values = table_values.concat([multiplicity[a.crystLabel]]);
+            }
+
+            // MS data
+            if (this.includeMS) {
+                table_values = table_values.concat([iso[i], aniso[i], asymm[i]]);
+            }
+            
+            // Euler angles
+            if (this.includeEuler) {
+                table_values = table_values.concat(euler[i]);
+            }
+
+            table += tableRow(table_values, rowOptions);
         });
 
         return table;
     }
 
-    _efgMakeTable(view) {
+    _efgMakeTable(view, multiplicity) {
 
-        const tabW = 20;
-        const prec = 5;
+        const tabW = this.tabWidth;
+        const prec = this.precision;
+        const fileFormat = this.fileFormat;
+        const rowOptions = {width:tabW, precision:prec, format:fileFormat};
         const conv = this.state.eul_convention;
 
-        let table = 'EFG Table generated by MagresView 2\n';
-        table += `Euler angles convention: ${conv}\n\n`;
+        let table = '# EFG Table generated by MagresView 2\n';
+        if (this.includeEuler)
+            table += `# Euler angles convention: ${conv}\n`;
 
         // Header
-        table += tableRow(['Label', 'Element', 'Index', 'Vzz/au', 'Anisotropy/au', 
-                           'Asymmetry', 'Q/MHz', 
-                           'alpha', 'beta', 'gamma'], tabW);
+        let header = ['Label', 'Isotope', 'No. in label']
+        if (this.mergeByLabel) {
+            header = header.concat(['Multiplicity']);
+        }
+        if (this.includeEFG) {
+            header = header.concat(['Vzz/au', 'Anisotropy/au', 'Asymmetry', 'Q/MHz']);
+        }
+
+        if (this.includeEuler) {
+            header = header.concat(['alpha', 'beta', 'gamma']);
+        }
+        table += tableRow(header, rowOptions);
 
         // Get the NMR data
         const Vzz = getNMRData(view, 'e_z', 'efg')[1];
         const aniso = getNMRData(view, 'aniso', 'efg')[1];
         const asymm = getNMRData(view, 'asymm', 'efg')[1];
-        const Q = getNMRData(view, 'Q', 'efg')[1] / 1e6; // Convert to MHz
+        const Q = getNMRData(view, 'Q', 'efg')[1]; // in MHz already
 
         // Euler angles
         const euler = view.atoms.map((a) => {
@@ -276,72 +432,125 @@ class FilesInterface extends BaseInterface {
             return eulerFromRotation(T.haeberlen_eigenvectors, conv).map((x) => (x*180.0/Math.PI));
         });
 
+        const species_labels = this._get_labels(view);
+        const indices = this._get_indices(view);
+
         view.atoms.forEach((a, i) => {
-            table += tableRow([
-                a.crystLabel,
+            let table_values = [
+                species_labels[i],
                 a.isotope + a.element,
-                a.index + 1, // 1-indexed
-                Vzz[i],
-                aniso[i],
-                asymm[i],
-                Q[i],
-                euler[i][0],
-                euler[i][1],
-                euler[i][2]
-            ], tabW, prec);
+                indices[i],
+            ];
+
+            if (this.mergeByLabel) {
+                // if the multiplicity is not defined, throw an error
+                if (multiplicity[a.crystLabel] === undefined) {
+                    throw new Error(`Multiplicity of ${a.crystLabel} is not defined`);
+                }
+                table_values = table_values.concat([multiplicity[a.crystLabel]]);
+            }
+
+            // EFG data
+            if (this.includeEFG) {
+                table_values = table_values.concat([Vzz[i], aniso[i], asymm[i], Q[i]]);
+            }    
+
+            // Euler angles
+            if (this.includeEuler) {
+                table_values = table_values.concat(euler[i]);
+            }
+
+            table += tableRow(table_values, rowOptions);
         });
 
         return table;
     }
 
-    _dipMakeTable(view) {
+    _dipMakeTable(view, multiplicity) {
 
-        const tabW = 20;
-        const prec = 5;
+        const tabW = this.tabWidth;
+        const prec = this.precision;
+        const fileFormat = this.fileFormat;
+        const rowOptions = {width: tabW, precision: prec, format: fileFormat};
 
-        let table = 'Dipolar coupling table generated by MagresView 2\n\n';
+        let table = '# Dipolar coupling table generated by MagresView 2\n';
 
         // Header
-        table += tableRow(['Label 1', 'Element 1', 'Index 1', 
-                           'Label 2', 'Element 2', 'Index 2',
-                           'D/kHz', 'r_x/Ang', 'r_y/Ang', 'r_z/Ang'], tabW);
+        let header = ['Label 1', 'Isotope 1', 'Index 1',
+                      'Label 2', 'Isotope 2', 'Index 2'];
+        if (this.mergeByLabel) {
+            header = header.concat(['Multiplicity 1', 'Multiplicity 2']);
+        }
+        header = header.concat(['D/kHz', 'r_x/Ang', 'r_y/Ang', 'r_z/Ang']);
+        table += tableRow(header, rowOptions);
 
         const atoms = view.atoms;
+
+        const species_labels = this._get_labels(view);
+        const indices = this._get_indices(view);
+
 
         atoms.forEach((a1, i) => {
             atoms.slice(i+1).forEach((a2, j) => {
 
-                const [D, r] = dipolarCoupling(a1, a2);
+                let [D, r] = dipolarCoupling(a1, a2);
 
-                table += tableRow([
-                    a1.crystLabel,
+                // convert to kHz
+                D /= 1000.0;
+                let table_values = [
+                    species_labels[i],
                     a1.isotope + a1.element,
-                    a1.index + 1, // 1-indexed
-                    a2.crystLabel,
+                    indices[i],
+                    species_labels[j],
                     a2.isotope + a2.element,
-                    a2.index + 1, // 1-indexed
-                    D,
-                    r[0], r[1], r[2]
-                ], tabW, prec);
+                    indices[j],
+                ];
+
+                if (this.mergeByLabel) {
+                    // if the multiplicity is not defined, throw an error
+                    if (multiplicity[a1.crystLabel] === undefined) {
+                        throw new Error(`Multiplicity of ${a1.crystLabel} is not defined`);
+                    }
+                    if (multiplicity[a2.crystLabel] === undefined) {
+                        throw new Error(`Multiplicity of ${a2.crystLabel} is not defined`);
+                    }
+                    table_values = table_values.concat([multiplicity[a1.crystLabel], multiplicity[a2.crystLabel]]);
+                }
+
+                table_values = table_values.concat([D, r[0], r[1], r[2]]);
+
+                // add row to table
+                table += tableRow(table_values, rowOptions);
             });
         });
 
         return table;
     }
 
-    _iscMakeTable(view) {
+    _iscMakeTable(view, multiplicity) {
 
-        const tabW = 20;
-        const prec = 5;
+        const tabW = this.tabWidth;
+        const prec = this.precision;
+        const fileFormat = this.fileFormat;
+        const rowOptions = {width: tabW, precision: prec, format: fileFormat};
 
-        let table = 'J coupling table generated by MagresView 2\n\n';
+        let table = '# J coupling table generated by MagresView 2\n';
 
         // Header
-        table += tableRow(['Label 1', 'Element 1', 'Index 1', 
-                           'Label 2', 'Element 2', 'Index 2',
-                           'J/Hz'], tabW);
+        let header = ['Label 1', 'Isotope 1', 'Index 1',
+                      'Label 2', 'Isotope 2', 'Index 2'];
+        if (this.mergeByLabel) {
+            header = header.concat(['Multiplicity 1', 'Multiplicity 2']);
+        }
+        header = header.concat(['J/Hz']);
+
+        // add header to table
+        table += tableRow(header, rowOptions);
 
         const atoms = view.atoms;
+        const species_labels = this._get_labels(view);
+        const indices = this._get_indices(view);
+
 
         atoms.forEach((a1, i) => {
             atoms.slice(i+1).forEach((a2, j) => {
@@ -350,16 +559,30 @@ class FilesInterface extends BaseInterface {
 
                 if(!J)
                     return; // No data
-
-                table += tableRow([
-                    a1.crystLabel,
+                let table_values = [
+                    species_labels[i],
                     a1.isotope + a1.element,
-                    a1.index + 1, // 1-indexed
-                    a2.crystLabel,
+                    indices[i],
+                    species_labels[j],
                     a2.isotope + a2.element,
-                    a2.index + 1, // 1-indexed
-                    J
-                ], tabW, prec);
+                    indices[j],
+                ];
+
+                if (this.mergeByLabel) {
+                    // if the multiplicity is not defined, throw an error
+                    if (multiplicity[a1.crystLabel] === undefined) {
+                        throw new Error(`Multiplicity of ${a1.crystLabel} is not defined`);
+                    }
+                    if (multiplicity[a2.crystLabel] === undefined) {
+                        throw new Error(`Multiplicity of ${a2.crystLabel} is not defined`);
+                    }
+                    table_values = table_values.concat([multiplicity[a1.crystLabel], multiplicity[a2.crystLabel]]);
+                }
+
+                table_values = table_values.concat([J]);
+
+                // add row to table
+                table += tableRow(table_values, rowOptions);
             });
         });
 
@@ -371,8 +594,8 @@ class FilesInterface extends BaseInterface {
         // Follow the soprano function here:
         // https://github.com/CCP-NC/soprano/blob/master/soprano/calculate/nmr/simpson.py
 
-        const tabW = 20;
-        const prec = 5;
+        const tabW = this.tabWidth;
+        const prec = this.precision;
         const conv = this.state.eul_convention;
         let table = '{spinsys\n';
 
@@ -426,6 +649,7 @@ class FilesInterface extends BaseInterface {
         if (options.includeEFG) {
             if (!this.hasEFGData) {
                 console.warn('No EFG data found. Skipping EFG data in spinsys table.');
+                alert('No EFG data found. Skipping EFG data in spinsys table.');
             }
             else {
                 // Get the NMR data

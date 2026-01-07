@@ -1,3 +1,7 @@
-.mv-icon path {
+.mv-icon-wrapper {
+  display: inline-block;
+}
+
+.mv-icon-wrapper .mv-icon path {
   fill: var(--path-fill) !important;
 }

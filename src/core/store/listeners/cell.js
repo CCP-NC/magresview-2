@@ -10,6 +10,8 @@ function cellListener(state) {
         if (model) {
             model.box.visible = state.sel_show_cell;
             model.axes.visible = state.sel_show_cell;
+            // update cell  line color to match theme
+            model.box.color = state.app_theme.FwdColor3;
         }
     }
 

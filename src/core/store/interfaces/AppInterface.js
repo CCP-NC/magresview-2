@@ -30,16 +30,19 @@ import { Events } from '../listeners';
 
 import CrystVis from '@ccp-nc/crystvis-js';
 
+import { themes } from '../../themes';
 
 const initialAppState = {
     app_viewer: null,
     app_click_handler: null,
-    app_theme: 'dark',
+    app_theme_name: 'dark',
+    app_theme: themes.dark,
     app_sidebar: 'load',
     app_default_displayed: null,
     app_model_queued: null,
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
-    app_use_nmr_isos: true
+    app_use_nmr_isos: true,
+    app_vdw_scaling: 1.0,
 };
 
 // Functions meant to operate on the app alone.
@@ -74,7 +77,14 @@ function appDisplayModel(state, m) {
     };
 }
 
-function appReloadModel(m) {
+function appReloadModel(state, m) {
+    let app = state.app_viewer;
+    app.reloadModel(m, {
+        supercell: [3, 3, 3],
+        molecularCrystal: state.app_load_as_mol,
+        useNMRActiveIsotopes: state.app_use_nmr_isos,
+        vdwScaling: state.app_vdw_scaling
+    });
 
     let data = {};
 
@@ -158,16 +168,29 @@ class AppInterface extends BaseInterface {
         return model_name;
     }
 
-    get theme() {
-        return this.state.app_theme;
+    get themeName() {
+        return this.state.app_theme_name;
     }
 
-    set theme(v) {
+    set themeName(v) {
         this.dispatch({
-            type: 'set',
-            key: 'app_theme',
-            value: v
+            type: 'update',
+            data: {
+                app_theme_name: v,
+                app_theme: themes[v],
+                listen_update: [
+                    Events.SEL_LABELS, Events.CSCALE,
+                    Events.MS_ELLIPSOIDS, Events.MS_LABELS,
+                    Events.EFG_ELLIPSOIDS, Events.EFG_LABELS,
+                    Events.DIP_LINKS, Events.JC_LINKS
+                ]
+            }
         });
+    }
+
+
+    get theme() {
+        return themes[this.themeName];
     }
 
     get sidebar() {
@@ -207,10 +230,23 @@ class AppInterface extends BaseInterface {
         });
     }
 
+    get vdwScaling() {
+        return this.state.app_vdw_scaling;
+    }
+
+    set vdwScaling(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'app_vdw_scaling',
+            value: v
+        });
+    }
+
+
     initialise(elem) {
         console.log('Initialising CrystVis app on element ' + elem);
         // Initialise app but only if it's not already there
-        const vis = new CrystVis(elem);
+        const vis = new CrystVis(elem, 0, 0, {preserveDrawingBuffer: true});
         vis.highlightSelected = true; // Our default
         
         const handler = new ClickHandler(vis, [
@@ -246,7 +282,8 @@ class AppInterface extends BaseInterface {
         let params = {
             supercell: [3, 3, 3],
             molecularCrystal: this.loadAsMol,
-            useNMRActiveIsotopes: this.useNMRIsotopes
+            useNMRActiveIsotopes: this.useNMRIsotopes,
+            vdwScaling: this.vdwScaling
         };
 
         // Callback for each file after the FileReader is done
