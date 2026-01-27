@@ -12,7 +12,7 @@
   "homepage": ".",
   "type": "module",
   "dependencies": {
-    "@ccp-nc/crystvis-js": "^0.6.0",
+    "@ccp-nc/crystvis-js": "^0.6.1",
     "@nivo/line": "^0.99.0",
     "@popperjs/core": "^2.11.8",
     "color-scales": "^3.0.2",

@@ -33,7 +33,7 @@ import { tooltip_molecular_crystal, tooltip_nmr_active, tooltip_vdw_scaling } fr
 import MVRange from '../../controls/MVRange';
 
 // Accepted file formats
-const file_formats = ['.cif', '.xyz', '.magres', '.cell'];
+const file_formats = ['.cif', '.xyz', '.extxyz', '.magres', '.cell'];
 
 function MVSidebarLoad(props) {
 
