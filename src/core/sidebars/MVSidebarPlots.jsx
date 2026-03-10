@@ -24,12 +24,11 @@ import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSel
 import MVRange from '../../controls/MVRange';
 import MVSwitch from '../../controls/MVSwitch';
 import MVTooltip from '../../controls/MVTooltip';
-import { tooltip_lorentzian_broadening, tooltip_plots_shifts, tooltip_plots_elements } from './tooltip_messages';
-import React, { useEffect, useRef} from 'react';
+import { tooltip_lorentzian_broadening, tooltip_broadening_type, tooltip_plots_shifts, tooltip_plots_elements } from './tooltip_messages';
+import { MVReferenceTable } from './MVSidebarMS';
+import React, { useState, useEffect, useRef} from 'react';
 
-
-
-import { usePlotsInterface } from '../store';
+import { usePlotsInterface, useMSInterface } from '../store';
 import { chainClasses } from '../../utils';
 
 
@@ -41,6 +40,8 @@ const otherOnOff = {
 function MVSidebarPlots(props) {
 
     const pltint = usePlotsInterface();
+    const msint = useMSInterface();
+    const [ showRefTable, setShowRefTable ] = useState(false);
     // const formats = '.png,.jpg,.jpeg';
 
     function setMinX(v) {
@@ -86,18 +87,43 @@ function MVSidebarPlots(props) {
             <span className='sep-1' />
             <div className='mv-sidebar-tooltip-grid'>
                 Element <MVTooltip tooltipText={tooltip_plots_elements} />
-                <MVCustomSelect onSelect={(v) => { pltint.element = v; }} selected={pltint.element} name='element_dropdown'>
+                <MVCustomSelect onSelect={(v) => {
+                        pltint.element = v;
+                        // If already in shift mode, check that the new element has a reference
+                        if (pltint.useRefTable) {
+                            const ref = msint.getReference(v);
+                            if (!ref || ref === '') {
+                                setShowRefTable(true);
+                            }
+                        }
+                    }} selected={pltint.element} name='element_dropdown'>
                     {options}
                 </MVCustomSelect>
             </div>
             <span className='sep-1' />
             <div className='mv-plots-agrid-switch'>
                 <span>Shielding</span>
-                <MVSwitch on={ pltint.useRefTable} onClick={() => { pltint.useRefTable = !pltint.useRefTable; }} 
-                            colorFalse='var(--bkg-color-1)' colorTrue='var(--ms-color-2)'/>
+                <MVSwitch on={ pltint.useRefTable} onClick={() => {
+                    if (!pltint.useRefTable) {
+                        // Switching to shift — check reference exists for current element
+                        const ref = msint.getReference(pltint.element);
+                        if (!ref || ref === '') {
+                            // No ref yet — open the reference table so user can set one
+                            setShowRefTable(true);
+                        } else {
+                            pltint.useRefTable = true;
+                        }
+                    } else {
+                        pltint.useRefTable = false;
+                    }
+                }} colorFalse='var(--bkg-color-1)' colorTrue='var(--ms-color-2)'/>
                 <span>Shift (use references)</span>
                 <MVTooltip tooltipText={tooltip_plots_shifts} />
             </div>
+            <MVButton onClick={() => { setShowRefTable(true); }}>Set References</MVButton>
+            <MVReferenceTable display={showRefTable}
+                close={() => { setShowRefTable(false); }}
+                onAccept={() => { pltint.useRefTable = true; }} />
             <span className='sep-1' />
             {/* <div className='mv-sidebar-block'>
                 Background spectrum image
@@ -105,16 +131,10 @@ function MVSidebarPlots(props) {
                 <MVButton onClick={() => { pltint.clearBkgImage(); }}>Clear image</MVButton>
             </div> */}
             <div className='mv-sidebar-grid'>
-                <MVCheckBox checked={pltint.showAxes} onCheck={(v) => { pltint.showAxes = v; }}>Show axes</MVCheckBox>
+                <MVCheckBox checked={pltint.showXAxis} onCheck={(v) => { pltint.showXAxis = v; }}>Show X axis</MVCheckBox>
+                <MVCheckBox checked={pltint.showYAxis} onCheck={(v) => { pltint.showYAxis = v; }}>Show Y axis</MVCheckBox>
                 <MVCheckBox checked={pltint.showGrid} onCheck={(v) => { pltint.showGrid = v; }}>Show grid</MVCheckBox>
                 <MVCheckBox checked={pltint.showLabels} onCheck={(v) => { pltint.showLabels = v; }}>Show labels</MVCheckBox>
-            </div>
-            <span className='sep-1' />
-            <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
-            X range: &nbsp;
-                <MVText size='5' value={pltint.rangeX[0]} onChange={setMinX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' /> &nbsp; to &nbsp; 
-                <MVText size='5' value={pltint.rangeX[1]} onChange={setMaxX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
-                <MVCheckBox checked={pltint.autoScaleX} onCheck={(v) => { pltint.autoScaleX = v; }}>Auto</MVCheckBox>
             </div>
             <span className='sep-1' />
             <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
@@ -124,17 +144,35 @@ function MVSidebarPlots(props) {
                 <MVTooltip tooltipText={tooltip_lorentzian_broadening} />
             </div>
             <span className='sep-1' />
+            <div className='mv-sidebar-tooltip-grid'>
+                Broadening <MVTooltip tooltipText={tooltip_broadening_type} />
+                <MVCustomSelect onSelect={(v) => { pltint.broadeningType = v; }} selected={pltint.broadeningType} name='broadening_dropdown'>
+                    <MVCustomSelectOption value='lorentzian'>Lorentzian</MVCustomSelectOption>
+                    <MVCustomSelectOption value='gaussian'>Gaussian</MVCustomSelectOption>
+                </MVCustomSelect>
+            </div>
+            <span className='sep-1' />
             <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
-            X steps: &nbsp;
+                X range: &nbsp;
+                <MVText size='5' value={pltint.rangeX[0]} onChange={setMinX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' /> &nbsp; to &nbsp; 
+                <MVText size='5' value={pltint.rangeX[1]} onChange={setMaxX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                <MVCheckBox checked={pltint.autoScaleX} onCheck={(v) => { pltint.autoScaleX = v; }}>Auto</MVCheckBox>
+            </div>
+            <span className='sep-1' />
+            <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
+                Y range: &nbsp;
+                <MVText size='5' value={pltint.rangeY[0]} onChange={(v) => { pltint.setRange(v, null, 'y'); }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' /> &nbsp; to &nbsp;
+                <MVText size='5' value={pltint.rangeY[1]} onChange={(v) => { pltint.setRange(null, v, 'y'); }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                <MVCheckBox checked={pltint.autoScaleY} onCheck={(v) => { pltint.autoScaleY = v; }}>Auto</MVCheckBox>
+            </div>
+            <span className='sep-1' />
+            <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
+                X steps: &nbsp;
                 <MVText size='3' value={pltint.xSteps} onChange={(v) => { pltint.xSteps = v; }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
             </div>
             <span className='sep-1' />
             <div className='mv-sidebar-grid'>
-                {/* download svg */}
-                {/* disable if pltint.mode is none */}
                 <MVButton onClick={() => { pltint.downloadSVG(); }} disabled={pltint.mode === 'none'}>Download SVG</MVButton>
-                {/* download data */}
-                {/* disable if pltint.mode is none */}
                 <MVButton onClick={() => { pltint.downloadData(); }} disabled={pltint.mode === 'none'}>Download data (.csv)</MVButton>
             </div>
         </div>

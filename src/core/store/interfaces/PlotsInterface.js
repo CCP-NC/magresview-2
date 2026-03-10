@@ -27,8 +27,10 @@ const initialPlotsState = {
     plots_element: null, // what species' spectrum to plot
     plots_use_refs: false,
     plots_q2_shifts: true,
-    plots_show_axes: true,
+    plots_show_x_axis: true,
+    plots_show_y_axis: true,
     plots_show_grid: true,
+    plots_broadening_type: 'lorentzian', // 'lorentzian' | 'gaussian'
     plots_bkg_img_url: null,
     plots_bkg_img_w: 0,
     plots_bkg_img_h: 0,
@@ -125,17 +127,34 @@ class PlotsInterface extends DataCheckInterface {
          }));
     }   
 
-    get showAxes() {
-        return this.state.plots_show_axes;
+    get showXAxis() {
+        return this.state.plots_show_x_axis;
     }
 
-    set showAxes(v) {
+    set showXAxis(v) {
         this.dispatch({
             type: 'update',
-            data: {
-                plots_show_axes: v
-            }
+            data: { plots_show_x_axis: v }
         });
+    }
+
+    get showYAxis() {
+        return this.state.plots_show_y_axis;
+    }
+
+    set showYAxis(v) {
+        this.dispatch({
+            type: 'update',
+            data: { plots_show_y_axis: v }
+        });
+    }
+
+    get broadeningType() {
+        return this.state.plots_broadening_type;
+    }
+
+    set broadeningType(v) {
+        this.dispatch(makePlotAction({ plots_broadening_type: v }));
     }
 
     get showGrid() {

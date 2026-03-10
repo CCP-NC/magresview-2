@@ -56,12 +56,9 @@ function plotsListener(state) {
 
     // make sure no null values in peaks
     if (peaks.indexOf(null) >= 0) {
-        // cannot plot peaks if there are null values
-        // probably because there is no MS reference
-        alert('Check that you have set the MS reference ' +
-        'for the selected element.\n\n ' +
-        'Alternatively, switch to plotting the ' +
-        'raw chemical sheilding instead.');
+        // No MS reference set for this element — return empty data silently.
+        // The UI should prompt the user to enter a reference before switching to shift mode.
+        return { plots_data: [] };
     }
     
     // if auto_x is true, use the range of peaks
@@ -91,12 +88,20 @@ function plotsListener(state) {
 
     if (w > 0) {
         function lorentzian(x, x0, w) {
-            return 0.5/Math.PI*w/(Math.pow(x-x0, 2)+0.25*w*w);  // Lorentzian peak
+            return 0.5/Math.PI*w/(Math.pow(x-x0, 2)+0.25*w*w);
         }
+
+        function gaussian(x, x0, w) {
+            // w is FWHM; convert to sigma
+            const sigma = w / (2 * Math.sqrt(2 * Math.log(2)));
+            return 1/(sigma * Math.sqrt(2*Math.PI)) * Math.exp(-0.5 * Math.pow((x-x0)/sigma, 2));
+        }
+
+        const kernel = (state.plots_broadening_type === 'gaussian') ? gaussian : lorentzian;
 
         xaxis = _.range(n).map((i) => (minx + (maxx-minx)*i/(n-1)));
         yaxis = xaxis.map((x) => {
-            return sortedpeaks.reduce((s, x0) => (s + lorentzian(x, x0, w)), 0);
+            return sortedpeaks.reduce((s, x0) => (s + kernel(x, x0, w)), 0);
         });
     } else if (w === 0) {
         xaxis = sortedpeaks;

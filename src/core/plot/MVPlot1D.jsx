@@ -1,6 +1,8 @@
 import createPlotlyComponent from 'react-plotly.js/factory';
 import Plotly from 'plotly.js-dist-min';
 
+import { useRef, useState, useCallback } from 'react';
+
 import MVModal from '../../controls/MVModal';
 import { usePlotsInterface } from '../store';
 import { PLOT_DIV_ID } from './constants';
@@ -80,6 +82,27 @@ function buildAnnotations(peaks, labels, rangeX, peakW, xyData) {
 function MVPlot1D() {
     const pltint = usePlotsInterface();
 
+    const observerRef = useRef(null);
+    const [dims, setDims] = useState({ width: 680, height: 440 });
+
+    // Callback ref: fires whenever the div mounts or unmounts, regardless of
+    // whether `show` was true on the initial render.
+    const containerRef = useCallback(node => {
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+            observerRef.current = null;
+        }
+        if (!node) return;
+        const observer = new ResizeObserver(entries => {
+            const { width, height } = entries[0].contentRect;
+            if (width > 10 && height > 10) {
+                setDims({ width: Math.floor(width), height: Math.floor(height) });
+            }
+        });
+        observer.observe(node);
+        observerRef.current = observer;
+    }, []);
+
     const show = (pltint.mode !== 'none') && (pltint.hasData) && (pltint.element);
 
     if (!show) {
@@ -126,7 +149,7 @@ function MVPlot1D() {
     const xaxisConfig = {
         title: { text: xAxisLabel },
         showgrid: pltint.showGrid,
-        visible: pltint.showAxes,
+        visible: pltint.showXAxis,
         automargin: true,
     };
 
@@ -143,7 +166,7 @@ function MVPlot1D() {
     const yaxisConfig = {
         title: { text: pltint.peakW > 0 ? 'Intensity' : '' },
         showgrid: pltint.showGrid,
-        visible: pltint.showAxes,
+        visible: pltint.showYAxis,
         automargin: true,
         showticklabels: pltint.peakW > 0,
     };
@@ -179,8 +202,8 @@ function MVPlot1D() {
         });
     }
 
-    const plotWidth  = bkg ? bkg.width  : 680;
-    const plotHeight = bkg ? bkg.height : 480;
+    const plotWidth  = dims.width;
+    const plotHeight = dims.height;
 
     const layout = {
         width:  plotWidth,
@@ -211,7 +234,10 @@ function MVPlot1D() {
         <MVModal title="Spectral 1D plot" display={show}
             noFooter={true} resizable={true} draggable={true}
             onClose={() => { pltint.mode = 'none'; }}>
-            <div style={{ backgroundColor: 'white', color: 'black' }}>
+            <div ref={containerRef}
+                 style={{ position: 'absolute', inset: 0,
+                          backgroundColor: 'white', color: 'black',
+                          overflow: 'hidden' }}>
                 <Plot
                     divId={PLOT_DIV_ID}
                     data={traces}

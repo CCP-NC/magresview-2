@@ -49,6 +49,8 @@
 .mv-modal-resizable {
     resize: both;
     overflow: hidden;
+    height: 560px;
+    width: 720px;
 }
 
 .mv-modal-title {
@@ -87,9 +89,12 @@
 }
 
 .mv-modal-resizable .mv-modal-content {
-    overflow: auto;    
+    position: relative;
+    overflow: hidden;
     width: 100%;
     height: 100%;
+    flex: 1;
+    min-height: 0;
 }
 
 .mv-modal-footer {
