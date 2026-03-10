@@ -14,6 +14,8 @@
 
 import { Events } from '../listeners';
 
+import Plotly from 'plotly.js-dist-min';
+import { PLOT_DIV_ID } from '../../plot/constants';
 import { loadImage } from '../../../utils';
 import { makeSelector, DataCheckInterface } from '../utils';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
@@ -263,21 +265,14 @@ class PlotsInterface extends DataCheckInterface {
         return this.state.plots_data;
     }
 
-    // download existing svg
-    // TODO: there must be a way of selecting from the react component instead of 
-    // using the DOM directly
+    // download existing plot as SVG via Plotly API
     downloadSVG() {
-        let node = "#root > div > div > div.mv-control.mv-modal.mv-modal-draggable.mv-modal-resizable > div.mv-modal-content > div > div > svg";
-        let svg = document.querySelector(node);
-        let svgData = new XMLSerializer().serializeToString(svg);
-        let svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
-        let svgUrl = URL.createObjectURL(svgBlob);
-        let downloadLink = document.createElement("a");
-        downloadLink.href = svgUrl;
-        downloadLink.download = "plot.svg";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        const div = document.getElementById(PLOT_DIV_ID);
+        if (!div) return;
+        Plotly.downloadImage(div, {
+            format: 'svg',
+            filename: 'magresview_plot',
+        });
     }
     // download data
     downloadData() {
