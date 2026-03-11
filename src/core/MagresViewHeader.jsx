@@ -14,7 +14,7 @@
 
 import './MagresViewHeader.css';
 import logo from '../icons/logo.svg';
-import { FaSun, FaMoon, FaRegFolderOpen, FaMousePointer, FaFile, FaBan } from 'react-icons/fa';
+import { FaSun, FaMoon, FaRegFolderOpen, FaMousePointer, FaFile, FaBan, FaKeyboard } from 'react-icons/fa';
 import { GiHistogram } from 'react-icons/gi';
 
 import React from 'react';
@@ -39,7 +39,7 @@ function ThemeSwitcher() {
     </div>);
 }
 
-function MagresViewHeader() {
+function MagresViewHeader({ onHelpOpen }) {
 
     const appint = useAppInterface();
 
@@ -63,6 +63,15 @@ function MagresViewHeader() {
                 <MVCustomSelectOption value='files' icon={<FaFile />}>Report files</MVCustomSelectOption>
                 <MVCustomSelectOption value='none' icon={<FaBan />}>No sidebar</MVCustomSelectOption>
             </MVCustomSelect>            
+            <span className='mv-hor-sep-3'></span>
+            <button
+                    className='mv-header-help-btn'
+                    onClick={onHelpOpen}
+                    title='Keyboard shortcuts (?)'
+                    aria-label='Show keyboard shortcuts'
+                >
+                    <FaKeyboard />
+                </button>
             <span className='mv-hor-sep-3'></span>
             <ThemeSwitcher />
         </div>

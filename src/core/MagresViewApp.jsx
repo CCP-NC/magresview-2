@@ -17,6 +17,9 @@ import '../controls/controls.css';
 import './MagresViewApp.css';
 import React, { useEffect, useRef, useState } from 'react';
 
+import { useHotkeys } from './hotkeys/useHotkeys';
+import MVHotkeyHelp from './hotkeys/MVHotkeyHelp';
+
 import { chainClasses } from '../utils';
 import { useAppInterface } from './store';
 
@@ -38,6 +41,7 @@ import MVPlot1D from './plot/MVPlot1D';
 function MagresViewPage() {
 
     const [hovered, setHovered] = useState(false);
+    const { helpOpen, setHelpOpen } = useHotkeys();
 
     let appint = useAppInterface();
 
@@ -93,7 +97,8 @@ function MagresViewPage() {
 
     return (<div className={chainClasses('mv-main-page', 'theme-' + appint.themeName, hovered? 'has-drag' : '' )}
                  onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
-                <MagresViewHeader />
+                <MagresViewHeader onHelpOpen={() => setHelpOpen(true)} />
+                <MVHotkeyHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
                 <MVSidebarLoad show={appint.sidebar === 'load'} />
                 <MVSidebarSelect show={appint.sidebar === 'select'} />
                 <MVSidebarMS show={appint.sidebar === 'ms'} />
