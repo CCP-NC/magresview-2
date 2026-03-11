@@ -405,6 +405,12 @@ class AppInterface extends BaseInterface {
 
         const merger = new CallbackMerger(modelEntries.length, () => {
             // ── Phase 2: all files loaded ────────────────────────────────────
+            // Apply the theme to the canvas first (displayListener normally
+            // does this, but we bypass it here).
+            const themeName = doc.settings?.app_theme_name ?? 'dark';
+            const theme = themes[themeName] ?? themes.dark;
+            app.theme = theme;
+
             // Display the active model directly on the viewer (no dispatch
             // reset) so that app.displayed is populated before listeners run.
             const targetModel = doc.activeModel ?? app.modelList[0];
@@ -413,10 +419,28 @@ class AppInterface extends BaseInterface {
                 // Replicate the housekeeping that displayListener normally does
                 centerDisplayed(app);
                 if (app.model?.box) {
-                    const themeName = doc.settings?.app_theme_name ?? 'dark';
-                    const theme = themes[themeName] ?? themes.dark;
                     app.model.box.color = theme.FwdColor3;
                 }
+            }
+
+            // ── Resolve atom references ───────────────────────────────────────
+            // dip_central_atom and jc_central_atom are live atom objects that
+            // cannot be serialized. They were saved as crystLabel strings in
+            // doc.atomRefs. Re-resolve them from the now-loaded model so that
+            // the DIP_LINKS / JC_LINKS listeners can draw the sphere and links.
+            //
+            // We filter to app.displayed._indices (non-ghost atoms only), exactly
+            // as SelInterface does for label queries, so the sphere is centred on
+            // the real atom and not a periodic image.
+            const atomRefs = doc.atomRefs ?? {};
+            const ddIndices = app.displayed?._indices ?? null;
+            function resolveAtom(label) {
+                if (!label || !app.model) return null;
+                let indices = app.model._queryLabels([label]);
+                if (ddIndices) {
+                    indices = indices.filter(i => ddIndices.includes(i));
+                }
+                return indices.length > 0 ? app.model.view(indices).atoms[0] : null;
             }
 
             // ── Phase 3: restore all settings + fire all render listeners ────
@@ -428,10 +452,18 @@ class AppInterface extends BaseInterface {
                     // this is safe to spread directly.
                     ...doc.settings,
 
-                    // Non-serializable keys must be re-derived, not restored:
+                    // app_theme is excluded from serialization (it is derived
+                    // from app_theme_name). Re-derive it here so every listener
+                    // reads the correct theme object for colors.
+                    app_theme_name: themeName,
+                    app_theme: theme,
                     app_model_sources: restoredSources,
                     app_default_displayed: app.displayed,
                     app_model_queued: null,
+
+                    // Atom references restored from crystLabel strings
+                    dip_central_atom: resolveAtom(atomRefs.dip_central_atom),
+                    jc_central_atom:  resolveAtom(atomRefs.jc_central_atom),
 
                     // Fire every render listener so the canvas matches the
                     // restored settings.  We deliberately skip Events.DISPLAY

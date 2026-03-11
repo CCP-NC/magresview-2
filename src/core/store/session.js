@@ -80,6 +80,10 @@ export const NON_SERIALIZABLE_KEYS = new Set([
 
     // ── Computed/derived values (rebuilt by listeners after restore) ───────────
     'dip_link_names',
+    // dip_central_atom and jc_central_atom are atom objects — they cannot be
+    // JSON-serialized. They are saved separately as crystLabel strings in the
+    // top-level `atomRefs` field of the session document and re-resolved into
+    // live atom objects in AppInterface.restoreSession() after the model loads.
     'dip_central_atom',
     'jc_link_names',
     'jc_central_atom',
@@ -140,6 +144,15 @@ export function buildSessionDocument(state, viewer = null) {
         activeModel: viewer?.modelName ?? null,
         models: state.app_model_sources ?? {},
         settings: serializeSettings(state),
+
+        // Atom references: atom objects cannot be JSON-serialized, so we store
+        // their crystLabel strings and re-resolve them after the model reloads.
+        // eul_atom_A / eul_atom_B omitted here because EulerInterface resets
+        // them when the sidebar is re-opened; they are interaction-driven.
+        atomRefs: {
+            dip_central_atom: state.dip_central_atom?.crystLabel ?? null,
+            jc_central_atom:  state.jc_central_atom?.crystLabel  ?? null,
+        },
 
         // ── Future: camera/orientation state ──────────────────────────────────
         // Once crystvis-js exposes getCameraState(), replace null with:
