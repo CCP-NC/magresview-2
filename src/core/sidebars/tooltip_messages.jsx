@@ -73,25 +73,46 @@ export const tooltip_isotopes = <div>
 
 
 // --- Plots sidebar ---
+export const tooltip_broadening_type = <div>
+    <p>
+        <b>Lorentzian</b> broadening arises from exponential decay of transverse 
+        magnetization in the time domain (T₂ or T₂*), representing homogeneous 
+        broadening.
+        <br />
+        <b>Gaussian</b> broadening arises from a static distribution of resonance 
+        frequencies (inhomogeneous broadening), such as chemical shift distributions 
+        or unresolved dipolar couplings, and is common in disordered or 
+        dipolar-coupled systems.
+    </p>
+</div>
+
 export const tooltip_lorentzian_broadening = <div>
     <p>
-        This is the width used for the <a href="https://en.wikipedia.org/wiki/Spectral_line_shape#Lorentzian" target="_blank" rel="noopener noreferrer">Lorentzian broadening function. </a> <br />
-        When the width is set to 0, no broadening is applied and simple sticks are drawn.
+        Peak width at half-maximum (FWHM) in ppm. <br />
+        When set to 0, no broadening is applied and simple sticks are drawn.
     </p>
 </div>
 
 export const tooltip_plots_shifts = <div>
     <p>
-        If you have set a reference value for the selected element, you can choose to display chemical shift information, rather than the computed chemical shielding. <br />
-        If no reference value is set, this option will be disabled. <br />
-        You can set a reference value by clicking the <b>Set References</b> button in the <b>Magnetic Shielding</b> tab. <br />
+        Toggle between plotting the raw computed magnetic <b>shielding</b> (ppm) and
+        the <b>chemical shift</b> (ppm), which requires a reference value for each element.
+    </p>
+    <p>
+        If no reference is set for the current element when you switch to Shift mode,
+        you will be prompted to enter one. You can also update references at any time
+        using the <b>Set References</b> button below.
     </p>
 </div>
 
 export const tooltip_plots_elements = <div>
     <p>
-        Choose which species to plot from the set of <i> currently selected </i> elements. <br />
-        To change the selection, use the <b>Select and display</b> tab. <br />
+        Choose which species to plot from the set of <i>currently selected</i> elements. <br />
+        To change the selection, use the <b>Select and display</b> tab.
+    </p>
+    <p>
+        When in Shift mode, switching to an element with no reference set will prompt
+        you to enter one.
     </p>
 </div>
 

@@ -14,6 +14,8 @@
 
 import { Events } from '../listeners';
 
+import Plotly from 'plotly.js-dist-min';
+import { PLOT_DIV_ID } from '../../plot/constants';
 import { loadImage } from '../../../utils';
 import { makeSelector, DataCheckInterface } from '../utils';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
@@ -25,8 +27,10 @@ const initialPlotsState = {
     plots_element: null, // what species' spectrum to plot
     plots_use_refs: false,
     plots_q2_shifts: true,
-    plots_show_axes: true,
+    plots_show_x_axis: true,
+    plots_show_y_axis: true,
     plots_show_grid: true,
+    plots_broadening_type: 'lorentzian', // 'lorentzian' | 'gaussian'
     plots_bkg_img_url: null,
     plots_bkg_img_w: 0,
     plots_bkg_img_h: 0,
@@ -123,17 +127,34 @@ class PlotsInterface extends DataCheckInterface {
          }));
     }   
 
-    get showAxes() {
-        return this.state.plots_show_axes;
+    get showXAxis() {
+        return this.state.plots_show_x_axis;
     }
 
-    set showAxes(v) {
+    set showXAxis(v) {
         this.dispatch({
             type: 'update',
-            data: {
-                plots_show_axes: v
-            }
+            data: { plots_show_x_axis: v }
         });
+    }
+
+    get showYAxis() {
+        return this.state.plots_show_y_axis;
+    }
+
+    set showYAxis(v) {
+        this.dispatch({
+            type: 'update',
+            data: { plots_show_y_axis: v }
+        });
+    }
+
+    get broadeningType() {
+        return this.state.plots_broadening_type;
+    }
+
+    set broadeningType(v) {
+        this.dispatch(makePlotAction({ plots_broadening_type: v }));
     }
 
     get showGrid() {
@@ -263,21 +284,14 @@ class PlotsInterface extends DataCheckInterface {
         return this.state.plots_data;
     }
 
-    // download existing svg
-    // TODO: there must be a way of selecting from the react component instead of 
-    // using the DOM directly
+    // download existing plot as SVG via Plotly API
     downloadSVG() {
-        let node = "#root > div > div > div.mv-control.mv-modal.mv-modal-draggable.mv-modal-resizable > div.mv-modal-content > div > div > svg";
-        let svg = document.querySelector(node);
-        let svgData = new XMLSerializer().serializeToString(svg);
-        let svgBlob = new Blob([svgData], {type:"image/svg+xml;charset=utf-8"});
-        let svgUrl = URL.createObjectURL(svgBlob);
-        let downloadLink = document.createElement("a");
-        downloadLink.href = svgUrl;
-        downloadLink.download = "plot.svg";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        const div = document.getElementById(PLOT_DIV_ID);
+        if (!div) return;
+        Plotly.downloadImage(div, {
+            format: 'svg',
+            filename: 'magresview_plot',
+        });
     }
     // download data
     downloadData() {
