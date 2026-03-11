@@ -6,6 +6,7 @@
 
 .mv-main-page {
   color: var(--fwd-color-2);
+  outline: none; /* programmatically focused for hotkeys; no visible ring needed */
 }
 
 .mv-background {
