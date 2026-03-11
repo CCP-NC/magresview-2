@@ -3,17 +3,21 @@ import MagresViewSidebar from './MagresViewSidebar';
 import { AiFillEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { IoMdRefresh } from 'react-icons/io';
 import { MdDeleteForever } from 'react-icons/md';
+import { FaSave, FaFolderOpen } from 'react-icons/fa';
 
 import MVFile from '../../controls/MVFile';
 import MVBox from '../../controls/MVBox';
+import MVButton from '../../controls/MVButton';
 import MVCheckBox from '../../controls/MVCheckBox';
 import MVListSelect, { MVListSelectOption } from '../../controls/MVListSelect';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
 import MVTooltip from '../../controls/MVTooltip';
 import { useAppInterface } from '../store';
+import magresStore from '../store';
+import { downloadSession, parseSessionDocument, SESSION_EXTENSION } from '../store/session';
 
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 /**
  * MagresView 2.0
  *
@@ -45,10 +49,42 @@ function MVSidebarLoad(props) {
 
     const appint = useAppInterface();
     const models = appint.models;
+    const sessionInputRef = useRef(null);
 
     console.log('[MVSidebarLoad rendered]');
 
     // Methods
+    function saveSession() {
+        if (!appint.initialised || appint.models.length === 0) return;
+        downloadSession(magresStore);
+    }
+
+    function loadSession(files) {
+        const file = files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            let doc;
+            try {
+                doc = parseSessionDocument(e.target.result);
+            } catch (err) {
+                setState(s => ({
+                    ...s,
+                    load_message: 'Could not load session: ' + err.message,
+                    load_message_status: 'error'
+                }));
+                return;
+            }
+            appint.restoreSession(doc);
+            setState(s => ({
+                ...s,
+                load_message: 'Session restored successfully.',
+                load_message_status: 'success'
+            }));
+        };
+        reader.readAsText(file);
+    }
+
     function loadModel(f) {
 
         appint.load(f, (success) => {
@@ -93,6 +129,26 @@ function MVSidebarLoad(props) {
     return (<MagresViewSidebar show={props.show} title='Load file'>
         <div className='mv-sidebar-block'>
             <MVFile filetypes={file_formats.join(',')} onSelect={loadModel} notext={true} multiple={true}/>
+            <span className='sep-1' />
+            <div className='mv-sidebar-row'>
+                <MVButton onClick={saveSession} disabled={!appint.initialised || appint.models.length === 0}>
+                    <FaSave style={{marginRight: '0.35em'}}/> Save session
+                </MVButton>
+                {/* Hidden file input wired to the Load session button below */}
+                <input
+                    ref={sessionInputRef}
+                    type='file'
+                    accept={'.' + SESSION_EXTENSION}
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                        if (e.target.files?.length > 0) loadSession(e.target.files);
+                        e.target.value = null;
+                    }}
+                />
+                <MVButton onClick={() => sessionInputRef.current?.click()}>
+                    <FaFolderOpen style={{marginRight: '0.35em'}}/> Load session
+                </MVButton>
+            </div>
             <span className='sep-1' />
             <div className='mv-sidebar-block'>
                 <div className='mv-sidebar-tooltip-grid'>
