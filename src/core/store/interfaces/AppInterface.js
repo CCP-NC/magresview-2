@@ -43,10 +43,6 @@ const initialAppState = {
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
     app_use_nmr_isos: true,
     app_vdw_scaling: 1.0,
-    // Raw source text for every loaded model, keyed by model name.
-    // Used to save/restore sessions without external file references.
-    // Future: replace or supplement with crystvis-js getModelSource(name).
-    app_model_sources: {},
 };
 
 // Functions meant to operate on the app alone.
@@ -121,11 +117,6 @@ function appDeleteModel(state, m) {
 
     // Delete a model
     app.deleteModel(m);
-
-    // Remove the stored source text for the deleted model
-    const newSources = { ...state.app_model_sources };
-    delete newSources[m];
-    data.app_model_sources = newSources;
 
     let models = app.modelList;
 
@@ -299,22 +290,13 @@ class AppInterface extends BaseInterface {
         function onLoad(contents, name, extension) {
             var success = app.loadModels(contents, extension, name, params);
 
-            // Find a valid model name and capture source text for all that loaded
+            // Find a valid model name for display
             var to_display = null;
-            var newSources = { ...intf.state.app_model_sources };
             _.map(success, (v, n) => {
                 if (v === 0) {                 
                     to_display = n;
-                    // Store the raw source text so the session can be saved later.
-                    // Future: replace with crystvis-js getModelSource(n) once available.
-                    newSources[n] = { text: contents, extension };
                 }
             });
-
-            // Persist sources – dispatch before display so the state is up to date
-            if (Object.keys(newSources).length !== Object.keys(intf.state.app_model_sources).length) {
-                intf.dispatch({ type: 'set', key: 'app_model_sources', value: newSources });
-            }
 
             if (to_display) {
                 intf.display(to_display);
@@ -371,16 +353,9 @@ class AppInterface extends BaseInterface {
      * The two-phase approach (load → restore) is required because model loading
      * is asynchronous (FileReader) while Redux dispatch is synchronous. We load
      * all files first, then in the merged callback we display the active model
-     * directly on the viewer and dispatch a single bulk update that reinstates
-     * all settings and queues all relevant listeners.
-     *
-     * Camera restore hook
-     * -------------------
-     * Once crystvis-js exposes setCameraState(state), add after displayModel():
-     *
-     *   if (doc.camera && app.setCameraState) {
-     *       app.setCameraState(doc.camera);
-     *   }
+     * directly on the viewer, restore camera orientation, reconstruct the atom
+     * selection, and dispatch a single bulk update that reinstates all settings
+     * and queues all relevant listeners.
      *
      * @param {Object} doc  Parsed session document (from parseSessionDocument)
      */
@@ -393,15 +368,11 @@ class AppInterface extends BaseInterface {
         const modelEntries = Object.entries(doc.models ?? {});
         if (modelEntries.length === 0) return;
 
-        const params = {
-            supercell: [3, 3, 3],
-            molecularCrystal: doc.settings?.app_load_as_mol ?? null,
-            useNMRActiveIsotopes: doc.settings?.app_use_nmr_isos ?? true,
-            vdwScaling: doc.settings?.app_vdw_scaling ?? 1.0,
-        };
-
-        // Collect file sources to re-populate app_model_sources after load
-        const restoredSources = {};
+        // Clear all currently loaded models so that model names from the session
+        // document are loaded without collision suffixes (crystvis-js appends
+        // "_1", "_2" etc. to avoid duplicates — that would break activeModel
+        // lookup). unloadAll() is a single atomic render pass.
+        app.unloadAll();
 
         const merger = new CallbackMerger(modelEntries.length, () => {
             // ── Phase 2: all files loaded ────────────────────────────────────
@@ -421,6 +392,13 @@ class AppInterface extends BaseInterface {
                 if (app.model?.box) {
                     app.model.box.color = theme.FwdColor3;
                 }
+            }
+
+            // ── Restore camera ────────────────────────────────────────────────
+            // setCameraState overrides the centering done above, restoring the
+            // exact rotation / pan / zoom the user had when they saved.
+            if (doc.camera) {
+                app.setCameraState(doc.camera);
             }
 
             // ── Resolve atom references ───────────────────────────────────────
@@ -443,6 +421,15 @@ class AppInterface extends BaseInterface {
                 return indices.length > 0 ? app.model.view(indices).atoms[0] : null;
             }
 
+            // ── Restore atom selection ────────────────────────────────────────
+            // sel_selected_view was saved as an array of crystLabel strings in
+            // doc.selections.sel_selected. Reconstruct it via viewFromLabels()
+            // so the user's selection is visible again after restore.
+            const selLabels = doc.selections?.sel_selected ?? null;
+            const selView = (selLabels?.length > 0 && app.model)
+                ? app.model.viewFromLabels(selLabels)
+                : null;
+
             // ── Phase 3: restore all settings + fire all render listeners ────
             intf.dispatch({
                 type: 'update',
@@ -457,13 +444,15 @@ class AppInterface extends BaseInterface {
                     // reads the correct theme object for colors.
                     app_theme_name: themeName,
                     app_theme: theme,
-                    app_model_sources: restoredSources,
                     app_default_displayed: app.displayed,
                     app_model_queued: null,
 
                     // Atom references restored from crystLabel strings
                     dip_central_atom: resolveAtom(atomRefs.dip_central_atom),
                     jc_central_atom:  resolveAtom(atomRefs.jc_central_atom),
+
+                    // Atom selection restored from crystLabel strings
+                    sel_selected_view: selView,
 
                     // Fire every render listener so the canvas matches the
                     // restored settings.  We deliberately skip Events.DISPLAY
@@ -487,16 +476,19 @@ class AppInterface extends BaseInterface {
         });
 
         // ── Phase 1: load each model from stored source text ─────────────────
-        modelEntries.forEach(([modelName, { text, extension }]) => {
-            // Re-create a synthetic File so we can pass the text back through
-            // the same loadModels pathway as a real file pick.
+        // Each entry in doc.models carries its own source (text + extension) and
+        // the original loading parameters (supercell, molecularCrystal, …) as
+        // captured by getModelSource() / getModelParameters() at save time.
+        modelEntries.forEach(([modelName, modelData]) => {
+            const { text, extension } = modelData.source ?? modelData; // compat
+            const params = modelData.params ?? {
+                supercell: [3, 3, 3],
+                molecularCrystal: doc.settings?.app_load_as_mol ?? null,
+                useNMRActiveIsotopes: doc.settings?.app_use_nmr_isos ?? true,
+                vdwScaling: doc.settings?.app_vdw_scaling ?? 1.0,
+            };
+
             const result = app.loadModels(text, extension, modelName, params);
-
-            // Capture sources only for models that actually loaded
-            Object.entries(result).forEach(([n, v]) => {
-                if (v === 0) restoredSources[n] = { text, extension };
-            });
-
             merger.call(result);
         });
     }

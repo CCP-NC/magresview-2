@@ -5,34 +5,19 @@
  *
  * A session document is a plain JSON object that captures:
  *   - All serializable Redux state keys (settings, preferences, NMR vis toggles)
- *   - The raw text source + extension of every loaded model
+ *   - The raw text source + loading parameters of every loaded model
+ *     (obtained from the viewer via getModelSource() / getModelParameters())
  *   - The name of the currently active model
- *   - (Future) Camera / orientation state, once crystvis-js exposes it
+ *   - Camera orientation (position, target, zoom) via getCameraState()
+ *   - Atom selection state (sel_selected_view) as crystLabel strings via toLabels()
  *
  * The format is intentionally plain and forward-compatible: unknown keys are
  * silently ignored on restore, and a version field allows future migrations.
- *
- * ----------------------------------------------------------------------------
- * CAMERA STATE PLACEHOLDER
- * Once crystvis-js exposes getCameraState() / setCameraState(), the session
- * save should add:
- *
- *   camera: state.app_viewer.getCameraState()  // { position, target, zoom }
- *
- * and the restore flow should call:
- *
- *   if (doc.camera && viewer.setCameraState) {
- *       viewer.setCameraState(doc.camera);
- *   }
- *
- * The `camera` field is already present in every saved document (set to null
- * for now) so that sessions saved today will be valid once the feature lands.
- * ----------------------------------------------------------------------------
  */
 
 import { saveContents } from '../../utils';
 
-export const SESSION_VERSION = 1;
+export const SESSION_VERSION = 2;
 
 /**
  * File extension used when saving session files.
@@ -62,10 +47,15 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     'listen_update',        // Queued listener events
 
     // ── ModelView instances (atom selections) ─────────────────────────────────
-    // Selections are not currently serialised because they reference atoms by
-    // in-memory index inside a loaded model.
+    // These reference atoms by in-memory index inside a loaded model, so they
+    // cannot be JSON.stringified directly.
     //
-    // Future: serialise as arrays of crystLabel strings so they survive reload.
+    // sel_selected_view is serialised separately as an array of crystLabel
+    // strings in doc.selections.sel_selected (via ModelView.toLabels()), and
+    // reconstructed after load with model.viewFromLabels().
+    //
+    // The remaining views are all derived from other settings and are fully
+    // rebuilt by the listener events fired at the end of restoreSession().
     'app_default_displayed',
     'sel_selected_view',
     'sel_displayed_view',
@@ -99,9 +89,6 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     'plots_bkg_img_url',
     'plots_bkg_img_w',
     'plots_bkg_img_h',
-
-    // ── Internal session key (not settings; stored at top-level of doc) ───────
-    'app_model_sources',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -125,24 +112,38 @@ export function serializeSettings(state) {
 }
 
 /**
- * Build the full session document from the current Redux state.
+ * Build the full session document from the current Redux state and the live
+ * CrystVis viewer instance.
  *
- * The `camera` field is always written (null for now) so that once
- * crystvis-js exposes getCameraState() callers only need to pass the viewer:
+ * Model sources and parameters are read directly from the viewer via
+ * getModelSource() / getModelParameters() — no Redux state required beyond
+ * the modelList.
  *
- *   buildSessionDocument(state, state.app_viewer)
- *
- * and this function can check `viewer?.getCameraState?.()`.
- *
- * @param {Object} state   Full Redux state (must contain app_model_sources)
- * @param {Object} viewer  CrystVis instance (optional; ready for camera capture)
+ * @param {Object} state   Full Redux state
+ * @param {Object} viewer  CrystVis instance
  * @returns {Object}  Session document ready for JSON.stringify
  */
-export function buildSessionDocument(state, viewer = null) {
+export function buildSessionDocument(state, viewer) {
+    // Collect model source text + loading parameters from the viewer.
+    // getModelSource(name) → { text, extension }
+    // getModelParameters(name) → { supercell, molecularCrystal, … }
+    const models = {};
+    for (const name of (viewer?.modelList ?? [])) {
+        models[name] = {
+            source: viewer.getModelSource(name),
+            params: viewer.getModelParameters(name),
+        };
+    }
+
+    // Serialize the current atom selection as crystLabel strings so it
+    // survives the model reload on restore.  An empty or null view is stored
+    // as null (no selection to restore).
+    const selLabels = state.sel_selected_view?.toLabels?.() ?? null;
+
     return {
         version: SESSION_VERSION,
         activeModel: viewer?.modelName ?? null,
-        models: state.app_model_sources ?? {},
+        models,
         settings: serializeSettings(state),
 
         // Atom references: atom objects cannot be JSON-serialized, so we store
@@ -154,10 +155,15 @@ export function buildSessionDocument(state, viewer = null) {
             jc_central_atom:  state.jc_central_atom?.crystLabel  ?? null,
         },
 
-        // ── Future: camera/orientation state ──────────────────────────────────
-        // Once crystvis-js exposes getCameraState(), replace null with:
-        //   viewer?.getCameraState?.() ?? null
-        camera: null,
+        // Atom selection views serialised as crystLabel string arrays.
+        // On restore, model.viewFromLabels() reconstructs the live ModelView.
+        selections: {
+            sel_selected: selLabels?.length > 0 ? selLabels : null,
+        },
+
+        // Camera orientation: position, target, and zoom captured from the
+        // current OrbitControls state via getCameraState().
+        camera: viewer?.getCameraState?.() ?? null,
     };
 }
 
