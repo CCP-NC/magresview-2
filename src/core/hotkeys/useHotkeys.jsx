@@ -27,8 +27,7 @@ import {
     useAppInterface,
     useMSInterface,
     useEFGInterface,
-    useDipInterface,
-    useJCoupInterface,
+    usePlotsInterface,
 } from '../store';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -66,10 +65,19 @@ const ACTIONS = {
     'sidebar-hide':   ({ appint }) => { appint.sidebar = 'none'; },
 
     // ── Visualisation toggles ─────────────────────────────────────────────────
-    'toggle-ms-ellipsoids':  ({ msint })  => { msint.hasEllipsoids  = !msint.hasEllipsoids; },
-    'toggle-efg-ellipsoids': ({ efgint }) => { efgint.hasEllipsoids = !efgint.hasEllipsoids; },
-    'toggle-dip-links':      ({ dipint }) => { dipint.isOn = !dipint.isOn; },
-    'toggle-jcoup-links':    ({ jcint })  => { jcint.isOn  = !jcint.isOn; },
+    // Guard with hasData: the listener calls getSel(app) which needs a live model.
+    // If no data, do nothing to avoid the toggle getting stuck in a broken state.
+    'toggle-ms-ellipsoids':  ({ msint  }) => { if (msint.hasData)  msint.hasEllipsoids  = !msint.hasEllipsoids; },
+    'toggle-efg-ellipsoids': ({ efgint }) => { if (efgint.hasData) efgint.hasEllipsoids = !efgint.hasEllipsoids; },
+    'toggle-plots': ({ pltint }) => {
+        if (!pltint.hasData) return;
+        if (pltint.mode === 'none') {
+            pltint.setDefaultElement();
+            pltint.mode = 'line1d';
+        } else {
+            pltint.mode = 'none';
+        }
+    },
 
     // ── Interface ─────────────────────────────────────────────────────────────
     'toggle-theme': ({ appint }) => {
@@ -97,11 +105,10 @@ export function useHotkeys() {
     const appint  = useAppInterface();
     const msint   = useMSInterface();
     const efgint  = useEFGInterface();
-    const dipint  = useDipInterface();
-    const jcint   = useJCoupInterface();
+    const pltint  = usePlotsInterface();
 
     useEffect(() => {
-        const interfaces = { appint, msint, efgint, dipint, jcint, setHelpOpen };
+        const interfaces = { appint, msint, efgint, pltint, setHelpOpen };
 
         // Build the tinykeys key-map from the flat shortcut list
         const keyMap = {};
@@ -127,7 +134,7 @@ export function useHotkeys() {
         return tinykeys(window, keyMap);
         // Re-bind whenever any interface instance changes identity (state updates
         // produce new interface objects, so closures always capture fresh data).
-    }, [appint, msint, efgint, dipint, jcint, helpOpen]);
+    }, [appint, msint, efgint, pltint, helpOpen]);
 
     return { helpOpen, setHelpOpen };
 }

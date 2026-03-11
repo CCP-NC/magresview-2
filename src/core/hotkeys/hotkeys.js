@@ -50,8 +50,7 @@ export const HOTKEY_GROUPS = [
         shortcuts: [
             { id: 'toggle-ms-ellipsoids',  key: 'm', display: 'M', description: 'Toggle MS ellipsoids' },
             { id: 'toggle-efg-ellipsoids', key: 'e', display: 'E', description: 'Toggle EFG ellipsoids' },
-            { id: 'toggle-dip-links',      key: 'd', display: 'D', description: 'Toggle dipolar links' },
-            { id: 'toggle-jcoup-links',    key: 'j', display: 'J', description: 'Toggle J-coupling links' },
+            { id: 'toggle-plots',          key: 'p', display: 'P', description: 'Toggle spectral plot' },
         ],
     },
     {
@@ -59,8 +58,9 @@ export const HOTKEY_GROUPS = [
         label: 'Interface',
         color: 'var(--efg-color-1)',
         shortcuts: [
-            { id: 'toggle-theme', key: 't', display: 'T',  description: 'Toggle dark / light theme' },
-            { id: 'show-help',    key: '?', display: '?',  description: 'Show / hide this help' },
+            { id: 'toggle-theme', key: 't',       display: 'T',  description: 'Toggle dark / light theme' },
+            // tinykeys matches on event.key. Shift+/ produces event.key='?' so bind as 'Shift+?'.
+            { id: 'show-help',    key: 'Shift+?', display: '?',  description: 'Show / hide this help' },
         ],
     },
 ];

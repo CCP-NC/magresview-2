@@ -46,8 +46,13 @@ function MagresViewPage() {
     let appint = useAppInterface();
 
     const appRef = useRef(appint);
+    const pageRef = useRef(null);
 
     useEffect(() => {
+        // Focus the page container so hotkeys work immediately on load,
+        // before the user has clicked anywhere.
+        pageRef.current?.focus({ preventScroll: true });
+
         // Clear any existing canvases before initializing (prevents double canvas in StrictMode)
         const container = document.getElementById('mv-appwindow');
         if (container) {
@@ -95,7 +100,9 @@ function MagresViewPage() {
         setHovered(false);
     }
 
-    return (<div className={chainClasses('mv-main-page', 'theme-' + appint.themeName, hovered? 'has-drag' : '' )}
+    return (<div ref={pageRef}
+                 className={chainClasses('mv-main-page', 'theme-' + appint.themeName, hovered? 'has-drag' : '' )}
+                 tabIndex={-1}
                  onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
                 <MagresViewHeader onHelpOpen={() => setHelpOpen(true)} />
                 <MVHotkeyHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
