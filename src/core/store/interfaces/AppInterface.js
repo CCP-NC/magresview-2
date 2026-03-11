@@ -394,13 +394,6 @@ class AppInterface extends BaseInterface {
                 }
             }
 
-            // ── Restore camera ────────────────────────────────────────────────
-            // setCameraState overrides the centering done above, restoring the
-            // exact rotation / pan / zoom the user had when they saved.
-            if (doc.camera) {
-                app.setCameraState(doc.camera);
-            }
-
             // ── Resolve atom references ───────────────────────────────────────
             // dip_central_atom and jc_central_atom are live atom objects that
             // cannot be serialized. They were saved as crystLabel strings in
@@ -473,6 +466,15 @@ class AppInterface extends BaseInterface {
                     ],
                 },
             });
+
+            // ── Restore camera ─────────────────────────────────────────────────
+            // Called AFTER the dispatch so that all listeners (VIEWS, CELL, etc.)
+            // have already run. Any listener that calls centerDisplayed() (e.g.
+            // viewsListener when sel === displ) would overwrite the camera;
+            // restoring last guarantees the saved orientation survives.
+            if (doc.camera) {
+                app.setCameraState(doc.camera);
+            }
         });
 
         // ── Phase 1: load each model from stored source text ─────────────────
