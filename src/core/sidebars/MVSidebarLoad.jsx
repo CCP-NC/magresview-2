@@ -78,6 +78,7 @@ function MVSidebarLoad(props) {
             appint.restoreSession(doc);
             setState(s => ({
                 ...s,
+                list_selected: doc.activeModel ?? '',
                 load_message: 'Session restored successfully.',
                 load_message_status: 'success'
             }));
