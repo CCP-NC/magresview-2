@@ -25,8 +25,7 @@ import MVRange from '../../controls/MVRange';
 import MVSwitch from '../../controls/MVSwitch';
 import MVTooltip from '../../controls/MVTooltip';
 import { tooltip_lorentzian_broadening, tooltip_broadening_type, tooltip_plots_shifts, tooltip_plots_elements } from './tooltip_messages';
-import { MVReferenceTable } from './MVSidebarMS';
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useEffect, useRef} from 'react';
 
 import { usePlotsInterface, useMSInterface } from '../store';
 import { chainClasses } from '../../utils';
@@ -41,7 +40,6 @@ function MVSidebarPlots(props) {
 
     const pltint = usePlotsInterface();
     const msint = useMSInterface();
-    const [ showRefTable, setShowRefTable ] = useState(false);
     // const formats = '.png,.jpg,.jpeg';
 
     function setMinX(v) {
@@ -93,7 +91,7 @@ function MVSidebarPlots(props) {
                         if (pltint.useRefTable) {
                             const ref = msint.getReference(v);
                             if (!ref || ref === '') {
-                                setShowRefTable(true);
+                                msint.showRefTable = true;
                             }
                         }
                     }} selected={pltint.element} name='element_dropdown'>
@@ -109,7 +107,7 @@ function MVSidebarPlots(props) {
                         const ref = msint.getReference(pltint.element);
                         if (!ref || ref === '') {
                             // No ref yet — open the reference table so user can set one
-                            setShowRefTable(true);
+                            msint.showRefTable = true;
                         } else {
                             pltint.useRefTable = true;
                         }
@@ -120,10 +118,7 @@ function MVSidebarPlots(props) {
                 <span>Shift (use references)</span>
                 <MVTooltip tooltipText={tooltip_plots_shifts} />
             </div>
-            <MVButton onClick={() => { setShowRefTable(true); }}>Set References</MVButton>
-            <MVReferenceTable display={showRefTable}
-                close={() => { setShowRefTable(false); }}
-                onAccept={() => { pltint.useRefTable = true; }} />
+            <MVButton onClick={() => { msint.showRefTable = true; }}>Set References</MVButton>
             <span className='sep-1' />
             {/* <div className='mv-sidebar-block'>
                 Background spectrum image

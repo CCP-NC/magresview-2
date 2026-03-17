@@ -25,6 +25,7 @@ const initialMSState = {
     ms_labels_type: 'none',
     ms_references: {},
     ms_precision: 2,
+    ms_show_ref_table: false,
 };
 
 // Update any new references for chemical shifts
@@ -125,6 +126,14 @@ class MSInterface extends CScaleInterface {
 
     getReference(el) {
         return this.state.ms_references[el] || '';
+    }
+
+    get showRefTable() {
+        return this.state.ms_show_ref_table;
+    }
+
+    set showRefTable(v) {
+        this.dispatch(msAction({ ms_show_ref_table: v }));
     }
 
     // reset 

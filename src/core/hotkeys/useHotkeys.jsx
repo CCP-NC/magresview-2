@@ -83,6 +83,7 @@ const ACTIONS = {
     'toggle-theme': ({ appint }) => {
         appint.themeName = appint.themeName === 'dark' ? 'light' : 'dark';
     },
+    'show-ref-table': ({ msint }) => { msint.showRefTable = true; },
     'show-help': ({ setHelpOpen }) => {
         setHelpOpen(prev => !prev);
     },
