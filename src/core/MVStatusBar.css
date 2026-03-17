@@ -3,19 +3,20 @@
   bottom: 0;
   left: 0;
   width: 100vw;
-  height: var(--status-bar-height, 2em);
+  height: var(--status-bar-height, 2.5em);
   box-sizing: border-box;
 
   background-color: var(--bkg-color-3);
-  border-top: 1px solid var(--mid-color-1);
+  border-top: 2px solid var(--mode-color, var(--mid-color-1));
+  transition: border-top-color 0.25s;
 
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.5em;
+  gap: 0.7em;
   padding: 0 1em;
 
-  font-size: 0.8em;
+  font-size: 0.85em;
   color: var(--mid-color-2);
   user-select: none;
   z-index: 900;
@@ -29,6 +30,12 @@
   gap: 0.4em;
   font-weight: 600;
   flex-shrink: 0;
+
+  background-color: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 25%, transparent);
+  border-radius: 4px;
+  padding: 0.15em 0.55em;
+  transition: background-color 0.25s, border-color 0.25s;
 }
 
 .mv-status-mode-icon {
@@ -38,9 +45,9 @@
 }
 
 .mv-status-mode-label {
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  font-size: 0.9em;
+  font-size: 0.85em;
 }
 
 .mv-status-sep {

@@ -45,7 +45,7 @@ function MVStatusBar() {
     const count = selint.selectionCount;
 
     return (
-        <div className='mv-status-bar'>
+        <div className='mv-status-bar' style={{ '--mode-color': config.color }}>
             <div className='mv-status-mode' style={{ color: config.color }}>
                 <span className='mv-status-mode-icon'>{config.icon}</span>
                 <span className='mv-status-mode-label'>{config.label}</span>

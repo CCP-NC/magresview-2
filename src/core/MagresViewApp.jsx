@@ -26,7 +26,6 @@ import { useAppInterface, useSelInterface, useDipInterface, useEulerInterface, u
 import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
 import MVStatusBar from './MVStatusBar';
-import MVModeOverlay from './MVModeOverlay';
 import MVModeToolbar from './MVModeToolbar';
 
 import MVSidebarLoad from './sidebars/MVSidebarLoad';
@@ -176,7 +175,6 @@ function MagresViewPage() {
                 <MVSidebarPlots show={appint.sidebar === 'plots'} />
                 <MVSidebarFiles show={appint.sidebar === 'files'} />
                 <div id='mv-appwindow' className='mv-background'/>
-                <MVModeOverlay />
                 <MVStatusBar />
                 <MagresViewScreenshot />
                 <div className='drag-overlay' />

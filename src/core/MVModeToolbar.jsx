@@ -29,35 +29,35 @@ const sidebars = [
         key: 'ms',
         label: 'MS',
         title: 'Magnetic Shielding (3)',
-        icon: <MVIcon icon='ms' />,
+        icon: (c) => <MVIcon icon='ms' color={c} />,
         accentVar: '--ms-color-2'
     },
     {
         key: 'efg',
         label: 'EFG',
         title: 'Electric Field Gradient (4)',
-        icon: <MVIcon icon='efg' />,
+        icon: (c) => <MVIcon icon='efg' color={c} />,
         accentVar: '--efg-color-2'
     },
     {
         key: 'dip',
         label: 'Dipolar',
         title: 'Dipolar Couplings (5)',
-        icon: <MVIcon icon='dip' />,
+        icon: (c) => <MVIcon icon='dip' color={c} />,
         accentVar: '--dip-color-2'
     },
     {
         key: 'jcoup',
         label: 'J-Coup',
         title: 'J Couplings (6)',
-        icon: <MVIcon icon='jcoup' />,
+        icon: (c) => <MVIcon icon='jcoup' color={c} />,
         accentVar: '--jcoup-color-2'
     },
     {
         key: 'euler',
         label: 'Euler',
         title: 'Euler Angles (7)',
-        icon: <MVIcon icon='euler' />,
+        icon: (c) => <MVIcon icon='euler' color={c} />,
         accentVar: '--mid-color-2'
     },
     {
@@ -101,7 +101,11 @@ function MVModeToolbar() {
                         aria-pressed={isActive}
                         onClick={() => { appint.sidebar = s.key; }}
                     >
-                        <span className='mv-mode-btn-icon'>{s.icon}</span>
+                        <span className='mv-mode-btn-icon'>
+                            {typeof s.icon === 'function'
+                                ? s.icon(isActive ? `var(${s.accentVar})` : undefined)
+                                : s.icon}
+                        </span>
                         <span className='mv-mode-btn-label'>{s.label}</span>
                     </button>
                 );
