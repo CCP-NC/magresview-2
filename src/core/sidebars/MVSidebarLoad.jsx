@@ -182,6 +182,12 @@ function MVSidebarLoad(props) {
             {models.map(makeModelOption)}
         </MVListSelect>
         <span className='sep-1' />
+        { appint.autosaveWarning && (
+            <MVBox status='error' onClose={() => { appint.autosaveWarning = false; }}>
+                <strong>Autosave unavailable</strong> — your browser storage is full.
+                Use <em>Save session</em> above to keep your work.
+            </MVBox>
+        )}
         <MVBox status={state.load_message_status} onClose={() => {setState({...state, load_message_status: ''})}}>
             {state.load_message}
         </MVBox>

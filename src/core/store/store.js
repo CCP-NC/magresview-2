@@ -1,4 +1,5 @@
 import { createStore } from 'redux';
+import { autosaveSession } from './session';
 
 // Initial state, merged from segments
 import { initialAppState } from './interfaces/AppInterface';
@@ -63,5 +64,22 @@ function storeReducer(state=initialState, action={type: 'none'}) {
 
 const magresStore = createStore(storeReducer);
 magresStore.subscribe(makeMasterListener(magresStore));
+
+// ── Autosave to localStorage ──────────────────────────────────────────────────
+// Debounce autosaves so rapid dispatch bursts don't thrash localStorage.
+// The beforeunload handler flushes any pending save immediately when the user
+// navigates away / closes the tab, ensuring the last state is captured.
+let _autosaveTimer = null;
+magresStore.subscribe(() => {
+    clearTimeout(_autosaveTimer);
+    _autosaveTimer = setTimeout(() => autosaveSession(magresStore), 2000);
+});
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+        clearTimeout(_autosaveTimer);
+        autosaveSession(magresStore);
+    });
+}
 
 export default magresStore;

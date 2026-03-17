@@ -43,6 +43,7 @@ const initialAppState = {
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
     app_use_nmr_isos: true,
     app_vdw_scaling: 1.0,
+    app_autosave_warning: false, // set to true when localStorage quota is exceeded
 };
 
 // Functions meant to operate on the app alone.
@@ -238,6 +239,18 @@ class AppInterface extends BaseInterface {
         this.dispatch({
             type: 'set',
             key: 'app_vdw_scaling',
+            value: v
+        });
+    }
+
+    get autosaveWarning() {
+        return this.state.app_autosave_warning;
+    }
+
+    set autosaveWarning(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'app_autosave_warning',
             value: v
         });
     }
