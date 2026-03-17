@@ -94,7 +94,11 @@ function MagresViewPage() {
     //   jcoup → J-coupling picker         (always bound; isOn auto-enabled on entry)
     //   euler → Euler-angle atom picker
     //   any other sidebar → normal atom selection (always enabled)
+    // selApp is app_viewer — including it as a dep ensures the effect re-fires
+    // once the viewer finishes initialising (app_click_handler becomes non-null),
+    // which fixes the "first click does nothing on fresh load" bug.
     const sidebar = appint.sidebar;
+    const selApp  = selint.app;
     useEffect(() => {
         const sel = selRef.current;
         const dip = dipRef.current;
@@ -124,7 +128,7 @@ function MagresViewPage() {
             eul.unbind();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sidebar]);
+    }, [sidebar, selApp]);
 
 
     // Handling the dragging events
