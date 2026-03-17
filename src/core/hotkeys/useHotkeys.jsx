@@ -29,6 +29,8 @@ import {
     useEFGInterface,
     usePlotsInterface,
 } from '../store';
+import magresStore from '../store';
+import { downloadSession } from '../store/session';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -84,6 +86,9 @@ const ACTIONS = {
         appint.themeName = appint.themeName === 'dark' ? 'light' : 'dark';
     },
     'show-ref-table': ({ msint }) => { msint.showRefTable = true; },
+    'save-session': ({ appint }) => {
+        if (appint.initialised && appint.models.length > 0) downloadSession(magresStore);
+    },
     'show-help': ({ setHelpOpen }) => {
         setHelpOpen(prev => !prev);
     },
