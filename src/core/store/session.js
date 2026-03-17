@@ -212,6 +212,74 @@ export function parseSessionDocument(json) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Autosave (localStorage)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const AUTOSAVE_KEY = 'magresview2_autosave';
+
+// Module-level guard: once quota is exceeded we stop attempting subsequent
+// autosaves for the lifetime of the page (re-trying would just fail again
+// every dispatch burst and produce repeated error dispatches).
+let _quotaExceeded = false;
+
+/**
+ * Serialize the current state and write it to localStorage.
+ * A no-op when the viewer has no models loaded, when localStorage is
+ * unavailable (private-browsing quota, iframe sandbox, etc.), or after a
+ * QuotaExceededError has already been signalled this session.
+ *
+ * On QuotaExceededError the function dispatches app_autosave_warning=true so
+ * the UI can prompt the user to save manually.
+ *
+ * @param {Object} store  The Redux store (magresStore)
+ */
+export function autosaveSession(store) {
+    if (_quotaExceeded) return;
+    try {
+        const state = store.getState();
+        const viewer = state.app_viewer;
+        if (!viewer || !(viewer.modelList?.length > 0)) return;
+        const doc = buildSessionDocument(state, viewer);
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(doc));
+    } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+            _quotaExceeded = true;
+            store.dispatch({ type: 'set', key: 'app_autosave_warning', value: true });
+        } else {
+            console.warn('[MagresView] Autosave failed:', e);
+        }
+    }
+}
+
+/**
+ * Load and validate the autosaved session document from localStorage.
+ * Returns the parsed document, or null if nothing was saved or the stored
+ * data is invalid / incompatible.
+ *
+ * @returns {Object|null}
+ */
+export function loadAutosavedSession() {
+    try {
+        const raw = localStorage.getItem(AUTOSAVE_KEY);
+        if (!raw) return null;
+        return parseSessionDocument(raw);
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Remove the autosaved session from localStorage.
+ */
+export function clearAutosavedSession() {
+    try {
+        localStorage.removeItem(AUTOSAVE_KEY);
+    } catch (e) {
+        // Ignore — localStorage may be unavailable.
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Top-level convenience
 // ─────────────────────────────────────────────────────────────────────────────
 
