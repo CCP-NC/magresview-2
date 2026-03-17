@@ -171,8 +171,7 @@ function MVSidebarSelect(props) {
             <h3>Selection controls:</h3>
             <ul>
                 <li><tt>CLICK</tt> to select an atom/element/etc.</li>
-                <li><tt>SHIFT+CLICK</tt> to add to the current selection</li>
-                <li><tt>CTRL+CLICK</tt> to remove from the current selection</li>
+                <li><tt>SHIFT+CLICK</tt> to add to or remove from the selection</li>
             </ul>
         </div>
     </MagresViewSidebar>);

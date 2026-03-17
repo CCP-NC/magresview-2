@@ -330,7 +330,17 @@ class SelInterface extends BaseInterface {
 
         if (selFunc) {
             handler.setCallback('sel', LC, (a, e) => { intf.selected = selFunc(a, e); });
-            handler.setCallback('sel', SLC, (a, e) => { intf.selected = app.selected.or(selFunc(a, e)); });
+            // Shift+click toggles: adds atoms not yet in the selection,
+            // removes atoms that are already in it.
+            handler.setCallback('sel', SLC, (a, e) => {
+                const clicked = selFunc(a, e);
+                const cur = app.selected;
+                const curSet = new Set(cur?._indices || []);
+                const allIn = clicked._indices.length > 0 &&
+                              clicked._indices.every(i => curSet.has(i));
+                intf.selected = allIn ? cur.remove(clicked) : cur.or(clicked);
+            });
+            // Ctrl+click still removes, kept as a power-user alias.
             handler.setCallback('sel', CLC, (a, e) => { intf.selected = app.selected.remove(selFunc(a, e)); });
         }
         else {

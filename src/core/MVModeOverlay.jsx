@@ -13,7 +13,7 @@ const modeConfig = {
     select: {
         label: 'Select Mode',
         icon: <FaMousePointer />,
-        hint: 'Click atoms to select',
+        hint: 'Click to select · Shift+click to toggle',
         color: 'var(--fwd-color-2)'
     },
     dipolar: {
