@@ -69,11 +69,12 @@ export const HOTKEY_GROUPS = [
         label: 'Interface',
         color: 'var(--efg-color-1)',
         shortcuts: [
-            { id: 'toggle-theme',    key: 't',       display: 'T',  description: 'Toggle dark / light theme' },
-            { id: 'show-ref-table',    key: 'r',       display: 'R',  description: 'Set chemical shift references' },
+            { id: 'toggle-theme',    key: 't',       display: 'T',        description: 'Toggle dark / light theme' },
+            { id: 'show-ref-table', key: 'r',       display: 'R',        description: 'Set chemical shift references' },
             { id: 'show-iso-modal',    key: 'i',       display: 'I',  description: 'Open isotope setter' },
+            { id: 'save-session',   key: '$mod+s',  display: 'Ctrl+S',   description: 'Save session' },
             // tinykeys matches on event.key. Shift+/ produces event.key='?' so bind as 'Shift+?'.
-            { id: 'show-help',      key: 'Shift+?', display: '?',  description: 'Show / hide this help' },
+            { id: 'show-help',      key: 'Shift+?', display: '?',        description: 'Show / hide this help' },
         ],
     },
 ];
