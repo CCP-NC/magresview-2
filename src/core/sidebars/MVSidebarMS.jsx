@@ -71,10 +71,6 @@ function MVReferenceTable(props) {
 
 function MVSidebarMS(props) {
 
-    const [ state, setState ] = useState({
-        showRefTable: false
-    });
-
     const msint = useMSInterface();
 
     console.log('[MVSidebarMS rendered]');
