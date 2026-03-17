@@ -14,8 +14,6 @@
 
 import './MVSidebarEuler.css';
 
-import { useRef, useEffect } from 'react';
-
 import MagresViewSidebar from './MagresViewSidebar';
 import { useEulerInterface } from '../store';
 import { saveContents, copyContents } from '../../utils';
@@ -30,22 +28,6 @@ function MVSidebarEuler(props) {
     const eulint = useEulerInterface();
 
     console.log('[MVSidebarEuler rendered]');
-
-    const intRef = useRef();
-    intRef.current = eulint;
-
-    useEffect(() => {
-        let eulint = intRef.current;
-
-        // Only keep events bound when this sidebar is visible!
-        if (props.show) {
-            eulint.bind();
-        }
-        else {
-            eulint.unbind();
-        }
-
-    }, [props.show]);
 
     const otherTensor = {
         ms: 'efg',
@@ -68,12 +50,19 @@ function MVSidebarEuler(props) {
 
     return (<MagresViewSidebar show={props.show} title='Euler angles'>
         <p>
-            Left and right click on atoms to pick a pair of atoms, A and B respectively (which can be the same). Use the switches below to select the pair
-            of tensors of interest.
+            Select which atom to pick (A or B), then click an atom in the viewer.
+            Right-click always sets atom B as a fallback.
         </p>
         <div className='mv-sidebar-block'>
             <h3>Atom A</h3>
             <div className='mv-euler-agrid'>
+                <MVButton
+                    className={eulint.step === 'A' ? 'mv-euler-step-btn active' : 'mv-euler-step-btn'}
+                    style={eulint.step === 'A' ? { borderColor: 'var(--ms-color-2)', color: 'var(--ms-color-2)' } : {}}
+                    onClick={() => { eulint.step = 'A'; }}
+                >
+                    {eulint.step === 'A' ? '● Picking A…' : 'Select Atom A'}
+                </MVButton>
                 <span className='header'>Label:</span>
                 <span>{eulint.atomLabelA}</span>
                 <div className='mv-euler-agrid-switch'>
@@ -87,6 +76,13 @@ function MVSidebarEuler(props) {
         <div className='mv-sidebar-block'>
             <h3>Atom B</h3>
             <div className='mv-euler-agrid'>
+                <MVButton
+                    className={eulint.step === 'B' ? 'mv-euler-step-btn active' : 'mv-euler-step-btn'}
+                    style={eulint.step === 'B' ? { borderColor: 'var(--efg-color-2)', color: 'var(--efg-color-2)' } : {}}
+                    onClick={() => { eulint.step = 'B'; }}
+                >
+                    {eulint.step === 'B' ? '● Picking B…' : 'Select Atom B'}
+                </MVButton>
                 <span className='header'>Label:</span>
                 <span>{eulint.atomLabelB}</span>
                 <div className='mv-euler-agrid-switch'>

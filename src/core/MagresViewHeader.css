@@ -49,6 +49,19 @@
   margin: 0;
 }
 
+.mv-header-model-name {
+  margin-left: 1.2em;
+  font-size: calc(var(--header-height) * 0.26);
+  color: var(--mid-color-2);
+  font-family: monospace;
+  max-width: 18em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.85;
+  letter-spacing: 0.01em;
+}
+
 /* ── Help button ──────────────────────────────────────────────────────────── */
 
 .mv-header-help-btn {

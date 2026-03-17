@@ -1,0 +1,72 @@
+/* ─── MVModeToolbar ──────────────────────────────────────────────────────── */
+
+:root {
+  --toolbar-width: 4em;
+}
+
+.mv-mode-toolbar {
+  position: fixed;
+  left: 0;
+  top: var(--header-height);
+  width: var(--toolbar-width);
+  /* Stop above the status bar */
+  height: calc(100vh - var(--header-height) - var(--status-bar-height, 2em));
+
+  background-color: var(--bkg-color-3);
+  border-right: 1px solid var(--mid-color-1);
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0.4em 0;
+
+  z-index: 900;
+  user-select: none;
+}
+
+.mv-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+
+  color: var(--mid-color-2);
+  padding: 0.7em 0;
+  width: 100%;
+
+  transition: color 0.15s, border-left-color 0.15s, background 0.15s;
+  font-size: 0.7em;
+}
+
+.mv-mode-btn:hover {
+  color: var(--fwd-color-2);
+  background-color: var(--bkg-color-2);
+}
+
+.mv-mode-btn.active {
+  background-color: var(--bkg-color-2);
+  /* color and border-left-color are set inline per-mode */
+}
+
+.mv-mode-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  line-height: 1;
+}
+
+.mv-mode-btn-label {
+  font-size: 0.9em;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  text-align: center;
+}

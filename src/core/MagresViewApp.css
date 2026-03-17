@@ -2,6 +2,8 @@
   /* Shared variables */
   --header-height: 5em;
   --sidebar-width: 25em;
+  --toolbar-width: 4em;
+  --status-bar-height: 2em;
 }
 
 .mv-main-page {
@@ -11,7 +13,8 @@
 
 .mv-background {
   width: 100vw;
-  height: 100vh;
+  /* Leave room for the status bar at the bottom */
+  height: calc(100vh - var(--status-bar-height, 2em));
   background-color: var(--dark-color-2);
 }
 

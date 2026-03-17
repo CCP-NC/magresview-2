@@ -31,7 +31,8 @@ const initialEulerState = {
     eul_newatom_B: null,
     eul_tensor_B: 'ms',
     eul_convention: 'zyz',
-    eul_results: null
+    eul_results: null,
+    eul_step: 'A'   // 'A' | 'B' — which atom the next viewer click will assign
 };
 
 const tensorValues = new Set(['ms', 'efg']);
@@ -87,6 +88,17 @@ class EulerInterface extends DataCheckInterface {
         if (!conventionValues.has(v))
             throw Error('Invalid Euler angles convention');
         this.dispatch(makeEulerAction({eul_convention: v}));
+    }
+
+    /** Which atom the next viewer click will assign: 'A' or 'B' */
+    get step() {
+        return this.state.eul_step;
+    }
+
+    set step(v) {
+        if (v !== 'A' && v !== 'B')
+            throw Error('Invalid Euler step; must be "A" or "B"');
+        this.dispatch({ type: 'set', key: 'eul_step', value: v });
     }
 
     _getAtomLabel(ending='A') {
@@ -172,7 +184,23 @@ class EulerInterface extends DataCheckInterface {
         if (!handler)
             return;
 
-        handler.setCallback('eul', LC, makeCallback(dispatch, 'A'));
+        // Route the click to atom A or B based on eul_step in the CURRENT state
+        // (read at call time via the 'call' action, not at bind time).
+        handler.setCallback('eul', LC, (a, e) => {
+            dispatch({
+                type: 'call',
+                function: (state, atom) => {
+                    const step = state.eul_step;
+                    return {
+                        ['eul_newatom_' + step]: atom,
+                        listen_update: [Events.EUL_ANGLES]
+                    };
+                },
+                arguments: [a]
+            });
+        });
+
+        // Keep RC as a legacy fallback: right-click always sets atom B
         handler.setCallback('eul', RC, makeCallback(dispatch, 'B'));
     }
 

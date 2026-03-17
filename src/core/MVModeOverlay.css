@@ -1,0 +1,45 @@
+.mv-mode-overlay {
+  position: fixed;
+  top: calc(var(--header-height) + 1em);
+  left: calc(var(--toolbar-width, 3.5em) + 1em);
+  z-index: 800;
+
+  background-color: var(--overlay-color);
+  border: 1px solid var(--mid-color-1);
+  border-radius: 6px;
+  padding: 0.5em 0.8em;
+
+  pointer-events: none;
+  user-select: none;
+
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.mv-mode-overlay-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.mv-mode-overlay-icon {
+  display: flex;
+  align-items: center;
+  font-size: 1em;
+}
+
+.mv-mode-overlay-label {
+  line-height: 1;
+}
+
+.mv-mode-overlay-hint {
+  margin-top: 0.3em;
+  font-size: 0.72em;
+  color: var(--mid-color-3);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}

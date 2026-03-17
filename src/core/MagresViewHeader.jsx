@@ -49,6 +49,11 @@ function MagresViewHeader({ onHelpOpen }) {
             <h3 id='mv-header-title'>
                 <span style={{color: 'var(--ms-color-2)'}}>M</span>agres<span style={{color: 'var(--efg-color-2)'}}>V</span>iew 2.0
             </h3>
+            {appint.currentModelName &&
+                <span className='mv-header-model-name' title={appint.currentModelName}>
+                    {appint.currentModelName}
+                </span>
+            }
         </div>
         <div className='mv-header-right'>
             <MVCustomSelect onSelect={(v) => { appint.sidebar = v; }} selected={appint.sidebar}>

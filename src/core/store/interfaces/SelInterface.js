@@ -43,6 +43,10 @@ class SelInterface extends BaseInterface {
         return this.state.app_viewer;
     }
 
+    get selectionCount() {
+        return this.state.sel_selected_view?.length || 0;
+    }
+
     get selected() {
         return this.state.sel_selected_view;
     }
@@ -342,6 +346,30 @@ class SelInterface extends BaseInterface {
             sel_bond_n: options.n,
             sel_on: options.on
         }});
+    }
+
+    /**
+     * Re-register ClickHandler callbacks based on current stored state.
+     * Does not dispatch to the store — safe to call when mode changes.
+     */
+    bind() {
+        this.setSelection(this.selectionMode, {
+            on: this.selectionOn,
+            r: this.selectionSphereR,
+            n: this.selectionBondN
+        });
+    }
+
+    /**
+     * Remove ClickHandler callbacks without altering the stored sel_on state.
+     * Call this when switching away from 'select' interaction mode.
+     */
+    unbind() {
+        const handler = this.state.app_click_handler;
+        if (!handler) return;
+        handler.setCallback('sel', LC);
+        handler.setCallback('sel', SLC);
+        handler.setCallback('sel', CLC);
     }
 
 }

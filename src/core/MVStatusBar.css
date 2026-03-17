@@ -1,0 +1,66 @@
+.mv-status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: var(--status-bar-height, 2em);
+  box-sizing: border-box;
+
+  background-color: var(--bkg-color-3);
+  border-top: 1px solid var(--mid-color-1);
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0 1em;
+
+  font-size: 0.8em;
+  color: var(--mid-color-2);
+  user-select: none;
+  z-index: 900;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.mv-status-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mv-status-mode-icon {
+  display: flex;
+  align-items: center;
+  font-size: 1em;
+}
+
+.mv-status-mode-label {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.9em;
+}
+
+.mv-status-sep {
+  color: var(--mid-color-1);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.mv-status-hint {
+  color: var(--mid-color-2);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+
+.mv-status-count {
+  flex-shrink: 0;
+  color: var(--fwd-color-2);
+  font-weight: 500;
+}
+
+/* Light theme uses same variables so no override needed */

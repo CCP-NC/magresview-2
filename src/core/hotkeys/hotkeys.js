@@ -54,6 +54,16 @@ export const HOTKEY_GROUPS = [
         ],
     },
     {
+        id:    'modes',
+        label: 'Interaction Modes',
+        color: 'var(--dip-color-1)',
+        shortcuts: [
+            { id: 'mode-select',  key: 'q', display: 'Q', description: 'Switch to Select mode' },
+            { id: 'mode-dipolar', key: 'd', display: 'D', description: 'Switch to Dipolar mode' },
+            { id: 'mode-euler',   key: 'r', display: 'R', description: 'Switch to Euler Angles mode' },
+        ],
+    },
+    {
         id:    'interface',
         label: 'Interface',
         color: 'var(--efg-color-1)',

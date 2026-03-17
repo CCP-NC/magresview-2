@@ -2,7 +2,19 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-gap: 10px;
-    width: 80%;
+    width: 90%;
+}
+
+.mv-euler-step-btn {
+    grid-column: 1 / span 2;
+    width: 100%;
+    border: 1px solid var(--mid-color-1) !important;
+    transition: border-color 0.15s, color 0.15s !important;
+    font-size: 0.85em;
+}
+
+.mv-euler-step-btn.active {
+    font-weight: 600;
 }
 
 .mv-euler-agrid span {

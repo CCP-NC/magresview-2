@@ -79,6 +79,11 @@ const ACTIONS = {
         }
     },
 
+    // ── Interaction modes ─────────────────────────────────────────────────────
+    'mode-select':  ({ appint }) => { appint.setInteractionMode('select'); },
+    'mode-dipolar': ({ appint }) => { appint.setInteractionMode('dipolar'); },
+    'mode-euler':   ({ appint }) => { appint.setInteractionMode('euler'); },
+
     // ── Interface ─────────────────────────────────────────────────────────────
     'toggle-theme': ({ appint }) => {
         appint.themeName = appint.themeName === 'dark' ? 'light' : 'dark';

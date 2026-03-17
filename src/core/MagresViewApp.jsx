@@ -21,10 +21,13 @@ import { useHotkeys } from './hotkeys/useHotkeys';
 import MVHotkeyHelp from './hotkeys/MVHotkeyHelp';
 
 import { chainClasses } from '../utils';
-import { useAppInterface } from './store';
+import { useAppInterface, useSelInterface, useDipInterface, useEulerInterface } from './store';
 
 import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
+import MVStatusBar from './MVStatusBar';
+import MVModeOverlay from './MVModeOverlay';
+import MVModeToolbar from './MVModeToolbar';
 
 import MVSidebarLoad from './sidebars/MVSidebarLoad';
 import MVSidebarSelect from './sidebars/MVSidebarSelect';
@@ -44,9 +47,20 @@ function MagresViewPage() {
     const { helpOpen, setHelpOpen } = useHotkeys();
 
     let appint = useAppInterface();
+    let selint = useSelInterface();
+    let dipint = useDipInterface();
+    let eulint = useEulerInterface();
 
     const appRef = useRef(appint);
     const pageRef = useRef(null);
+
+    // Keep interface refs current so effects can safely access latest state
+    const selRef = useRef(selint);
+    const dipRef = useRef(dipint);
+    const eulRef = useRef(eulint);
+    selRef.current = selint;
+    dipRef.current = dipint;
+    eulRef.current = eulint;
 
     useEffect(() => {
         // Focus the page container so hotkeys work immediately on load,
@@ -70,6 +84,33 @@ function MagresViewPage() {
             }
         };
     }, []);
+
+    // Centralised interaction-mode bind/unbind.
+    // Fires when the mode changes OR when dipolar isOn changes (so toggling
+    // the checkbox while already in dipolar mode connects the click handler).
+    const mode = appint.interactionMode;
+    const dipIsOn = dipint.isOn;
+    useEffect(() => {
+        const sel = selRef.current;
+        const dip = dipRef.current;
+        const eul = eulRef.current;
+
+        if (mode === 'select') {
+            sel.bind();
+            dip.unbind();
+            eul.unbind();
+        } else if (mode === 'dipolar') {
+            sel.unbind();
+            if (dipIsOn) dip.bind();
+            else dip.unbind();
+            eul.unbind();
+        } else if (mode === 'euler') {
+            sel.unbind();
+            dip.unbind();
+            eul.bind();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode, dipIsOn]);
 
 
     // Handling the dragging events
@@ -106,6 +147,7 @@ function MagresViewPage() {
                  onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
                 <MagresViewHeader onHelpOpen={() => setHelpOpen(true)} />
                 <MVHotkeyHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+                <MVModeToolbar />
                 <MVSidebarLoad show={appint.sidebar === 'load'} />
                 <MVSidebarSelect show={appint.sidebar === 'select'} />
                 <MVSidebarMS show={appint.sidebar === 'ms'} />
@@ -116,6 +158,8 @@ function MagresViewPage() {
                 <MVSidebarPlots show={appint.sidebar === 'plots'} />
                 <MVSidebarFiles show={appint.sidebar === 'files'} />
                 <div id='mv-appwindow' className='mv-background'/>
+                <MVModeOverlay />
+                <MVStatusBar />
                 <MagresViewScreenshot />
                 <div className='drag-overlay' />
             { /* Modals */ }

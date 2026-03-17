@@ -38,6 +38,7 @@ const initialAppState = {
     app_theme_name: 'dark',
     app_theme: themes.dark,
     app_sidebar: 'load',
+    app_interaction_mode: 'select',  // 'select' | 'dipolar' | 'euler'
     app_default_displayed: null,
     app_model_queued: null,
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
@@ -202,6 +203,20 @@ class AppInterface extends BaseInterface {
             type: 'set',
             key: 'app_sidebar',
             value: v
+        });
+    }
+
+    get interactionMode() {
+        return this.state.app_interaction_mode;
+    }
+
+    setInteractionMode(mode) {
+        this.dispatch({
+            type: 'update',
+            data: {
+                app_interaction_mode: mode,
+                listen_update: [Events.VIEWS]
+            }
         });
     }
 
