@@ -28,7 +28,7 @@ import MVTooltip from '../../controls/MVTooltip';
 import { tooltip_label_by, tooltip_selection_mode, tooltip_isotopes} from './tooltip_messages';
 
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 
 
 function sharedElement(sel) {
@@ -119,15 +119,6 @@ function MVSidebarSelect(props) {
     function setN(v) {
         selint.selectionBondN = v;
     }
-
-    const selRef = useRef();
-    selRef.current = selint;
-
-    useEffect(() => {
-        console.log('Binding select clicks');
-        let selint = selRef.current;
-        selint.selectionOn = props.show;
-    }, [props.show, selint.app]); // The dependency on app guarantees this is executed AFTER the app itself is loaded
 
     return (<MagresViewSidebar show={props.show} title='Select and display'>
         <div className='mv-sidebar-block'>

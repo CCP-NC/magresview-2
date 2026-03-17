@@ -211,12 +211,17 @@ class AppInterface extends BaseInterface {
     }
 
     setInteractionMode(mode) {
+        const sidebarMap = { dipolar: 'dip', jcoupling: 'jcoup', euler: 'euler' };
+        const data = {
+            app_interaction_mode: mode,
+            listen_update: [Events.VIEWS]
+        };
+        if (sidebarMap[mode]) {
+            data.app_sidebar = sidebarMap[mode];
+        }
         this.dispatch({
             type: 'update',
-            data: {
-                app_interaction_mode: mode,
-                listen_update: [Events.VIEWS]
-            }
+            data
         });
     }
 

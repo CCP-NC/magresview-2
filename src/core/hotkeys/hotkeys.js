@@ -49,7 +49,7 @@ export const HOTKEY_GROUPS = [
         color: 'var(--ms-color-1)',
         shortcuts: [
             { id: 'toggle-ms-ellipsoids',  key: 'm', display: 'M', description: 'Toggle MS ellipsoids' },
-            { id: 'toggle-efg-ellipsoids', key: 'e', display: 'E', description: 'Toggle EFG ellipsoids' },
+            { id: 'toggle-efg-ellipsoids', key: 'f', display: 'F', description: 'Toggle EFG ellipsoids' },
             { id: 'toggle-plots',          key: 'p', display: 'P', description: 'Toggle spectral plot' },
         ],
     },
@@ -58,9 +58,10 @@ export const HOTKEY_GROUPS = [
         label: 'Interaction Modes',
         color: 'var(--dip-color-1)',
         shortcuts: [
-            { id: 'mode-select',  key: 'q', display: 'Q', description: 'Switch to Select mode' },
-            { id: 'mode-dipolar', key: 'd', display: 'D', description: 'Switch to Dipolar mode' },
-            { id: 'mode-euler',   key: 'r', display: 'R', description: 'Switch to Euler Angles mode' },
+            { id: 'mode-select',    key: 'q', display: 'Q', description: 'Switch to Select mode' },
+            { id: 'mode-dipolar',  key: 'd', display: 'D', description: 'Switch to Dipolar mode' },
+            { id: 'mode-jcoupling', key: 'j', display: 'J', description: 'Switch to J-Coupling mode' },
+            { id: 'mode-euler',    key: 'e', display: 'E', description: 'Switch to Euler Angles mode' },
         ],
     },
     {

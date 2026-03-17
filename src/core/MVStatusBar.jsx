@@ -22,10 +22,16 @@ const modeConfig = {
         hint: 'Click atom to show dipolar couplings within radius',
         color: 'var(--dip-color-2)'
     },
+    jcoupling: {
+        label: 'J-Coupling',
+        icon: <MVIcon icon='jcoup' color='var(--jcoup-color-2)' />,
+        hint: 'Click atom to set it as the central atom for J-coupling',
+        color: 'var(--jcoup-color-2)'
+    },
     euler: {
         label: 'Euler Angles',
         icon: <MVIcon icon='euler' color='var(--bkg-color-3)' />,
-        hint: 'Click "Select Atom A/B" button, then click an atom in the viewer',
+        hint: 'Click “Select Atom A/B” button, then click an atom in the viewer',
         color: 'var(--mid-color-2)'
     }
 };

@@ -21,7 +21,7 @@ import { useHotkeys } from './hotkeys/useHotkeys';
 import MVHotkeyHelp from './hotkeys/MVHotkeyHelp';
 
 import { chainClasses } from '../utils';
-import { useAppInterface, useSelInterface, useDipInterface, useEulerInterface } from './store';
+import { useAppInterface, useSelInterface, useDipInterface, useEulerInterface, useJCoupInterface } from './store';
 
 import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
@@ -50,6 +50,7 @@ function MagresViewPage() {
     let selint = useSelInterface();
     let dipint = useDipInterface();
     let eulint = useEulerInterface();
+    let jcint  = useJCoupInterface();
 
     const appRef = useRef(appint);
     const pageRef = useRef(null);
@@ -58,9 +59,11 @@ function MagresViewPage() {
     const selRef = useRef(selint);
     const dipRef = useRef(dipint);
     const eulRef = useRef(eulint);
+    const jcRef  = useRef(jcint);
     selRef.current = selint;
     dipRef.current = dipint;
     eulRef.current = eulint;
+    jcRef.current  = jcint;
 
     useEffect(() => {
         // Focus the page container so hotkeys work immediately on load,
@@ -90,27 +93,38 @@ function MagresViewPage() {
     // the checkbox while already in dipolar mode connects the click handler).
     const mode = appint.interactionMode;
     const dipIsOn = dipint.isOn;
+    const jcIsOn  = jcint.isOn;
     useEffect(() => {
         const sel = selRef.current;
         const dip = dipRef.current;
         const eul = eulRef.current;
+        const jc  = jcRef.current;
 
         if (mode === 'select') {
             sel.bind();
             dip.unbind();
+            jc.unbind();
             eul.unbind();
         } else if (mode === 'dipolar') {
             sel.unbind();
             if (dipIsOn) dip.bind();
             else dip.unbind();
+            jc.unbind();
+            eul.unbind();
+        } else if (mode === 'jcoupling') {
+            sel.unbind();
+            dip.unbind();
+            if (jcIsOn) jc.bind();
+            else jc.unbind();
             eul.unbind();
         } else if (mode === 'euler') {
             sel.unbind();
             dip.unbind();
+            jc.unbind();
             eul.bind();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mode, dipIsOn]);
+    }, [mode, dipIsOn, jcIsOn]);
 
 
     // Handling the dragging events

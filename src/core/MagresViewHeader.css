@@ -129,3 +129,57 @@
     transform: rotate(360deg);
   }
 }
+
+/* ── Interaction mode buttons ─────────────────────────────────────────────── */
+
+.mv-header-mode-group {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  height: 100%;
+}
+
+.mv-header-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15em;
+
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+
+  color: var(--mid-color-2);
+  padding: 0 0.9em;
+  height: 100%;
+
+  transition: color 0.15s, border-bottom-color 0.15s, background 0.15s;
+  font-size: 0.72em;
+}
+
+.mv-header-mode-btn:hover {
+  color: var(--fwd-color-2);
+  background-color: var(--bkg-color-2);
+}
+
+.mv-header-mode-btn.active {
+  background-color: var(--bkg-color-2);
+  /* color and border-bottom-color are set inline per-mode */
+}
+
+.mv-header-mode-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4em;
+  line-height: 1;
+}
+
+.mv-header-mode-label {
+  font-size: 0.85em;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}

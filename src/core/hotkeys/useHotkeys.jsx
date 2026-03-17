@@ -80,9 +80,10 @@ const ACTIONS = {
     },
 
     // ── Interaction modes ─────────────────────────────────────────────────────
-    'mode-select':  ({ appint }) => { appint.setInteractionMode('select'); },
-    'mode-dipolar': ({ appint }) => { appint.setInteractionMode('dipolar'); },
-    'mode-euler':   ({ appint }) => { appint.setInteractionMode('euler'); },
+    'mode-select':    ({ appint }) => { appint.setInteractionMode('select'); },
+    'mode-dipolar':   ({ appint }) => { appint.setInteractionMode('dipolar'); },
+    'mode-jcoupling': ({ appint }) => { appint.setInteractionMode('jcoupling'); },
+    'mode-euler':     ({ appint }) => { appint.setInteractionMode('euler'); },
 
     // ── Interface ─────────────────────────────────────────────────────────────
     'toggle-theme': ({ appint }) => {

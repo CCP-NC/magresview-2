@@ -14,13 +14,42 @@
 
 import './MagresViewHeader.css';
 import logo from '../icons/logo.svg';
-import { FaSun, FaMoon, FaRegFolderOpen, FaMousePointer, FaFile, FaBan, FaKeyboard } from 'react-icons/fa';
-import { GiHistogram } from 'react-icons/gi';
+import { FaSun, FaMoon, FaMousePointer, FaKeyboard } from 'react-icons/fa';
 
 import React from 'react';
-import MVCustomSelect, { MVCustomSelectOption } from '../controls/MVCustomSelect';
 import MVIcon from '../icons/MVIcon';
 import { useAppInterface } from './store';
+
+const interactionModes = [
+    {
+        key: 'select',
+        label: 'Select',
+        title: 'Select mode (Q)',
+        icon: <FaMousePointer />,
+        colorVar: '--fwd-color-2'
+    },
+    {
+        key: 'dipolar',
+        label: 'Dipolar',
+        title: 'Dipolar coupling mode (D)',
+        icon: <MVIcon icon='dip' />,
+        colorVar: '--dip-color-2'
+    },
+    {
+        key: 'jcoupling',
+        label: 'J-Coup',
+        title: 'J-coupling mode (J)',
+        icon: <MVIcon icon='jcoup' />,
+        colorVar: '--jcoup-color-2'
+    },
+    {
+        key: 'euler',
+        label: 'Euler',
+        title: 'Euler angles mode (E)',
+        icon: <MVIcon icon='euler' />,
+        colorVar: '--mid-color-2'
+    }
+];
 
 function ThemeSwitcher() {
 
@@ -42,6 +71,7 @@ function ThemeSwitcher() {
 function MagresViewHeader({ onHelpOpen }) {
 
     const appint = useAppInterface();
+    const currentMode = appint.interactionMode || 'select';
 
     return (<header className='mv-header'>
         <div className='mv-header-left'>
@@ -56,18 +86,25 @@ function MagresViewHeader({ onHelpOpen }) {
             }
         </div>
         <div className='mv-header-right'>
-            <MVCustomSelect onSelect={(v) => { appint.sidebar = v; }} selected={appint.sidebar}>
-                <MVCustomSelectOption value='load' icon={<FaRegFolderOpen />}>Load file</MVCustomSelectOption>
-                <MVCustomSelectOption value='select' icon={<FaMousePointer />}>Select and display</MVCustomSelectOption>
-                <MVCustomSelectOption value='ms' icon={<MVIcon icon='ms' color='var(--ms-color-3)'/>}>Magnetic Shielding</MVCustomSelectOption>
-                <MVCustomSelectOption value='efg' icon={<MVIcon icon='efg' color='var(--efg-color-3)'/>}>Electric Field Gradient</MVCustomSelectOption>
-                <MVCustomSelectOption value='dip' icon={<MVIcon icon='dip' color='var(--dip-color-3)'/>}>Dipolar Couplings</MVCustomSelectOption>
-                <MVCustomSelectOption value='jcoup' icon={<MVIcon icon='jcoup' color='var(--jcoup-color-3)'/>}>J Couplings</MVCustomSelectOption>
-                <MVCustomSelectOption value='euler' icon={<MVIcon icon='euler' color='var(--bkg-color-3)'/>}>Euler Angles</MVCustomSelectOption>
-                <MVCustomSelectOption value='plots' icon={<GiHistogram />}>Spectral plots</MVCustomSelectOption>
-                <MVCustomSelectOption value='files' icon={<FaFile />}>Report files</MVCustomSelectOption>
-                <MVCustomSelectOption value='none' icon={<FaBan />}>No sidebar</MVCustomSelectOption>
-            </MVCustomSelect>            
+            <div className='mv-header-mode-group' role='group' aria-label='Interaction mode'>
+                {interactionModes.map(m => {
+                    const isActive = currentMode === m.key;
+                    return (
+                        <button
+                            key={m.key}
+                            className={`mv-header-mode-btn${isActive ? ' active' : ''}`}
+                            style={isActive ? { color: `var(${m.colorVar})`, borderBottomColor: `var(${m.colorVar})` } : {}}
+                            title={m.title}
+                            aria-label={m.label}
+                            aria-pressed={isActive}
+                            onClick={() => appint.setInteractionMode(m.key)}
+                        >
+                            <span className='mv-header-mode-icon'>{m.icon}</span>
+                            <span className='mv-header-mode-label'>{m.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
             <span className='mv-hor-sep-3'></span>
             <button
                     className='mv-header-help-btn'

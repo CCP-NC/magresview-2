@@ -22,6 +22,12 @@ const modeConfig = {
         hint: 'Click atom to show couplings',
         color: 'var(--dip-color-2)'
     },
+    jcoupling: {
+        label: 'J-Coupling Mode',
+        icon: <MVIcon icon='jcoup' color='var(--jcoup-color-2)' />,
+        hint: 'Click atom to set central atom',
+        color: 'var(--jcoup-color-2)'
+    },
     euler: {
         label: 'Euler Mode',
         icon: <MVIcon icon='euler' color='var(--mid-color-2)' />,
