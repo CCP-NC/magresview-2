@@ -38,7 +38,6 @@ const initialAppState = {
     app_theme_name: 'dark',
     app_theme: themes.dark,
     app_sidebar: 'load',
-    app_interaction_mode: 'select',  // 'select' | 'dipolar' | 'euler'
     app_default_displayed: null,
     app_model_queued: null,
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
@@ -206,23 +205,32 @@ class AppInterface extends BaseInterface {
         });
     }
 
+    /**
+     * Interaction mode is derived from the active sidebar.
+     * 'dip' → 'dipolar', 'jcoup' → 'jcoupling', 'euler' → 'euler',
+     * all other sidebars → 'select'.
+     */
     get interactionMode() {
-        return this.state.app_interaction_mode;
+        const sidebar = this.state.app_sidebar;
+        if (sidebar === 'dip')   return 'dipolar';
+        if (sidebar === 'jcoup') return 'jcoupling';
+        if (sidebar === 'euler') return 'euler';
+        return 'select';
     }
 
+    /**
+     * Switch to a specialised interaction mode by switching the corresponding
+     * sidebar.  Passing 'select' switches to the Select & Display sidebar.
+     */
     setInteractionMode(mode) {
-        const sidebarMap = { dipolar: 'dip', jcoupling: 'jcoup', euler: 'euler' };
-        const data = {
-            app_interaction_mode: mode,
-            listen_update: [Events.VIEWS]
-        };
-        if (sidebarMap[mode]) {
-            data.app_sidebar = sidebarMap[mode];
+        const sidebarMap = { select: 'select', dipolar: 'dip', jcoupling: 'jcoup', euler: 'euler' };
+        const target = sidebarMap[mode];
+        if (target) {
+            this.dispatch({
+                type: 'update',
+                data: { app_sidebar: target, listen_update: [Events.VIEWS] }
+            });
         }
-        this.dispatch({
-            type: 'update',
-            data
-        });
     }
 
     get loadAsMol() {

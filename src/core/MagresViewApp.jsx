@@ -88,10 +88,13 @@ function MagresViewPage() {
         };
     }, []);
 
-    // Centralised interaction-mode bind/unbind.
-    // Fires when the mode changes OR when dipolar isOn changes (so toggling
-    // the checkbox while already in dipolar mode connects the click handler).
-    const mode = appint.interactionMode;
+    // Centralised click-handler bind/unbind.
+    // The active sidebar determines which interface owns mouse clicks:
+    //   dip   → dipolar coupling picker
+    //   jcoup → J-coupling picker
+    //   euler → Euler-angle atom picker
+    //   any other sidebar → normal atom selection (always enabled)
+    const sidebar = appint.sidebar;
     const dipIsOn = dipint.isOn;
     const jcIsOn  = jcint.isOn;
     useEffect(() => {
@@ -100,31 +103,31 @@ function MagresViewPage() {
         const eul = eulRef.current;
         const jc  = jcRef.current;
 
-        if (mode === 'select') {
-            sel.bind();
-            dip.unbind();
+        if (sidebar === 'dip') {
+            sel.unbind();
+            if (dipIsOn) dip.bind(); else dip.unbind();
             jc.unbind();
             eul.unbind();
-        } else if (mode === 'dipolar') {
-            sel.unbind();
-            if (dipIsOn) dip.bind();
-            else dip.unbind();
-            jc.unbind();
-            eul.unbind();
-        } else if (mode === 'jcoupling') {
+        } else if (sidebar === 'jcoup') {
             sel.unbind();
             dip.unbind();
-            if (jcIsOn) jc.bind();
-            else jc.unbind();
+            if (jcIsOn) jc.bind(); else jc.unbind();
             eul.unbind();
-        } else if (mode === 'euler') {
+        } else if (sidebar === 'euler') {
             sel.unbind();
             dip.unbind();
             jc.unbind();
             eul.bind();
+        } else {
+            // All other sidebars (load, select, ms, efg, plots, files, none):
+            // selection is always active.
+            sel.bind();
+            dip.unbind();
+            jc.unbind();
+            eul.unbind();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mode, dipIsOn, jcIsOn]);
+    }, [sidebar, dipIsOn, jcIsOn]);
 
 
     // Handling the dragging events

@@ -350,11 +350,11 @@ class SelInterface extends BaseInterface {
 
     /**
      * Re-register ClickHandler callbacks based on current stored state.
-     * Does not dispatch to the store — safe to call when mode changes.
+     * Always enables selection (forces on:true).
      */
     bind() {
         this.setSelection(this.selectionMode, {
-            on: this.selectionOn,
+            on: true,
             r: this.selectionSphereR,
             n: this.selectionBondN
         });

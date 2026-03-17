@@ -80,7 +80,8 @@ const ACTIONS = {
     },
 
     // ── Interaction modes ─────────────────────────────────────────────────────
-    'mode-select':    ({ appint }) => { appint.setInteractionMode('select'); },
+    // These switch the sidebar, which in turn determines the click mode.
+    'mode-select':    ({ appint }) => { appint.sidebar = 'select'; },
     'mode-dipolar':   ({ appint }) => { appint.setInteractionMode('dipolar'); },
     'mode-jcoupling': ({ appint }) => { appint.setInteractionMode('jcoupling'); },
     'mode-euler':     ({ appint }) => { appint.setInteractionMode('euler'); },
