@@ -198,11 +198,12 @@ class AppInterface extends BaseInterface {
     }
 
     set sidebar(v) {
-        this.dispatch({
-            type: 'set',
-            key: 'app_sidebar',
-            value: v
-        });
+        // Auto-enable the relevant coupling display when switching to those panels
+        // so the user can immediately click an atom without a separate checkbox.
+        const data = { app_sidebar: v };
+        if (v === 'dip')   data.dip_links_on = true;
+        if (v === 'jcoup') data.jc_links_on  = true;
+        this.dispatch({ type: 'update', data });
     }
 
     /**
@@ -225,12 +226,8 @@ class AppInterface extends BaseInterface {
     setInteractionMode(mode) {
         const sidebarMap = { select: 'select', dipolar: 'dip', jcoupling: 'jcoup', euler: 'euler' };
         const target = sidebarMap[mode];
-        if (target) {
-            this.dispatch({
-                type: 'update',
-                data: { app_sidebar: target, listen_update: [Events.VIEWS] }
-            });
-        }
+        // Route through the sidebar setter so auto-enable logic fires for dip/jcoup
+        if (target) this.sidebar = target;
     }
 
     get loadAsMol() {

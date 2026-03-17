@@ -32,12 +32,11 @@ function MVSidebarDip(props) {
 
     return (<MagresViewSidebar show={props.show} title='Dipolar couplings'>
         <div className='mv-sidebar-block'>
-            <MVCheckBox color='var(--dip-color-3)' onCheck={(v) => { dipint.isOn = v; }} checked={ dipint.isOn } >Show dipolar couplings</MVCheckBox>
+            <MVCheckBox color='var(--dip-color-3)' onCheck={(v) => { dipint.isOn = v; }} checked={ dipint.isOn } >Show dipolar coupling links</MVCheckBox>
         </div>
         <div className='mv-sidebar-block'>
             <p>
-                Click on an atom to show all dipolar couplings in a selected radius.
-                (Note: to avoid performance issues, changing the radius of selection has effect only from the next click)
+                Click an atom in the viewer to show its dipolar couplings within the radius below.
             </p>
              <MVRange min={1.0} max={20.0} step={0.05} value={dipint.radius} color={'var(--dip-color-3)'}
                       onChange={(s) => { dipint.radius = s; }}>Selection radius / Å</MVRange>

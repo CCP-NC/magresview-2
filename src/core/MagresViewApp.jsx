@@ -90,13 +90,11 @@ function MagresViewPage() {
 
     // Centralised click-handler bind/unbind.
     // The active sidebar determines which interface owns mouse clicks:
-    //   dip   → dipolar coupling picker
-    //   jcoup → J-coupling picker
+    //   dip   → dipolar coupling picker  (always bound; isOn auto-enabled on entry)
+    //   jcoup → J-coupling picker         (always bound; isOn auto-enabled on entry)
     //   euler → Euler-angle atom picker
     //   any other sidebar → normal atom selection (always enabled)
     const sidebar = appint.sidebar;
-    const dipIsOn = dipint.isOn;
-    const jcIsOn  = jcint.isOn;
     useEffect(() => {
         const sel = selRef.current;
         const dip = dipRef.current;
@@ -105,13 +103,13 @@ function MagresViewPage() {
 
         if (sidebar === 'dip') {
             sel.unbind();
-            if (dipIsOn) dip.bind(); else dip.unbind();
+            dip.bind();   // isOn was auto-enabled by sidebar setter
             jc.unbind();
             eul.unbind();
         } else if (sidebar === 'jcoup') {
             sel.unbind();
             dip.unbind();
-            if (jcIsOn) jc.bind(); else jc.unbind();
+            jc.bind();    // isOn was auto-enabled by sidebar setter
             eul.unbind();
         } else if (sidebar === 'euler') {
             sel.unbind();
@@ -119,15 +117,14 @@ function MagresViewPage() {
             jc.unbind();
             eul.bind();
         } else {
-            // All other sidebars (load, select, ms, efg, plots, files, none):
-            // selection is always active.
+            // All other sidebars: selection always active.
             sel.bind();
             dip.unbind();
             jc.unbind();
             eul.unbind();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sidebar, dipIsOn, jcIsOn]);
+    }, [sidebar]);
 
 
     // Handling the dragging events
