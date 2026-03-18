@@ -115,6 +115,16 @@ class EulerInterface extends DataCheckInterface {
         this.dispatch(makeEulerAction({['eul_tensor_' + ending]: v}));
     }
 
+    setAtomA(atom) {
+        if (!atom) return;
+        this.dispatch(makeEulerAction({ eul_newatom_A: atom }));
+    }
+
+    setAtomB(atom) {
+        if (!atom) return;
+        this.dispatch(makeEulerAction({ eul_newatom_B: atom }));
+    }
+
     get atomA() {
         return this.state.eul_atom_A;
     }

@@ -162,6 +162,7 @@ function MVSidebarSelect(props) {
                 <MVButton onClick={() => { selint.displayed = selint.selected }}>Display selected</MVButton>
                 <MVButton onClick={() => { selint.displayed = null }}>Reset displayed</MVButton>                
             </div>
+            <MVButton style={{width: '100%', marginTop: '0.4em'}} onClick={() => { selint.invertSelection() }}>Invert selection</MVButton>
         </div>
         <span className='sep-1' />
         <div className='mv-sidebar-tooltip-grid'>

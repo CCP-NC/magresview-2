@@ -22,6 +22,7 @@ import CrystVis from '@ccp-nc/crystvis-js';
 const LC = CrystVis.LEFT_CLICK;
 const SLC = CrystVis.LEFT_CLICK + CrystVis.SHIFT_BUTTON;
 const CLC = CrystVis.LEFT_CLICK + CrystVis.CTRL_BUTTON;
+const RC = CrystVis.RIGHT_CLICK;
 
 const initialSelState = {
     sel_selected_view: null,
@@ -34,7 +35,9 @@ const initialSelState = {
     sel_hlight: true,
     sel_sites_view: null,
     sel_sites_labels_type: 'none',
-    sel_show_cell: true
+    sel_show_cell: true,
+    sel_context_atom: null,
+    sel_context_pos: null,
 };
 
 class SelInterface extends BaseInterface {
@@ -350,6 +353,15 @@ class SelInterface extends BaseInterface {
             handler.setCallback('sel', CLC);
         }
 
+        // Right-click always opens a context menu, regardless of selection mode.
+        handler.setCallback('sel', RC, (a, e) => {
+            if (!a) return;
+            intf.dispatch({ type: 'update', data: {
+                sel_context_atom: a,
+                sel_context_pos: { x: e.clientX, y: e.clientY }
+            }});
+        });
+
         this.dispatch({type: 'update', data: {
             sel_mode: mode,
             sel_sphere_r: options.r,
@@ -380,6 +392,59 @@ class SelInterface extends BaseInterface {
         handler.setCallback('sel', LC);
         handler.setCallback('sel', SLC);
         handler.setCallback('sel', CLC);
+        handler.setCallback('sel', RC);
+    }
+
+    // ── Context menu ──────────────────────────────────────────────────────────
+
+    get contextAtom() { return this.state.sel_context_atom; }
+    get contextPos()  { return this.state.sel_context_pos; }
+
+    clearContextMenu() {
+        this.dispatch({ type: 'update', data: { sel_context_atom: null, sel_context_pos: null } });
+    }
+
+    // ── Programmatic selection helpers (used by context menu) ─────────────────
+
+    invertSelection() {
+        const model = this.state.app_viewer?.model;
+        if (!model) return;
+        const displayedIndices = new Set(this.displayed?._indices || []);
+        const selectedIndices  = new Set(this.selected?._indices  || []);
+        const inverted = [...displayedIndices].filter(i => !selectedIndices.has(i));
+        this.selected = model.view(inverted);
+    }
+
+    addToSelection(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        const indices = model._queryLabels([atom.crystLabel]);
+        if (!indices?.length) return;
+        const cur = this.selected;
+        this.selected = cur ? cur.or(model.view(indices)) : model.view(indices);
+    }
+
+    removeFromSelection(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        const indices = model._queryLabels([atom.crystLabel]);
+        if (!indices?.length) return;
+        const cur = this.selected;
+        if (cur) this.selected = cur.remove(model.view(indices));
+    }
+
+    selectSameElement(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        let indices = model._queryElements(atom.element);
+        if (!indices?.length) return;
+        // Restrict to the default displayed view (unit cell) so this matches
+        // the behaviour of the sidebar's element selection mode.
+        const dd_indices = this.state.app_default_displayed?._indices;
+        if (dd_indices) {
+            indices = indices.filter(i => dd_indices.includes(i));
+        }
+        this.selected = model.view(indices);
     }
 
 }

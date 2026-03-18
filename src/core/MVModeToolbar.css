@@ -6,14 +6,14 @@
 
 .mv-mode-toolbar {
   position: fixed;
-  left: 0;
+  right: 0;
   top: var(--header-height);
   width: var(--toolbar-width);
   /* Stop above the status bar */
   height: calc(100vh - var(--header-height) - var(--status-bar-height, 2em));
 
   background-color: var(--bkg-color-3);
-  border-right: 1px solid var(--mid-color-1);
+  border-left: 1px solid var(--mid-color-1);
   box-sizing: border-box;
 
   display: flex;
@@ -35,7 +35,7 @@
 
   background: none;
   border: none;
-  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
   cursor: pointer;
 
   color: var(--mid-color-2);

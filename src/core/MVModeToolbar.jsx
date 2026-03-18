@@ -95,7 +95,7 @@ function MVModeToolbar() {
                     <button
                         key={s.key}
                         className={`mv-mode-btn${isActive ? ' active' : ''}`}
-                        style={isActive ? { color: `var(${s.accentVar})`, borderLeftColor: `var(${s.accentVar})` } : {}}
+                        style={isActive ? { color: `var(${s.accentVar})`, borderRightColor: `var(${s.accentVar})` } : {}}
                         title={s.title}
                         aria-label={s.label}
                         aria-pressed={isActive}

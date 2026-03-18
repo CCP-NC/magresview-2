@@ -12,13 +12,13 @@
   box-sizing: border-box;
   overflow-y: auto;
 
-  /* Animate sliding in when opening */
-  right: calc(var(--sidebar-width) * (-1));
+  /* Animate sliding in from the right (hidden off-screen) */
+  right: calc(-1 * var(--sidebar-width));
   transition: right 0.2s;
 }
 
 .mv-sidebar.open {
-  right: 0;
+  right: var(--toolbar-width);
 }
 
 .mv-sidebar .mv-sidebar-title {

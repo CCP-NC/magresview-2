@@ -1,29 +1,100 @@
-.mv-euler-agrid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-gap: 10px;
-    width: 90%;
-}
-
-.mv-euler-step-btn {
-    grid-column: 1 / span 2;
+/* ── Atom A/B picker ─────────────────────────────────────────────────── */
+.mv-euler-pick-row {
+    display: flex;
+    gap: 0.5em;
     width: 100%;
-    border: 1px solid var(--mid-color-1) !important;
-    transition: border-color 0.15s, color 0.15s !important;
-    font-size: 0.85em;
+    margin-bottom: 0.4em;
 }
 
-.mv-euler-step-btn.active {
+.mv-euler-pick-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35em;
+
+    padding: 0.45em 0.6em;
+    border: 1.5px solid var(--mid-color-1);
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+
+    color: var(--mid-color-2);
+    font-size: 0.88em;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.mv-euler-pick-btn:hover {
+    border-color: var(--mid-color-2);
+    color: var(--fwd-color-2);
+    background: var(--bkg-color-2);
+}
+
+.mv-euler-pick-a.active {
+    border-color: var(--ms-color-2);
+    color: var(--ms-color-2);
+    background: color-mix(in srgb, var(--ms-color-2) 10%, transparent);
     font-weight: 600;
 }
 
-.mv-euler-agrid span {
-    text-align: right;
+.mv-euler-pick-b.active {
+    border-color: var(--efg-color-2);
+    color: var(--efg-color-2);
+    background: color-mix(in srgb, var(--efg-color-2) 10%, transparent);
+    font-weight: 600;
 }
 
-.mv-euler-agrid .header {
-    font-weight: bold;
-    text-align: left;
+.mv-euler-pick-dot {
+    font-size: 0.75em;
+    animation: euler-dot-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes euler-dot-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+}
+
+.mv-euler-pick-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5em;
+    width: 100%;
+    margin-bottom: 0.2em;
+}
+
+.mv-euler-pick-label-val {
+    text-align: center;
+    font-size: 0.88em;
+    font-weight: 600;
+    color: var(--fwd-color-1);
+    background: var(--bkg-color-2);
+    border-radius: 3px;
+    padding: 0.2em 0.4em;
+}
+
+.mv-euler-pick-label-val.unset {
+    color: var(--mid-color-2);
+    font-weight: 400;
+    font-style: italic;
+}
+
+/* ── Tensor type row ─────────────────────────────────────────────────── */
+.mv-euler-tensors {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    width: 100%;
+    margin-bottom: 0.3em;
+}
+
+.mv-euler-tensor-label {
+    font-weight: 700;
+    font-size: 0.9em;
+    width: 1em;
+    text-align: center;
+    color: var(--mid-color-2);
 }
 
 .mv-euler-agrid-switch {

@@ -27,6 +27,7 @@ import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
 import MVStatusBar from './MVStatusBar';
 import MVModeToolbar from './MVModeToolbar';
+import MVContextMenu from './MVContextMenu';
 
 import MVSidebarLoad from './sidebars/MVSidebarLoad';
 import MVSidebarSelect from './sidebars/MVSidebarSelect';
@@ -176,6 +177,7 @@ function MagresViewPage() {
                 <MVSidebarFiles show={appint.sidebar === 'files'} />
                 <div id='mv-appwindow' className='mv-background'/>
                 <MVStatusBar />
+                <MVContextMenu />
                 <MagresViewScreenshot />
                 <div className='drag-overlay' />
             { /* Modals */ }

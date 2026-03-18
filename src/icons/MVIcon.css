@@ -2,6 +2,15 @@
   display: inline-block;
 }
 
-.mv-icon-wrapper .mv-icon path {
-  fill: var(--path-fill) !important;
+/* Reset Inkscape's hardcoded color:#000000 and apply fill from the wrapper's
+   color property. Targets all SVG shape elements so rect/circle/polygon
+   variants also respond correctly. */
+.mv-icon-wrapper .mv-icon path,
+.mv-icon-wrapper .mv-icon rect,
+.mv-icon-wrapper .mv-icon circle,
+.mv-icon-wrapper .mv-icon ellipse,
+.mv-icon-wrapper .mv-icon polygon,
+.mv-icon-wrapper .mv-icon polyline {
+  color: inherit !important;
+  fill: currentColor !important;
 }
