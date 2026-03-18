@@ -5,7 +5,7 @@
 
 import './MVModeToolbar.css';
 import React from 'react';
-import { FaRegFolderOpen, FaMousePointer, FaFile, FaBan } from 'react-icons/fa';
+import { FaRegFolderOpen, FaMousePointer, FaFile } from 'react-icons/fa';
 import { GiHistogram } from 'react-icons/gi';
 import MVIcon from '../icons/MVIcon';
 import { useAppInterface } from './store';
@@ -74,13 +74,6 @@ const sidebars = [
         icon: <FaFile />,
         accentVar: '--fwd-color-2'
     },
-    {
-        key: 'none',
-        label: 'Hide',
-        title: 'Hide sidebar (0)',
-        icon: <FaBan />,
-        accentVar: '--mid-color-1'
-    }
 ];
 
 function MVModeToolbar() {
@@ -99,7 +92,7 @@ function MVModeToolbar() {
                         title={s.title}
                         aria-label={s.label}
                         aria-pressed={isActive}
-                        onClick={() => { appint.sidebar = (isActive && s.key !== 'none') ? 'none' : s.key; }}
+                        onClick={() => { appint.sidebar = isActive ? 'none' : s.key; }}
                     >
                         <span className='mv-mode-btn-icon'>
                             {typeof s.icon === 'function'
