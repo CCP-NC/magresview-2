@@ -99,7 +99,7 @@ function MVModeToolbar() {
                         title={s.title}
                         aria-label={s.label}
                         aria-pressed={isActive}
-                        onClick={() => { appint.sidebar = s.key; }}
+                        onClick={() => { appint.sidebar = (isActive && s.key !== 'none') ? 'none' : s.key; }}
                     >
                         <span className='mv-mode-btn-icon'>
                             {typeof s.icon === 'function'

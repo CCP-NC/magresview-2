@@ -40,8 +40,28 @@
   padding: 0;
 }
 
-.mv-sidebar-hide {
+.mv-sidebar-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: none;
+  border: 1px solid var(--mid-color-1);
+  border-radius: 4px;
+  color: var(--mid-color-2);
   cursor: pointer;
+  padding: 0.3em 0.5em;
+  font-size: 0.9em;
+  line-height: 1;
+  flex-shrink: 0;
+
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.mv-sidebar-close:hover {
+  color: var(--fwd-color-2);
+  border-color: var(--fwd-color-1);
+  background: var(--bkg-color-2);
 }
 
 .mv-sidebar p {

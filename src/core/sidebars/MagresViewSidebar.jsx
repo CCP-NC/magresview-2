@@ -15,7 +15,7 @@
 import './MagresViewSidebar.css';
 
 import React from 'react';
-import { FaAngleDoubleRight } from 'react-icons/fa';
+import { FaChevronRight } from 'react-icons/fa';
 
 import { chainClasses } from '../../utils';
 import { useAppInterface } from '../store';
@@ -27,7 +27,9 @@ function MagresViewSidebar(props) {
     return (<div className={chainClasses('mv-sidebar', props.show? 'open' : '')}>
         <div className='mv-sidebar-title'>
             {props.title? <h2>{props.title}</h2> : null}            
-            <FaAngleDoubleRight className='mv-sidebar-hide' onClick={() => { appint.sidebar = 'none'; }} />
+            <button className='mv-sidebar-close' onClick={() => { appint.sidebar = 'none'; }} title='Close panel'>
+                <FaChevronRight />
+            </button>
         </div>
         {props.children}
     </div>);
