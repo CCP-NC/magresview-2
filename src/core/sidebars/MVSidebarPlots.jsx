@@ -14,7 +14,7 @@
 
 import './MVSidebarPlots.css';
 
-import MagresViewSidebar from './MagresViewSidebar';
+import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
 
 // import MVFile from '../../controls/MVFile';
 import MVButton from '../../controls/MVButton';
@@ -130,13 +130,6 @@ function MVSidebarPlots(props) {
                 <MVFile filetypes={formats} onSelect={(f) => { pltint.loadBkgImage(f); }} notext={false} multiple={false}/>
                 <MVButton onClick={() => { pltint.clearBkgImage(); }}>Clear image</MVButton>
             </div> */}
-            <div className='mv-sidebar-grid'>
-                <MVCheckBox checked={pltint.showXAxis} onCheck={(v) => { pltint.showXAxis = v; }}>Show X axis</MVCheckBox>
-                <MVCheckBox checked={pltint.showYAxis} onCheck={(v) => { pltint.showYAxis = v; }}>Show Y axis</MVCheckBox>
-                <MVCheckBox checked={pltint.showGrid} onCheck={(v) => { pltint.showGrid = v; }}>Show grid</MVCheckBox>
-                <MVCheckBox checked={pltint.showLabels} onCheck={(v) => { pltint.showLabels = v; }}>Show labels</MVCheckBox>
-            </div>
-            <span className='sep-1' />
             <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
                 Peak width: &nbsp;
                 <MVRange min={0} max={5} step={0.1} value={pltint.peakW} onChange={(v) => { pltint.peakW = v; }} />
@@ -152,24 +145,33 @@ function MVSidebarPlots(props) {
                 </MVCustomSelect>
             </div>
             <span className='sep-1' />
-            <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
-                X range: &nbsp;
-                <MVText size='5' value={pltint.rangeX[0]} onChange={setMinX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' /> &nbsp; to &nbsp; 
-                <MVText size='5' value={pltint.rangeX[1]} onChange={setMaxX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
-                <MVCheckBox checked={pltint.autoScaleX} onCheck={(v) => { pltint.autoScaleX = v; }}>Auto</MVCheckBox>
-            </div>
-            <span className='sep-1' />
-            <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
-                Y range: &nbsp;
-                <MVText size='5' value={pltint.rangeY[0]} onChange={(v) => { pltint.setRange(v, null, 'y'); }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' /> &nbsp; to &nbsp;
-                <MVText size='5' value={pltint.rangeY[1]} onChange={(v) => { pltint.setRange(null, v, 'y'); }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
-                <MVCheckBox checked={pltint.autoScaleY} onCheck={(v) => { pltint.autoScaleY = v; }}>Auto</MVCheckBox>
-            </div>
-            <span className='sep-1' />
-            <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
-                X steps: &nbsp;
-                <MVText size='3' value={pltint.xSteps} onChange={(v) => { pltint.xSteps = v; }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
-            </div>
+            <MVCheckBox checked={pltint.showLabels} onCheck={(v) => { pltint.showLabels = v; }}>Show labels</MVCheckBox>
+            <MVAdvancedSection>
+                <div className='mv-sidebar-grid'>
+                    <MVCheckBox checked={pltint.showXAxis} onCheck={(v) => { pltint.showXAxis = v; }}>Show X axis</MVCheckBox>
+                    <MVCheckBox checked={pltint.showYAxis} onCheck={(v) => { pltint.showYAxis = v; }}>Show Y axis</MVCheckBox>
+                    <MVCheckBox checked={pltint.showGrid} onCheck={(v) => { pltint.showGrid = v; }}>Show grid</MVCheckBox>
+                </div>
+                <span className='sep-1' />
+                <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
+                    X range: &nbsp;
+                    <MVText size='5' value={pltint.rangeX[0]} onChange={setMinX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' /> &nbsp; to &nbsp; 
+                    <MVText size='5' value={pltint.rangeX[1]} onChange={setMaxX} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                    <MVCheckBox checked={pltint.autoScaleX} onCheck={(v) => { pltint.autoScaleX = v; }}>Auto</MVCheckBox>
+                </div>
+                <span className='sep-1' />
+                <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
+                    Y range: &nbsp;
+                    <MVText size='5' value={pltint.rangeY[0]} onChange={(v) => { pltint.setRange(v, null, 'y'); }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' /> &nbsp; to &nbsp;
+                    <MVText size='5' value={pltint.rangeY[1]} onChange={(v) => { pltint.setRange(null, v, 'y'); }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                    <MVCheckBox checked={pltint.autoScaleY} onCheck={(v) => { pltint.autoScaleY = v; }}>Auto</MVCheckBox>
+                </div>
+                <span className='sep-1' />
+                <div className='mv-sidebar-row' style={{alignItems: 'center'}}>
+                    X steps: &nbsp;
+                    <MVText size='3' value={pltint.xSteps} onChange={(v) => { pltint.xSteps = v; }} filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                </div>
+            </MVAdvancedSection>
             <span className='sep-1' />
             <div className='mv-sidebar-grid'>
                 <MVButton onClick={() => { pltint.downloadSVG(); }} disabled={pltint.mode === 'none'}>Download SVG</MVButton>

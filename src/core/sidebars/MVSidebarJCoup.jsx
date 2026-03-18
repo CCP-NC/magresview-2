@@ -14,7 +14,7 @@
 
 import './MVSidebarJCoup.css';
 
-import MagresViewSidebar from './MagresViewSidebar';
+import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
 
 import React from 'react';
 
@@ -49,7 +49,9 @@ function MVSidebarJCoup(props) {
                           onChange={(s) => { jcint.radius = s; }}>Selection radius / Å</MVRange>
                  <MVCheckBox color='var(--jcoup-color-3)' onCheck={(v) => { jcint.showSphere = v; }} checked={ jcint.showSphere } >Show selection sphere</MVCheckBox>                        
                  <MVCheckBox color='var(--jcoup-color-3)' onCheck={(v) => { jcint.homonuclearOnly = v; }} checked={ jcint.homonuclearOnly } >Show only homonuclear couplings</MVCheckBox>                        
-                 <MVRange min={0} max={6} step={1} value={jcint.precision} onChange={(p) => { jcint.precision = p; }} disabled={!jcint.isOn}>Label Precision</MVRange>
+                 <MVAdvancedSection>
+                     <MVRange min={0} max={6} step={1} value={jcint.precision} onChange={(p) => { jcint.precision = p; }} disabled={!jcint.isOn}>Label Precision</MVRange>
+                 </MVAdvancedSection>
                 {/* reset button */}
                 <MVButton onClick={() => { jcint.reset(); }}>Reset options</MVButton>
             </div>

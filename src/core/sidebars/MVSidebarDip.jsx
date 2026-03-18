@@ -14,7 +14,7 @@
 
 import './MVSidebarDip.css';
 
-import MagresViewSidebar from './MagresViewSidebar';
+import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
 
 import React from 'react';
 
@@ -42,7 +42,9 @@ function MVSidebarDip(props) {
                       onChange={(s) => { dipint.radius = s; }}>Selection radius / Å</MVRange>
              <MVCheckBox color='var(--dip-color-3)' onCheck={(v) => { dipint.showSphere = v; }} checked={ dipint.showSphere } >Show selection sphere</MVCheckBox>                        
              <MVCheckBox color='var(--dip-color-3)' onCheck={(v) => { dipint.homonuclearOnly = v; }} checked={ dipint.homonuclearOnly } >Show only homonuclear couplings</MVCheckBox>                        
-             <MVRange min={0} max={6} step={1} value={dipint.precision} onChange={(p) => { dipint.precision = p; }} disabled={!dipint.isOn}>Label Precision</MVRange>
+             <MVAdvancedSection>
+                 <MVRange min={0} max={6} step={1} value={dipint.precision} onChange={(p) => { dipint.precision = p; }} disabled={!dipint.isOn}>Label Precision</MVRange>
+             </MVAdvancedSection>
              {/* reset button */}
              <MVButton onClick={() => { dipint.reset(); }}>Reset options</MVButton>
         </div>

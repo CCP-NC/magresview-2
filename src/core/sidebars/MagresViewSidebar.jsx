@@ -14,8 +14,8 @@
 
 import './MagresViewSidebar.css';
 
-import React from 'react';
-import { FaChevronRight } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaChevronRight, FaChevronDown } from 'react-icons/fa';
 
 import { chainClasses } from '../../utils';
 import { useAppInterface } from '../store';
@@ -35,4 +35,37 @@ function MagresViewSidebar(props) {
     </div>);
 }
 
+/**
+ * Collapsible advanced-options disclosure block.
+ * Forced open when the global advanced mode is active;
+ * otherwise toggled locally by the user.
+ */
+function MVAdvancedSection({ children }) {
+    const appint = useAppInterface();
+    const [localOpen, setLocalOpen] = useState(false);
+    const show = appint.advancedMode || localOpen;
+
+    return (
+        <div className='mv-advanced-section'>
+            <button
+                className={`mv-advanced-toggle${show ? ' open' : ''}`}
+                onClick={() => { if (!appint.advancedMode) setLocalOpen(o => !o); }}
+                aria-expanded={show}
+                title={appint.advancedMode ? 'Advanced mode is on globally' : (show ? 'Collapse advanced options' : 'Expand advanced options')}
+            >
+                <span className='mv-advanced-chevron'>
+                    {show ? <FaChevronDown /> : <FaChevronRight />}
+                </span>
+                Advanced
+            </button>
+            {show && (
+                <div className='mv-advanced-content'>
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default MagresViewSidebar;
+export { MVAdvancedSection };

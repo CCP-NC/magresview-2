@@ -43,6 +43,7 @@ const initialAppState = {
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
     app_use_nmr_isos: true,
     app_vdw_scaling: 1.0,
+    app_advanced_mode: false,
 };
 
 // Functions meant to operate on the app alone.
@@ -204,6 +205,14 @@ class AppInterface extends BaseInterface {
         if (v === 'dip')   data.dip_links_on = true;
         if (v === 'jcoup') data.jc_links_on  = true;
         this.dispatch({ type: 'update', data });
+    }
+
+    get advancedMode() {
+        return this.state.app_advanced_mode;
+    }
+
+    set advancedMode(v) {
+        this.dispatch({ type: 'update', data: { app_advanced_mode: v } });
     }
 
     /**

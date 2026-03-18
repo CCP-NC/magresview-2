@@ -20,6 +20,7 @@ const initialCScaleState = {
     cscale_displ: null,
     cscale_type: 'none',
     cscale_lims: [0,1],
+    cscale_lims_override: null,
     cscale_units: '',
     cscale_cmap: 'viridis',
 };
@@ -52,6 +53,18 @@ class CScaleInterface extends BaseInterface {
         return this.state.cscale_lims;
     }
 
+    get colorScaleLimitsOverride() {
+        return this.state.cscale_lims_override;
+    }
+
+    set colorScaleLimitsOverride(v) {
+        // Pass [min, max] to pin, or null to restore auto-scaling.
+        this.dispatch({
+            type: 'update',
+            data: { cscale_lims_override: v, listen_update: [Events.CSCALE] }
+        });
+    }
+
     get colorScaleUnits() {
         return this.state.cscale_units;
     }
@@ -78,6 +91,10 @@ class CScaleInterface extends BaseInterface {
                 listen_update: [Events.CSCALE]
             }
         });
+    }
+
+    resetColorScaleLimits() {
+        this.colorScaleLimitsOverride = null;
     }
 
 }

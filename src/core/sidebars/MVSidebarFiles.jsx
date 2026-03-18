@@ -15,7 +15,7 @@
 import './MVSidebarFiles.css';
 
 import React, { useEffect } from 'react';
-import MagresViewSidebar from './MagresViewSidebar';
+import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
 
 import MVButton from '../../controls/MVButton';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
@@ -105,7 +105,6 @@ function msTableOptions(fileint) {
         {/* <MVCheckBox checked={fileint.includeMS} onCheck={(v) => { fileint.includeMS = v; }}>MS tensors</MVCheckBox> */}
         {eulerOption(fileint)}
         {mergeOption(fileint)}
-        {setPrecision(fileint)}
     </div>);
         
 }
@@ -117,7 +116,6 @@ function efgTableOptions(fileint) {
         {eulerOption(fileint)}
         {/* <MVCheckBox checked={fileint.includeQuadrupole} onCheck={(v) => { fileint.includeQuadrupole = v; }}>Quadrupole moments</MVCheckBox> */}
         {mergeOption(fileint)}
-        {setPrecision(fileint)}
     </div>);
 }
 
@@ -128,7 +126,6 @@ function dipTableOptions(fileint) {
         {/* <MVCheckBox checked={fileint.includeD} onCheck={(v) => { fileint.includeD = v; }}>Dipolar couplings</MVCheckBox> */}
         {eulerOption(fileint)}
         {mergeOption(fileint)}
-        {setPrecision(fileint)}
     </div>);
 }
 // eslint-disable-next-line
@@ -138,7 +135,6 @@ function iscTableOptions(fileint) {
         {/* <MVCheckBox checked={fileint.includeJ} onCheck={(v) => { fileint.includeJ = v; }}>J couplings</MVCheckBox> */}
         {eulerOption(fileint)}
         {mergeOption(fileint)}
-        {setPrecision(fileint)}
     </div>);
 }
 
@@ -176,6 +172,9 @@ function MVSidebarFiles(props) {
             {fileint.fileType === 'dip' ? dipTableOptions(fileint) : null}
             {fileint.fileType === 'isc' ? iscTableOptions(fileint) : null}
             {/* {fileint.fileType === 'spinsys' ? spinSysOptions(fileint) : null} */}
+            <MVAdvancedSection>
+                {setPrecision(fileint)}
+            </MVAdvancedSection>
             {/* file type options */}
             {selectFileFormat(fileint)}
             <MVButton onClick={() => { saveFile(fileint.generateFile(), fileint.fileName); }} disabled={!fileint.fileValid}>Save file</MVButton>

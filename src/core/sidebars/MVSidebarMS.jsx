@@ -17,7 +17,7 @@ import './MVSidebarMS.css';
 import _ from 'lodash';
 import React, { useState, useEffect, useRef } from 'react';
 
-import MagresViewSidebar from './MagresViewSidebar';
+import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
 import { useMSInterface } from '../store';
 import { chainClasses } from '../../utils';
 
@@ -102,7 +102,6 @@ function MVSidebarMS(props) {
                 <MVRadioButton value='redaniso'>Reduced Anisotropy (ppm)</MVRadioButton>
                 <MVRadioButton value='asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
-             <MVRange min={0} max={6} step={1} value={msint.precision} onChange={(p) => { msint.precision = p; }} disabled={msint.labelsMode === 'none'}>Label Precision</MVRange>
              <span className='sep-1' />
              <MVRadioGroup label='Use color scale' onSelect={(v) => { msint.colorScaleType = v; }} selected={msint.colorScaleType} disabled={!msint.colorScaleAvailable} name='ms_cscale_radio'>
                 <MVRadioButton value='none'>None</MVRadioButton>
@@ -111,20 +110,46 @@ function MVSidebarMS(props) {
                 <MVRadioButton value='ms_aniso'>Anisotropy</MVRadioButton>
                 <MVRadioButton value='ms_asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
-             {/* hide scalebar if msintcolorScaleType is 'none' */}
-             <MVCScaleBar label={msint.colorScaleType} 
-             hidden={msint.colorScaleType === 'none'}  
-             lims={msint.colorScaleLimits} 
+             <MVCScaleBar label={msint.colorScaleType}
+             hidden={msint.colorScaleType === 'none'}
+             lims={msint.colorScaleLimits}
              cmap={msint.colorScaleCmap}
              units={msint.colorScaleUnits} />
-             Color map
-            <MVCustomSelect onSelect={(v) => { msint.colorScaleCmap = v; }} selected={msint.colorScaleCmap} name='cmap_dropdown'>
-                <MVCustomSelectOption value='viridis'>Viridis</MVCustomSelectOption>
-                <MVCustomSelectOption value='portland'>Portland</MVCustomSelectOption>
-                <MVCustomSelectOption value='RdBu'>Red-Blue</MVCustomSelectOption>
-                <MVCustomSelectOption value='inferno'>Inferno</MVCustomSelectOption>
-                <MVCustomSelectOption value='jet'>Jet</MVCustomSelectOption>
-            </MVCustomSelect>
+             <MVAdvancedSection>
+                 <MVRange min={0} max={6} step={1} value={msint.precision} onChange={(p) => { msint.precision = p; }} disabled={msint.labelsMode === 'none'}>Label Precision</MVRange>
+                 <span className='sep-1' />
+                 Color map
+                 <MVCustomSelect onSelect={(v) => { msint.colorScaleCmap = v; }} selected={msint.colorScaleCmap} name='cmap_dropdown'>
+                     <MVCustomSelectOption value='viridis'>Viridis</MVCustomSelectOption>
+                     <MVCustomSelectOption value='portland'>Portland</MVCustomSelectOption>
+                     <MVCustomSelectOption value='RdBu'>Red-Blue</MVCustomSelectOption>
+                     <MVCustomSelectOption value='inferno'>Inferno</MVCustomSelectOption>
+                     <MVCustomSelectOption value='jet'>Jet</MVCustomSelectOption>
+                 </MVCustomSelect>
+                 <span className='sep-1' />
+                 <div className='mv-adv-lims'>
+                     <MVCheckBox
+                         checked={msint.colorScaleLimitsOverride === null}
+                         onCheck={(v) => { msint.colorScaleLimitsOverride = v ? null : msint.colorScaleLimits; }}
+                         disabled={msint.colorScaleType === 'none'}>
+                         Auto scale limits
+                     </MVCheckBox>
+                     <div className='mv-adv-lims-row'>
+                         Min:&nbsp;
+                         <MVText size='7'
+                             value={String((msint.colorScaleLimits[0] ?? 0).toFixed(3))}
+                             onChange={(v) => { msint.colorScaleLimitsOverride = [parseFloat(v), (msint.colorScaleLimitsOverride ?? msint.colorScaleLimits)[1]]; }}
+                             disabled={msint.colorScaleLimitsOverride === null || msint.colorScaleType === 'none'}
+                             filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                         &nbsp;Max:&nbsp;
+                         <MVText size='7'
+                             value={String((msint.colorScaleLimits[1] ?? 1).toFixed(3))}
+                             onChange={(v) => { msint.colorScaleLimitsOverride = [(msint.colorScaleLimitsOverride ?? msint.colorScaleLimits)[0], parseFloat(v)]; }}
+                             disabled={msint.colorScaleLimitsOverride === null || msint.colorScaleType === 'none'}
+                             filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                     </div>
+                 </div>
+             </MVAdvancedSection>
             {/* reset button */}
             <MVButton onClick={() => { msint.reset(); }}>Reset options</MVButton>
         </div>

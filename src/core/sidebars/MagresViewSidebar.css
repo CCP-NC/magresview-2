@@ -113,6 +113,86 @@
     display: none !important;
 }
 
+/* ─── Advanced-options disclosure ───────────────────────────────────────── */
+
+.mv-advanced-section {
+  width: 100%;
+  margin: 0.6em 0 0.2em;
+}
+
+.mv-advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px dashed var(--mid-color-1);
+  padding: 0.45em 0 0.3em;
+  cursor: pointer;
+
+  color: var(--mid-color-2);
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.mv-advanced-toggle:hover {
+  color: var(--fwd-color-2);
+  border-top-color: var(--mid-color-2);
+}
+
+.mv-advanced-toggle.open {
+  color: var(--fwd-color-1);
+  border-top-color: var(--mid-color-2);
+}
+
+.mv-advanced-toggle[disabled],
+.mv-advanced-toggle[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.8;
+}
+
+.mv-advanced-chevron {
+  display: flex;
+  align-items: center;
+  font-size: 0.85em;
+}
+
+.mv-advanced-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25em;
+  padding: 0.4em 0 0.2em 0.7em;
+  border-left: 2px solid var(--mid-color-1);
+  margin-top: 0.1em;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Limits row inside advanced sections */
+.mv-adv-lims {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  width: 100%;
+}
+
+.mv-adv-lims-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35em;
+  flex-wrap: wrap;
+  font-size: 0.9em;
+  color: var(--mid-color-3);
+}
+
 .mv-warning-noms {
     font-weight: bold;
     font-size: 3rem;

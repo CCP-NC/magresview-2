@@ -79,6 +79,50 @@
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
+/* ── Advanced mode toggle ─────────────────────────────────────────────────── */
+
+.mv-header-adv-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  background: none;
+  border: 1px solid var(--mid-color-1);
+  border-radius: 4px;
+  color: var(--mid-color-2);
+  font-size: calc(var(--header-height) * 0.22);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.mv-header-adv-btn::before {
+  content: '';
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--mid-color-1);
+  flex-shrink: 0;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.mv-header-adv-btn:hover {
+  color: var(--fwd-color-2);
+  border-color: var(--mid-color-2);
+}
+
+.mv-header-adv-btn.active {
+  color: var(--fwd-color-2);
+}
+
+.mv-header-adv-btn.active::before {
+  background: var(--ms-color-2);
+  box-shadow: 0 0 5px 1px color-mix(in srgb, var(--ms-color-2) 70%, transparent);
+}
+
 .mv-header-help-btn:hover {
   color: var(--fwd-color-1);
   border-color: var(--mid-color-1);

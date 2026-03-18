@@ -14,7 +14,7 @@
 
 import './MVSidebarEFG.css';
 
-import MagresViewSidebar from './MagresViewSidebar';
+import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
 import { useEFGInterface } from '../store';
 import { chainClasses } from '../../utils';
 
@@ -26,6 +26,7 @@ import MVButton from '../../controls/MVButton';
 import MVRadioButton, { MVRadioGroup } from '../../controls/MVRadioButton';
 import MVCScaleBar from '../../controls/MVCScaleBar';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
+import MVText from '../../controls/MVText';
 
 function MVSidebarEFG(props) {
 
@@ -50,7 +51,6 @@ function MVSidebarEFG(props) {
                 <MVRadioButton value='e_z'>Vzz (au)</MVRadioButton>
                 <MVRadioButton value='asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
-             <MVRange min={0} max={6} step={1} value={efgint.precision} onChange={(p) => { efgint.precision = p; }} disabled={efgint.labelsMode === 'none'}>Label Precision</MVRange>
              <MVRadioGroup label='Use color scale' onSelect={(v) => { efgint.colorScaleType = v; }} selected={ efgint.colorScaleType } disabled={!efgint.colorScaleAvailable}
                            name='efg_cscale_radio' color={'var(--efg-color-2)'}>
                 <MVRadioButton value='none'>None</MVRadioButton>
@@ -58,20 +58,46 @@ function MVSidebarEFG(props) {
                 <MVRadioButton value='efg_e_z'>Vzz</MVRadioButton>
                 <MVRadioButton value='efg_asymm'>Asymmetry</MVRadioButton>
              </MVRadioGroup>
-        {/* hide scalebar if msintcolorScaleType is 'none' */}
-        <MVCScaleBar label={efgint.colorScaleType} 
-                    hidden={efgint.colorScaleType === 'none'} 
+        <MVCScaleBar label={efgint.colorScaleType}
+                    hidden={efgint.colorScaleType === 'none'}
                     lims={efgint.colorScaleLimits}
                     units={efgint.colorScaleUnits}
                     cmap={efgint.colorScaleCmap}/>
-        Color map
-        <MVCustomSelect onSelect={(v) => { efgint.colorScaleCmap = v; }} selected={efgint.colorScaleCmap} name='cmap_dropdown'>
-                <MVCustomSelectOption value='viridis'>Viridis</MVCustomSelectOption>
-                <MVCustomSelectOption value='portland'>Portland</MVCustomSelectOption>
-                <MVCustomSelectOption value='RdBu'>Red-Blue</MVCustomSelectOption>
-                <MVCustomSelectOption value='inferno'>Inferno</MVCustomSelectOption>
-                <MVCustomSelectOption value='jet'>Jet</MVCustomSelectOption>
-        </MVCustomSelect>
+        <MVAdvancedSection>
+            <MVRange min={0} max={6} step={1} value={efgint.precision} onChange={(p) => { efgint.precision = p; }} disabled={efgint.labelsMode === 'none'}>Label Precision</MVRange>
+            <span className='sep-1' />
+            Color map
+            <MVCustomSelect onSelect={(v) => { efgint.colorScaleCmap = v; }} selected={efgint.colorScaleCmap} name='cmap_dropdown'>
+                    <MVCustomSelectOption value='viridis'>Viridis</MVCustomSelectOption>
+                    <MVCustomSelectOption value='portland'>Portland</MVCustomSelectOption>
+                    <MVCustomSelectOption value='RdBu'>Red-Blue</MVCustomSelectOption>
+                    <MVCustomSelectOption value='inferno'>Inferno</MVCustomSelectOption>
+                    <MVCustomSelectOption value='jet'>Jet</MVCustomSelectOption>
+            </MVCustomSelect>
+            <span className='sep-1' />
+            <div className='mv-adv-lims'>
+                <MVCheckBox
+                    checked={efgint.colorScaleLimitsOverride === null}
+                    onCheck={(v) => { efgint.colorScaleLimitsOverride = v ? null : efgint.colorScaleLimits; }}
+                    disabled={efgint.colorScaleType === 'none'}>
+                    Auto scale limits
+                </MVCheckBox>
+                <div className='mv-adv-lims-row'>
+                    Min:&nbsp;
+                    <MVText size='7'
+                        value={String((efgint.colorScaleLimits[0] ?? 0).toFixed(3))}
+                        onChange={(v) => { efgint.colorScaleLimitsOverride = [parseFloat(v), (efgint.colorScaleLimitsOverride ?? efgint.colorScaleLimits)[1]]; }}
+                        disabled={efgint.colorScaleLimitsOverride === null || efgint.colorScaleType === 'none'}
+                        filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                    &nbsp;Max:&nbsp;
+                    <MVText size='7'
+                        value={String((efgint.colorScaleLimits[1] ?? 1).toFixed(3))}
+                        onChange={(v) => { efgint.colorScaleLimitsOverride = [(efgint.colorScaleLimitsOverride ?? efgint.colorScaleLimits)[0], parseFloat(v)]; }}
+                        disabled={efgint.colorScaleLimitsOverride === null || efgint.colorScaleType === 'none'}
+                        filter='[\-]*[0-9]*(?:\.[0-9]*)?' />
+                </div>
+            </div>
+        </MVAdvancedSection>
         {/* reset button */}
         <MVButton onClick={() => { efgint.reset(); }}>Reset options</MVButton>
         </div>
