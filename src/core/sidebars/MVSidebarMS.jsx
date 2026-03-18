@@ -93,7 +93,8 @@ function MVSidebarMS(props) {
                     <MVButton onClick={() => { msint.ellipsoidScale = 0; }} disabled={!msint.hasEllipsoids}>Auto scale</MVButton>
                     <MVButton onClick={() => { setState({...state, showRefTable: true}) }}>Set References</MVButton>
                 </div>
-             <MVReferenceTable display={state.showRefTable} close={() => { setState({...state, showRefTable: false}) }}/>
+             <MVReferenceTable display={state.showRefTable || !!props.refTableOpen}
+                 close={() => { setState({...state, showRefTable: false}); props.onRefTableClose?.(); }}/>
              <MVRadioGroup label='Show labels' onSelect={(v) => { msint.labelsMode = v; }} selected={msint.labelsMode} name='ms_label_radio'>
                 <MVRadioButton value='none'>None</MVRadioButton>
                 <MVRadioButton value='iso'>Isotropy (ppm)</MVRadioButton>

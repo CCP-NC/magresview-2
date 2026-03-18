@@ -12,11 +12,12 @@
   "homepage": ".",
   "type": "module",
   "dependencies": {
-    "@ccp-nc/crystvis-js": "../crystvis-js.worktrees/feat_extxyz",
+    "@ccp-nc/crystvis-js": "^0.7.2",
     "@popperjs/core": "^2.11.8",
     "color-scales": "^3.0.2",
     "colormap": "^2.3.2",
     "immutable": "^5.1.4",
+    "lodash": "^4.17.23",
     "mathjs": "^15.1.0",
     "normalize.css": "^8.0.1",
     "plotly.js-dist-min": "^3.4.0",

@@ -57,11 +57,30 @@
 }
 
 .mv-mode-btn-icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5em;
   line-height: 1;
+}
+
+.mv-mode-btn-hotkey {
+  position: absolute;
+  bottom: -0.1em;
+  right: -0.5em;
+  font-size: 0.42em;
+  font-weight: 700;
+  color: var(--mid-color-1);
+  line-height: 1;
+  pointer-events: none;
+  letter-spacing: 0;
+  transition: color 0.15s;
+}
+
+.mv-mode-btn:hover .mv-mode-btn-hotkey,
+.mv-mode-btn.active .mv-mode-btn-hotkey {
+  color: inherit;
 }
 
 .mv-mode-btn-label {

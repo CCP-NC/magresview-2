@@ -9,6 +9,15 @@ import { FaRegFolderOpen, FaMousePointer, FaFile } from 'react-icons/fa';
 import { GiHistogram } from 'react-icons/gi';
 import MVIcon from '../icons/MVIcon';
 import { useAppInterface } from './store';
+import { HOTKEY_GROUPS } from './hotkeys/hotkeys';
+
+// Map sidebar key → hotkey display string from hotkeys.js (keeps toolbar in sync)
+const _panelsGroup = HOTKEY_GROUPS.find(g => g.id === 'panels');
+const sidebarHotkeyMap = {};
+_panelsGroup?.shortcuts.forEach(({ id, display }) => {
+    const m = id.match(/^sidebar-(.+)$/);
+    if (m) sidebarHotkeyMap[m[1]] = display;
+});
 
 const sidebars = [
     {
@@ -98,6 +107,8 @@ function MVModeToolbar() {
                             {typeof s.icon === 'function'
                                 ? s.icon(isActive ? `var(${s.accentVar})` : undefined)
                                 : s.icon}
+                            {sidebarHotkeyMap[s.key] &&
+                                <span className='mv-mode-btn-hotkey'>{sidebarHotkeyMap[s.key]}</span>}
                         </span>
                         <span className='mv-mode-btn-label'>{s.label}</span>
                     </button>

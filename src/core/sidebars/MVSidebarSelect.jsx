@@ -14,9 +14,8 @@
 
 import './MVSidebarSelect.css';
 
-import _ from 'lodash';
-
 import MagresViewSidebar from './MagresViewSidebar';
+import MVModal from '../../controls/MVModal';
 import { useSelInterface } from '../store';
 
 import MVCheckBox from '../../controls/MVCheckBox';
@@ -28,79 +27,173 @@ import MVTooltip from '../../controls/MVTooltip';
 import { tooltip_label_by, tooltip_selection_mode, tooltip_isotopes} from './tooltip_messages';
 
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 
-function sharedElement(sel) {
-    if (sel == null || sel.atoms.length === 0) {
-        return null;
-    }
+// ── Isotope Modal ────────────────────────────────────────────────────────────
 
-    let atoms = sel.atoms;
-    let el = atoms[0].element;
-
-    if (atoms.slice(1).reduce((s, a) => (s && a.element === el), true)) {
-        return el;
-    }
-    else {
-        return null;
-    }
-}
-
-
-function MVIsotopeSelection(props) {
-
-    // Actually unnecessary; we only use it to trigger a re-render
-    const [ state, setState ] = useState(1);
-
+function MVIsotopeModal({ display, onClose }) {
     const selint = useSelInterface();
-    const selected = selint.selected;
-    const el = sharedElement(selected);
+    const selintRef = useRef(selint);
+    selintRef.current = selint;
 
-    let elData = null;
-    let isoConf = null;
-    let selOptions = [];
-    let currentOption = 0;
+    // bySite: { [crystLabel]: isotopeMassString }
+    const [bySite, setBySite] = useState({});
 
-    if (el) {
-        // Information about that element?
-        elData = selected.atoms[0].elementData;
-        isoConf = selected.atoms.map((a) => a.isotope);
+    // Re-initialise every time modal opens
+    useEffect(() => {
+        if (!display) return;
+        const si = selintRef.current;
+        const selAtoms = si.selected?.atoms ?? [];
+        const atoms = selAtoms.length > 0
+            ? selAtoms
+            : (si.defaultDisplayed?.atoms ?? []);
+        const init = {};
+        atoms.forEach(a => {
+            if (!(a.crystLabel in init)) {
+                init[a.crystLabel] = String(a.isotope);
+            }
+        });
+        setBySite(init);
+    }, [display]);
 
-        // Are they all the same?
-        currentOption = isoConf[0].toString();
-        if (!isoConf.reduce((s, x) => s && x === isoConf[0], true)) {
-            // If not, then we have to add a special option that reproduces this last
-            // configuration
-            selOptions = [<MVCustomSelectOption key={-1} value={isoConf}>
-                {_.join(_.uniq(isoConf))}
-            </MVCustomSelectOption>];
-            currentOption = isoConf;
+    const app = selint.app;
+    if (!app?.model) return null;
+
+    // Use the current selection as source; fall back to defaultDisplayed
+    const selAtoms = selint.selected?.atoms ?? [];
+    const baseAtoms = selAtoms.length > 0
+        ? selAtoms
+        : (selint.defaultDisplayed?.atoms ?? []);
+
+    // Build ordered element list and site lists per element
+    const elementOrder = [];
+    const elementData = {}; // el → { elementData, sites: [{ label, element }] }
+    baseAtoms.forEach(a => {
+        if (!elementData[a.element]) {
+            elementOrder.push(a.element);
+            elementData[a.element] = { elementData: a.elementData, sites: [] };
         }
+        if (!elementData[a.element].sites.find(s => s.label === a.crystLabel)) {
+            elementData[a.element].sites.push({ label: a.crystLabel, element: a.element });
+        }
+    });
+    elementOrder.sort();
 
-        // Generate options
-        let keys = Object.keys(elData.isotopes).sort();
-        selOptions = selOptions.concat(keys.map((A, i) => (<MVCustomSelectOption key={i} value={A}>
-                {A}
-            </MVCustomSelectOption>))
-        );
-    }
-    else {
-        selOptions = [<MVCustomSelectOption key={0} value={0}>N/A</MVCustomSelectOption>];
+    // Build a flat options array — must be passed as the sole {child} so that
+    // MVCustomSelect receives it as a plain array (not nested inside [false, array])
+    function isoOptions(eData, el, isMixed) {
+        const opts = Object.keys(eData.isotopes)
+            .filter(k => !isNaN(parseInt(k)))
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(A => <MVCustomSelectOption key={A} value={A}>{A}{el}</MVCustomSelectOption>);
+        if (isMixed) {
+            opts.unshift(<MVCustomSelectOption key='mixed' value=''>mixed</MVCustomSelectOption>);
+        }
+        return opts;
     }
 
-    // This component handles specifically just the selection of isotopes
-    return (<>
-            <h3>Isotope selection</h3>
-            <MVTooltip tooltipText={tooltip_isotopes} />    
-            <MVCustomSelect disabled={!el} onSelect={(A) => { selint.setIsotope(A); setState(-state); }} selected={currentOption}>{selOptions}</MVCustomSelect>
-    </>);
+    // Determine the "current" isotope for a whole element in bySite state
+    function elementCurrent(el) {
+        const sites = elementData[el]?.sites ?? [];
+        if (sites.length === 0) return null;
+        const vals = sites.map(s => bySite[s.label]).filter(Boolean);
+        return vals.every(v => v === vals[0]) ? vals[0] : 'mixed';
+    }
+
+    function applyToAllElement(el, A) {
+        const sites = elementData[el]?.sites ?? [];
+        setBySite(prev => {
+            const next = { ...prev };
+            sites.forEach(s => { next[s.label] = A; });
+            return next;
+        });
+    }
+
+    function handleOK() {
+        Object.entries(bySite).forEach(([label, A]) => {
+            selintRef.current.setIsotopeForSite(label, A);
+        });
+        onClose();
+    }
+
+    return (
+        <MVModal
+            title='Isotope settings'
+            display={display}
+            hasOverlay={true}
+            onClose={onClose}
+            onAccept={handleOK}
+        >
+            <div className='mv-iso-modal'>
+                {/* ── By element ────────────────────────────────────── */}
+                <section className='mv-iso-section'>
+                    <h4 className='mv-iso-section-title'>By element
+                        <span className='mv-iso-section-hint'>— applies to all sites of that element</span>
+                    </h4>
+                    <div className='mv-iso-el-grid'>
+                        {elementOrder.map(el => {
+                            const { elementData: eData } = elementData[el];
+                            const current = elementCurrent(el);
+                            const isMixed = current === 'mixed';
+                            return (
+                                <React.Fragment key={el}>
+                                    <span className='mv-iso-el-symbol'>{el}</span>
+                                    <MVCustomSelect
+                                        selected={isMixed ? '' : current}
+                                        onSelect={A => applyToAllElement(el, A)}
+                                    >
+                                        {isoOptions(eData, el, isMixed)}
+                                    </MVCustomSelect>
+                                    <button
+                                        className='mv-iso-apply-btn'
+                                        disabled={!current || isMixed}
+                                        onClick={() => applyToAllElement(el, current)}
+                                        title={`Set all ${el} sites to ${current}${el}`}
+                                    >
+                                        Apply&nbsp;to&nbsp;all
+                                    </button>
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                <div className='mv-iso-divider' />
+
+                {/* ── By site ───────────────────────────────────────── */}
+                <section className='mv-iso-section'>
+                    <h4 className='mv-iso-section-title'>By site</h4>
+                    <div className='mv-iso-site-list'>
+                        {elementOrder.map(el => (
+                            <div key={el} className='mv-iso-site-group'>
+                                <span className='mv-iso-site-group-el'>{el}</span>
+                                <div className='mv-iso-site-rows'>
+                                    {elementData[el].sites.map(({ label }) => (
+                                        <div key={label} className='mv-iso-site-row'>
+                                            <span className='mv-iso-site-label'>{label}</span>
+                                            <MVCustomSelect
+                                                selected={bySite[label] ?? ''}
+                                                onSelect={A => setBySite(prev => ({ ...prev, [label]: A }))}
+                                            >
+                                                {isoOptions(elementData[el].elementData, el)}
+                                            </MVCustomSelect>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            </div>
+        </MVModal>
+    );
 }
-
 
 function MVSidebarSelect(props) {
 
     const selint = useSelInterface();
+    const [isoModalOpen, setIsoModalOpen] = useState(false);
 
     console.log('[MVSidebarSelect rendered]');
 
@@ -165,9 +258,14 @@ function MVSidebarSelect(props) {
             <MVButton style={{width: '100%', marginTop: '0.4em'}} onClick={() => { selint.invertSelection() }}>Invert selection</MVButton>
         </div>
         <span className='sep-1' />
-        <div className='mv-sidebar-tooltip-grid'>
-            <MVIsotopeSelection />
+        <div className='mv-iso-sidebar-btn-row'>
+            <div className='mv-iso-sidebar-label'>
+                <h3>Isotopes</h3>
+                <MVTooltip tooltipText={tooltip_isotopes} />
+            </div>
+            <MVButton onClick={() => setIsoModalOpen(true)}>Set isotopes…</MVButton>
         </div>
+        <MVIsotopeModal display={isoModalOpen} onClose={() => setIsoModalOpen(false)} />
         <div className='mv-sidebar-block'>
             <h3>Selection controls:</h3>
             <ul>

@@ -2,10 +2,11 @@
   position: fixed;
 
   top: 0;
-  height: 100vh;
+  height: calc(100vh - var(--status-bar-height, 2.5em));
   width: var(--sidebar-width);
   background: var(--bkg-color-3);
   padding-top: calc(var(--header-height) + 20px);
+  padding-bottom: 1em;
   padding-left: calc(var(--sidebar-width) * (0.05));
   padding-right: calc(var(--sidebar-width) * (0.03));
   border-left: 1px solid var(--mid-color-1);

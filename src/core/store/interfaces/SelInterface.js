@@ -447,6 +447,32 @@ class SelInterface extends BaseInterface {
         this.selected = model.view(indices);
     }
 
+    // ── Global isotope setters ────────────────────────────────────────────────
+
+    setIsotopeForElement(el, A) {
+        const model = this.state.app_viewer?.model;
+        if (!model) return;
+        const indices = model._queryElements(el);
+        if (!indices?.length) return;
+        model.view(indices).setProperty('isotope', A);
+        this.dispatch({
+            type: 'update',
+            data: { listen_update: [Events.EFG_LABELS, Events.CSCALE, Events.DIP_RENDER, Events.JC_RENDER, Events.SEL_LABELS] }
+        });
+    }
+
+    setIsotopeForSite(label, A) {
+        const model = this.state.app_viewer?.model;
+        if (!model) return;
+        const indices = model._queryLabels([label]);
+        if (!indices?.length) return;
+        model.view(indices).setProperty('isotope', A);
+        this.dispatch({
+            type: 'update',
+            data: { listen_update: [Events.EFG_LABELS, Events.CSCALE, Events.DIP_RENDER, Events.JC_RENDER, Events.SEL_LABELS] }
+        });
+    }
+
 }
 
 // Hook for interface

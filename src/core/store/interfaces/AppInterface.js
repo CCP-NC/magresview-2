@@ -12,7 +12,6 @@
  * 
  */
 
-import _ from 'lodash';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
 import { makeSelector, BaseInterface } from '../utils';
@@ -290,6 +289,26 @@ class AppInterface extends BaseInterface {
             CrystVis.RIGHT_CLICK
         ]);
 
+        // Override CrystVis's default box-selection handler so it dispatches
+        // through Redux instead of setting vis.selected directly.
+        // Shift+drag adds all atoms inside the box to the current selection,
+        // matching the Shift+click "add" behaviour.
+        const dispatch = this.dispatch;
+        vis.onAtomBox((boxView) => {
+            dispatch({
+                type: 'call',
+                function: (state, bv) => {
+                    const cur = state.sel_selected_view;
+                    const newSel = cur ? cur.or(bv) : bv;
+                    return {
+                        sel_selected_view: newSel,
+                        listen_update: [Events.VIEWS]
+                    };
+                },
+                arguments: [boxView]
+            });
+        });
+
         if (!this.initialised) {
             this.dispatch({
                 type: 'update',
@@ -326,8 +345,8 @@ class AppInterface extends BaseInterface {
 
             // Find a valid one to load
             var to_display = null;
-            _.map(success, (v, n) => {
-                if (v === 0) {                 
+            Object.entries(success).forEach(([n, v]) => {
+                if (v === 0) {
                     to_display = n;
                 }
             });
@@ -353,7 +372,7 @@ class AppInterface extends BaseInterface {
             reader.readAsText(f);
         }
 
-        _.forEach(files, parseOne);
+        Array.from(files).forEach(parseOne);
     }
 
     display(m) {
