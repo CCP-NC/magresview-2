@@ -44,7 +44,7 @@ import MVPlot1D from './plot/MVPlot1D';
 function MagresViewPage() {
 
     const [hovered, setHovered] = useState(false);
-    const { helpOpen, setHelpOpen, refTableOpen, setRefTableOpen } = useHotkeys();
+    const { helpOpen, setHelpOpen, refTableOpen, setRefTableOpen, isoModalOpen, setIsoModalOpen } = useHotkeys();
 
     let appint = useAppInterface();
     let selint = useSelInterface();
@@ -167,7 +167,7 @@ function MagresViewPage() {
                 <MVHotkeyHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
                 <MVModeToolbar />
                 <MVSidebarLoad show={appint.sidebar === 'load'} />
-                <MVSidebarSelect show={appint.sidebar === 'select'} />
+                <MVSidebarSelect isoModalOpen={isoModalOpen} onIsoModalClose={() => setIsoModalOpen(false)} show={appint.sidebar === 'select'} />
                 <MVSidebarMS show={appint.sidebar === 'ms'}
                     refTableOpen={refTableOpen}
                     onRefTableClose={() => setRefTableOpen(false)} />

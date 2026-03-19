@@ -97,6 +97,10 @@ const ACTIONS = {
         appint.sidebar = 'ms';
         setRefTableOpen(true);
     },
+    'show-iso-modal': ({ appint, setIsoModalOpen }) => {
+        appint.sidebar = 'select';
+        setIsoModalOpen(true);
+    },
 };
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
@@ -113,6 +117,7 @@ const ACTIONS = {
 export function useHotkeys() {
     const [helpOpen, setHelpOpen] = useState(false);
     const [refTableOpen, setRefTableOpen] = useState(false);
+    const [isoModalOpen, setIsoModalOpen] = useState(false);
 
     const appint  = useAppInterface();
     const msint   = useMSInterface();
@@ -120,7 +125,7 @@ export function useHotkeys() {
     const pltint  = usePlotsInterface();
 
     useEffect(() => {
-        const interfaces = { appint, msint, efgint, pltint, setHelpOpen, setRefTableOpen };
+        const interfaces = { appint, msint, efgint, pltint, setHelpOpen, setRefTableOpen, setIsoModalOpen };
 
         // Build the tinykeys key-map from the flat shortcut list
         const keyMap = {};
@@ -146,7 +151,7 @@ export function useHotkeys() {
         return tinykeys(window, keyMap);
         // Re-bind whenever any interface instance changes identity (state updates
         // produce new interface objects, so closures always capture fresh data).
-    }, [appint, msint, efgint, pltint, helpOpen, refTableOpen]);
+    }, [appint, msint, efgint, pltint, helpOpen, refTableOpen, isoModalOpen]);
 
-    return { helpOpen, setHelpOpen, refTableOpen, setRefTableOpen };
+    return { helpOpen, setHelpOpen, refTableOpen, setRefTableOpen, isoModalOpen, setIsoModalOpen };
 }

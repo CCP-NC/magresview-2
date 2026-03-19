@@ -56,10 +56,10 @@ function MagresViewHeader({ onHelpOpen }) {
             <button
                     className={`mv-header-adv-btn${appint.advancedMode ? ' active' : ''}`}
                     onClick={() => { appint.advancedMode = !appint.advancedMode; }}
-                    title={appint.advancedMode ? 'Expert mode on — click to disable' : 'Enable expert mode'}
+                    title={appint.advancedMode ? 'Advanced mode on — click to disable' : 'Enable advanced mode — reveals additional options in each sidebar panel'}
                     aria-pressed={appint.advancedMode}
                 >
-                    Expert mode
+                    Advanced mode
                 </button>
             <span className='mv-hor-sep-3'></span>
             <button

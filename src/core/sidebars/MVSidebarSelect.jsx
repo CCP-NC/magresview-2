@@ -122,6 +122,7 @@ function MVIsotopeModal({ display, onClose }) {
             title='Isotope settings'
             display={display}
             hasOverlay={true}
+            draggable={true}
             onClose={onClose}
             onAccept={handleOK}
         >
@@ -195,6 +196,11 @@ function MVSidebarSelect(props) {
     const selint = useSelInterface();
     const [isoModalOpen, setIsoModalOpen] = useState(false);
 
+    function closeIsoModal() {
+        setIsoModalOpen(false);
+        props.onIsoModalClose?.();
+    }
+
     console.log('[MVSidebarSelect rendered]');
 
     function selectMode(v) {
@@ -265,7 +271,7 @@ function MVSidebarSelect(props) {
             </div>
             <MVButton onClick={() => setIsoModalOpen(true)}>Set isotopes…</MVButton>
         </div>
-        <MVIsotopeModal display={isoModalOpen} onClose={() => setIsoModalOpen(false)} />
+        <MVIsotopeModal display={isoModalOpen || !!props.isoModalOpen} onClose={closeIsoModal} />
         <div className='mv-sidebar-block'>
             <h3>Selection controls:</h3>
             <ul>

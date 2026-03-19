@@ -70,7 +70,8 @@ export const HOTKEY_GROUPS = [
         color: 'var(--efg-color-1)',
         shortcuts: [
             { id: 'toggle-theme',    key: 't',       display: 'T',  description: 'Toggle dark / light theme' },
-            { id: 'show-ref-table', key: 'r',       display: 'R',  description: 'Open chemical shift references' },
+            { id: 'show-ref-table',    key: 'r',       display: 'R',  description: 'Open chemical shift references' },
+            { id: 'show-iso-modal',    key: 'i',       display: 'I',  description: 'Open isotope setter' },
             // tinykeys matches on event.key. Shift+/ produces event.key='?' so bind as 'Shift+?'.
             { id: 'show-help',      key: 'Shift+?', display: '?',  description: 'Show / hide this help' },
         ],
