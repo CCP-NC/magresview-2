@@ -41,7 +41,7 @@ import { downloadSession } from '../store/session';
 function ignoreInputs(fn) {
     return (e) => {
         const tag = e.target?.tagName?.toUpperCase();
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
         fn(e);
     };
 }
@@ -86,12 +86,14 @@ const ACTIONS = {
         const models = appint.models;
         if (models.length < 2) return;
         const idx = models.indexOf(appint.currentModelName);
+        if (idx === -1) return;
         appint.display(models[(idx - 1 + models.length) % models.length]);
     },
     'model-next': ({ appint }) => {
         const models = appint.models;
         if (models.length < 2) return;
         const idx = models.indexOf(appint.currentModelName);
+        if (idx === -1) return;
         appint.display(models[(idx + 1) % models.length]);
     },
 

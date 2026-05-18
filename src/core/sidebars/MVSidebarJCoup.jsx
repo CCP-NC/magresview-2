@@ -29,7 +29,6 @@ function MVSidebarJCoup(props) {
 
     const jcint = useJCoupInterface();
 
-    console.log('[MVSidebarJCoup rendered]');
 
     const intRef = useRef();
     intRef.current = jcint;

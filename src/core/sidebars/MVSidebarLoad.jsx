@@ -51,7 +51,6 @@ function MVSidebarLoad(props) {
     const models = appint.models;
     const sessionInputRef = useRef(null);
 
-    console.log('[MVSidebarLoad rendered]');
 
     // Methods
     function saveSession() {

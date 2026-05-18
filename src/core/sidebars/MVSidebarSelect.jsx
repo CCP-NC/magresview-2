@@ -102,7 +102,6 @@ function MVSidebarSelect(props) {
 
     const selint = useSelInterface();
 
-    console.log('[MVSidebarSelect rendered]');
 
     function selectMode(v) {
         selint.selectionMode = v;
@@ -124,7 +123,6 @@ function MVSidebarSelect(props) {
     selRef.current = selint;
 
     useEffect(() => {
-        console.log('Binding select clicks');
         let selint = selRef.current;
         selint.selectionOn = props.show;
     }, [props.show, selint.app, selint.defaultDisplayed]); // defaultDisplayed changes on every model switch, ensuring callbacks are re-registered with fresh atom indices

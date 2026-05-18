@@ -329,8 +329,11 @@ export function downloadSession(store) {
     const doc = buildSessionDocument(state, viewer);
     // Use the active model name when only one model is loaded, otherwise fall
     // back to a generic name so the filename is not misleadingly specific.
+    // Sanitise the stem to prevent path separators or special characters from
+    // producing unexpected filenames on any OS.
     const modelList = viewer?.modelList ?? [];
-    const stem = modelList.length === 1 ? (viewer?.modelName ?? 'session') : 'session';
+    const rawStem = modelList.length === 1 ? (viewer?.modelName ?? 'session') : 'session';
+    const stem = rawStem.replace(/[/\\:*?"<>|]/g, '_');
     const filename = `${stem}.${SESSION_EXTENSION}`;
     saveContents(JSON.stringify(doc, null, 2), filename);
 }

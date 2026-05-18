@@ -28,7 +28,6 @@ function MVSidebarDip(props) {
 
     const dipint = useDipInterface();
 
-    console.log('[MVSidebarDip rendered]');
 
     const intRef = useRef();
     intRef.current = dipint;
