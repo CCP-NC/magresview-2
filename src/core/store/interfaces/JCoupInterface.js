@@ -136,6 +136,9 @@ class JCoupInterface extends BaseInterface {
         if (!handler)
             return;
 
+        if (!this.hasData)
+            return;
+
         handler.setCallback('jc', LC, (a, e) => { 
                 // Avoid working on ghosts
                 if (a.opacity < 1.0) {
