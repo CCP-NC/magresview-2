@@ -115,3 +115,55 @@ function someListener(state) {
 ``` 
 
 Care must be used because listeners could trigger an infinite loop - there is no guard against that. The appropriate events also must be manually queued for now by any dispatch that wishes to trigger an event (for example, look at the events defining the change of selected and displayed atoms in `SelInterface`). This might be improved in the future, but has currently been deemed the most efficient way of handling it, rather than introducing additional checks at every event. After a first round of events has fired, all the events they triggered will fire, and so on until the event queue is empty.
+
+#### Session save / restore and versioning
+
+Session persistence is implemented in `src/core/store/session.js`. A session document is a plain JSON object (`.mvsession` file) containing all serialisable Redux state, the raw source text of every loaded model, the camera orientation, and the atom selection.
+
+**Format version**
+
+Every session document carries a `version` integer field. The current version is held in the `SESSION_VERSION` constant at the top of `session.js`. On load, documents newer than the running app are rejected with a clear error; older documents are walked forward through a migration table.
+
+**Adding new serialisable state**
+
+Most of the time — when you add a new plain-value (string / number / boolean / plain object) key to any `initial<Name>State` — no action is required. `serializeSettings` automatically includes every state key that is not in `NON_SERIALIZABLE_KEYS`. Old session files simply won't have the key, so Redux falls back to the initial state value, which is the correct default behaviour.
+
+Add the new key to `NON_SERIALIZABLE_KEYS` only if it holds a live object, a `ModelView` instance, or anything else that cannot be round-tripped through `JSON.stringify`.
+
+**Bumping the version (breaking changes only)**
+
+Bump `SESSION_VERSION` only when old session files would be silently misinterpreted without an active data transformation — for example if a key is renamed, its type changes, or the `models` / `camera` structure is restructured. Do **not** bump the version just because new keys were added.
+
+Steps:
+
+1. Increment `SESSION_VERSION` in `session.js`.
+2. Add a migration function to the `migrations` object in `parseSessionDocument`, keyed by the *old* version number:
+
+```js
+const migrations = {
+    2: (doc) => {
+        // example: rename old_key → new_key in settings
+        const { old_key, ...rest } = doc.settings;
+        return {
+            ...doc,
+            version: 3,
+            settings: { ...rest, new_key: old_key ?? defaultValue },
+        };
+    },
+};
+```
+
+Each migration receives the document at version `n` and must return it at version `n + 1`. The loop in `parseSessionDocument` chains them automatically so a v1 file loaded into a v3 app runs migrations 1→2 then 2→3.
+
+3. Add a one-line entry to the history comment block just above `migrations`:
+
+```js
+//   v2 → v3: renamed `old_key` to `new_key` in settings.
+```
+
+**Version history**
+
+| Version | Change |
+|---------|--------|
+| 1 | Initial format |
+| 2 | Added `atomRefs` (dip/jc central atom labels) and `selections` (sel_selected crystLabels) top-level fields |
