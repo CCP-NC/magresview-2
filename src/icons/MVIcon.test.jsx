@@ -6,9 +6,9 @@ test('render MVIcon', () => {
 
     const iconElement = screen.getByTestId('icon');
     expect(iconElement).toBeInTheDocument();
-    // The color is applied to the wrapper span, not the icon itself
+    // The color is applied as the `color` style on the wrapper span
     const wrapperElement = iconElement.parentElement;
-    expect(wrapperElement.style.getPropertyValue('--path-fill')).toBe('#ff0000');
+    expect(wrapperElement).toHaveStyle('color: #ff0000');
 
     cleanup();
 });
