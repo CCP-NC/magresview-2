@@ -208,7 +208,30 @@ export function parseSessionDocument(json) {
         );
     }
 
-    return doc;
+    // Run any migrations needed to bring the document up to SESSION_VERSION.
+    // Each function receives the doc and returns a new doc at the next version.
+    // Add an entry here whenever SESSION_VERSION is bumped.
+    //
+    // History:
+    //   v1 → v2: added top-level `atomRefs` and `selections` fields (previously
+    //            absent); both default to null / empty which is correct for old
+    //            files, so no data transformation is required — only version bump.
+    const migrations = {
+        // 1: (doc) => { /* transform v1 → v2 */ return { ...doc, version: 2 }; },
+    };
+
+    let current = doc;
+    for (let v = current.version; v < SESSION_VERSION; v++) {
+        const migrate = migrations[v];
+        if (migrate) {
+            current = migrate(current);
+        } else {
+            // No transform needed — bump the version and continue.
+            current = { ...current, version: v + 1 };
+        }
+    }
+
+    return current;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
