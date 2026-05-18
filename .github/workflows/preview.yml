@@ -1,0 +1,52 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main, master]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number }}-${{ github.event.action == 'closed' && 'cleanup' || 'deploy' }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    # Skip draft PRs, but still allow cleanup when the PR is closed
+    if: github.event.action == 'closed' || github.event.pull_request.draft == false
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Ensures full history is available if needed by the preview action
+          fetch-depth: 0
+
+      - name: Use Node.js
+        if: github.event.action != 'closed'
+        uses: actions/setup-node@v4
+        with:
+          # Alternatively: node-version-file: '.nvmrc'
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: github.event.action != 'closed'
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        if: github.event.action != 'closed'
+        run: npm run build
+
+      - name: Deploy / clean up PR preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: dist/
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          token: ${{ secrets.GITHUB_TOKEN }}
