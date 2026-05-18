@@ -433,6 +433,14 @@ class SelInterface extends BaseInterface {
         if (cur) this.selected = cur.remove(model.view(indices));
     }
 
+    selectMolecule(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        const indices = model._queryMolecule(atom);
+        if (!indices?.length) return;
+        this.selected = model.view(indices);
+    }
+
     selectSameElement(atom) {
         const model = this.state.app_viewer?.model;
         if (!model || !atom) return;

@@ -70,6 +70,10 @@ function MVContextMenu() {
                 onClick={act(() => selint.selectSameElement(atom))}>
                 Select all {atom.element}
             </button>
+            <button className='mv-ctx-item'
+                onClick={act(() => selint.selectMolecule(atom))}>
+                Select this molecule
+            </button>
 
             <div className='mv-ctx-divider' />
 

@@ -4,8 +4,8 @@
  */
 
 import './MVStatusBar.css';
-import React, { useState } from 'react';
-import { FaMousePointer, FaTimes } from 'react-icons/fa';
+import React, { useState, useRef, useEffect } from 'react';
+import { FaMousePointer, FaTimes, FaChevronUp } from 'react-icons/fa';
 import MVIcon from '../icons/MVIcon';
 import { useAppInterface, useSelInterface } from './store';
 import useDipInterface from './store/interfaces/DipInterface';
@@ -38,18 +38,42 @@ const modeConfig = {
     }
 };
 
+const SEL_MODE_OPTIONS = [
+    { value: 'atom',     label: 'Atom' },
+    { value: 'element',  label: 'Element' },
+    { value: 'label',    label: 'Cryst. label' },
+    { value: 'sphere',   label: 'Sphere' },
+    { value: 'molecule', label: 'Molecule' },
+    { value: 'bonds',    label: 'Bonds' },
+];
+
 function MVStatusBar() {
     const appint = useAppInterface();
     const selint = useSelInterface();
     const dipint = useDipInterface();
     const eulint = useEulerInterface();
     const [cardOpen, setCardOpen] = useState(false);
+    const [selModeOpen, setSelModeOpen] = useState(false);
+    const selModeRef = useRef(null);
+
+    // Close sel-mode popover on outside click
+    useEffect(() => {
+        if (!selModeOpen) return;
+        const handle = (e) => {
+            if (selModeRef.current && !selModeRef.current.contains(e.target))
+                setSelModeOpen(false);
+        };
+        const id = setTimeout(() => document.addEventListener('pointerdown', handle), 50);
+        return () => { clearTimeout(id); document.removeEventListener('pointerdown', handle); };
+    }, [selModeOpen]);
 
     const mode = appint.interactionMode || 'select';
     const config = modeConfig[mode] || modeConfig.select;
     const count = selint.selectionCount;
+    const currentSelMode = selint.selectionMode;
+    const currentSelLabel = SEL_MODE_OPTIONS.find(o => o.value === currentSelMode)?.label ?? currentSelMode;
 
-    // Mode-specific context string
+    // Mode-specific context string (non-select modes only)
     let context = null;
     if (mode === 'dipolar') {
         const ca = dipint.centralAtom;
@@ -97,10 +121,37 @@ function MVStatusBar() {
                 </div>
             )}
             <div className='mv-status-bar' style={{ '--mode-color': config.color }}>
-                <div className='mv-status-mode' style={{ color: config.color }}>
-                    <span className='mv-status-mode-icon'>{config.icon}</span>
-                    <span className='mv-status-mode-label'>{config.label}</span>
-                </div>
+                {mode === 'select' ? (
+                    <div className='mv-status-mode-wrap' ref={selModeRef}>
+                        {selModeOpen && (
+                            <div className='mv-selmode-popover'>
+                                {SEL_MODE_OPTIONS.map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        className={`mv-selmode-option${opt.value === currentSelMode ? ' active' : ''}`}
+                                        onClick={() => { selint.selectionMode = opt.value; setSelModeOpen(false); }}
+                                    >{opt.label}</button>
+                                ))}
+                            </div>
+                        )}
+                        <button
+                            className={`mv-status-mode mv-status-mode-btn${selModeOpen ? ' open' : ''}`}
+                            style={{ color: config.color }}
+                            onClick={() => setSelModeOpen(o => !o)}
+                            title='Change selection mode'
+                        >
+                            <span className='mv-status-mode-icon'>{config.icon}</span>
+                            <span className='mv-status-mode-label'>{config.label}</span>
+                            <span className='mv-status-selmode-sub'>{currentSelLabel}</span>
+                            <span className='mv-status-mode-chevron'><FaChevronUp /></span>
+                        </button>
+                    </div>
+                ) : (
+                    <div className='mv-status-mode' style={{ color: config.color }}>
+                        <span className='mv-status-mode-icon'>{config.icon}</span>
+                        <span className='mv-status-mode-label'>{config.label}</span>
+                    </div>
+                )}
                 <span className='mv-status-sep'>|</span>
                 <span className='mv-status-hint'>{config.hint}</span>
                 {context && <>

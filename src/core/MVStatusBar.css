@@ -21,7 +21,12 @@
   user-select: none;
   z-index: 900;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
+}
+
+.mv-status-mode-wrap {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .mv-status-mode {
@@ -36,6 +41,83 @@
   border-radius: 4px;
   padding: 0.15em 0.55em;
   transition: background-color 0.25s, border-color 0.25s;
+}
+
+.mv-status-mode-btn {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.mv-status-mode-btn:hover,
+.mv-status-mode-btn.open {
+  background-color: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 22%, transparent);
+  border-color: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 50%, transparent);
+}
+
+.mv-status-selmode-sub {
+  font-size: 0.85em;
+  font-weight: 400;
+  opacity: 0.75;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mv-status-mode-chevron {
+  display: flex;
+  align-items: center;
+  font-size: 0.7em;
+  opacity: 0.6;
+  transition: transform 0.15s;
+}
+
+.mv-status-mode-btn.open .mv-status-mode-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Selection mode popover ── */
+.mv-selmode-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 140px;
+  background: var(--bkg-color-3);
+  border: 1px solid var(--mid-color-1);
+  border-radius: 6px;
+  box-shadow: 0 -4px 14px rgba(0,0,0,0.35);
+  z-index: 902;
+  overflow: hidden;
+  animation: mv-selmode-in 0.14s ease-out;
+}
+
+@keyframes mv-selmode-in {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+.mv-selmode-option {
+  display: block;
+  width: 100%;
+  padding: 0.45em 0.85em;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9em;
+  color: var(--fwd-color-2);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.mv-selmode-option:hover {
+  background: color-mix(in srgb, var(--fwd-color-2) 8%, transparent);
+}
+
+.mv-selmode-option.active {
+  color: var(--fwd-color-1);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 14%, transparent);
 }
 
 .mv-status-mode-icon {
