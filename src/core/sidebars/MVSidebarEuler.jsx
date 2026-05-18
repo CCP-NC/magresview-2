@@ -27,7 +27,6 @@ function MVSidebarEuler(props) {
 
     const eulint = useEulerInterface();
 
-    console.log('[MVSidebarEuler rendered]');
 
     const otherTensor = {
         ms: 'efg',

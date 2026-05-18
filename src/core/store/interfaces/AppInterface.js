@@ -640,7 +640,7 @@ class AppInterface extends BaseInterface {
         // the original loading parameters (supercell, molecularCrystal, …) as
         // captured by getModelSource() / getModelParameters() at save time.
         modelEntries.forEach(([modelName, modelData]) => {
-            const { text, extension } = modelData.source ?? modelData; // compat
+            const { text, extension } = modelData.source;
             const params = modelData.params ?? {
                 supercell: [3, 3, 3],
                 molecularCrystal: doc.settings?.app_load_as_mol ?? null,

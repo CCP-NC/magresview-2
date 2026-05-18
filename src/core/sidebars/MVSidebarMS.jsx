@@ -73,7 +73,6 @@ function MVSidebarMS(props) {
 
     const msint = useMSInterface();
 
-    console.log('[MVSidebarMS rendered]');
 
     var has_ms = false;
     if (props.show) {
