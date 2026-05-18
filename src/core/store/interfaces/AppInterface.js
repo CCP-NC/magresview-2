@@ -44,7 +44,24 @@ const initialAppState = {
     app_vdw_scaling: 1.0,
     app_advanced_mode: false,
     app_autosave_warning: false, // set to true when localStorage quota is exceeded
+    // In-memory cache of per-model visualization state.  Keyed by model name;
+    // saved when switching away, restored when switching back.  Not persisted
+    // to disk (contains live atom/ModelView references).
+    app_model_states: {},
 };
+
+// Keys that are snapshotted and restored per-model — exactly the keys reset
+// by appDisplayModel.  Derived automatically so new state added to any of
+// these initial-state objects is included automatically.
+const PER_MODEL_STATE_KEYS = [
+    ...Object.keys(initialSelState),
+    ...Object.keys(initialCScaleState),
+    ...Object.keys(initialMSState),
+    ...Object.keys(initialEFGState),
+    ...Object.keys(initialDipState),
+    ...Object.keys(initialJCoupState),
+    ...Object.keys(initialEulerState),
+];
 
 // Functions meant to operate on the app alone.
 // These exist outside of the AppInterface because they will be invoked
@@ -52,10 +69,22 @@ const initialAppState = {
 function appDisplayModel(state, m) {
     let app = state.app_viewer;
     let cm = app.model;
+    let currentName = app.modelName;
 
+    let modelStates = state.app_model_states ?? {};
     let data = {};
+
     if (cm) {
-        // We turn visualizations off
+        // Snapshot the current model's visualization state + camera before
+        // switching away, so they can be restored when returning to it.
+        const snapshot = {};
+        for (const key of PER_MODEL_STATE_KEYS) {
+            snapshot[key] = state[key];
+        }
+        snapshot._camera = app.getCameraState?.() ?? null;
+        modelStates = { ...modelStates, [currentName]: snapshot };
+
+        // Start from initial (off) values for the incoming model
         data = {
             ...initialSelState,
             ...initialCScaleState,
@@ -65,16 +94,55 @@ function appDisplayModel(state, m) {
             ...initialJCoupState,
             ...initialEulerState
         };
+
+        // If the target model has been visited before, restore its saved state.
+        // _camera is kept only in the snapshot object, not spread into Redux state.
+        if (modelStates[m]) {
+            const { _camera: _c, ...savedRedux } = modelStates[m];
+            data = { ...data, ...savedRedux };
+        }
     }
 
-    // Return data for dispatch
+    // Switch the model directly on the viewer — exactly as restoreSession does —
+    // so that all visualization listeners that follow fire on the correct model.
+    // We do NOT use app_model_queued / Events.DISPLAY here because DISPLAY fires
+    // last in the priority cascade (priority 0), after all render listeners
+    // (priority 1-2) have already run on the old model.
+    app.displayModel(m);
+    app.theme = state.app_theme;
+    if (app.model?.box) {
+        app.model.box.color = state.app_theme.FwdColor3;
+    }
+
+    // Restore camera for a returning model; center the view for a first visit.
+    const savedCamera = modelStates[m]?._camera ?? null;
+    if (savedCamera) {
+        app.setCameraState?.(savedCamera);
+    } else {
+        centerDisplayed(app);
+    }
+
+    // Return data for dispatch.  app_model_queued is null because the model
+    // switch already happened above.  Skip Events.DISPLAY for the same reason.
     return {
         ...data,
-        app_model_queued: m,
-        listen_update: [Events.SEL_LABELS, Events.CSCALE,
-                        Events.MS_ELLIPSOIDS, Events.MS_LABELS,
-                        Events.EFG_ELLIPSOIDS, Events.EFG_LABELS, 
-                        Events.DIP_LINKS, Events.JC_LINKS]
+        app_model_states: modelStates,
+        app_default_displayed: app.displayed,
+        app_model_queued: null,
+        listen_update: [
+            Events.VIEWS,
+            Events.SEL_LABELS,
+            Events.CELL,
+            Events.CSCALE,
+            Events.MS_ELLIPSOIDS,
+            Events.MS_LABELS,
+            Events.EFG_ELLIPSOIDS,
+            Events.EFG_LABELS,
+            Events.DIP_LINKS,
+            Events.JC_LINKS,
+            Events.EUL_ANGLES,
+            Events.PLOTS_RECALC,
+        ]
     };
 }
 
@@ -87,10 +155,20 @@ function appReloadModel(state, m) {
         vdwScaling: state.app_vdw_scaling
     });
 
-    let data = {};
+    // Clear the cached state for this model — atom references are now stale
+    const { [m]: _dropped, ...modelStates } = state.app_model_states ?? {};
 
-    // We turn visualizations off
-    data = {
+    // Switch directly (same as appDisplayModel) so listeners fire on the
+    // freshly-reloaded model, not the pre-reload one.
+    app.displayModel(m);
+    app.theme = state.app_theme;
+    if (app.model?.box) {
+        app.model.box.color = state.app_theme.FwdColor3;
+    }
+    centerDisplayed(app);
+
+    // Reset all visualizations to off for the fresh model
+    const data = {
         ...initialSelState,
         ...initialCScaleState,
         ...initialMSState,
@@ -103,11 +181,23 @@ function appReloadModel(state, m) {
     // Return data for dispatch
     return {
         ...data,
-        app_model_queued: m,
-        listen_update: [Events.SEL_LABELS, Events.CSCALE,
-                        Events.MS_ELLIPSOIDS, Events.MS_LABELS,
-                        Events.EFG_ELLIPSOIDS, Events.EFG_LABELS, 
-                        Events.DIP_LINKS, Events.JC_LINKS]
+        app_model_states: modelStates,
+        app_default_displayed: app.displayed,
+        app_model_queued: null,
+        listen_update: [
+            Events.VIEWS,
+            Events.SEL_LABELS,
+            Events.CELL,
+            Events.CSCALE,
+            Events.MS_ELLIPSOIDS,
+            Events.MS_LABELS,
+            Events.EFG_ELLIPSOIDS,
+            Events.EFG_LABELS,
+            Events.DIP_LINKS,
+            Events.JC_LINKS,
+            Events.EUL_ANGLES,
+            Events.PLOTS_RECALC,
+        ]
     };
 }
 
@@ -116,8 +206,10 @@ function appDeleteModel(state, m) {
     let app = state.app_viewer;
     let data = {};
 
-    // Delete a model
+    // Delete a model and remove it from the per-model state cache
     app.deleteModel(m);
+    const { [m]: _dropped, ...modelStates } = state.app_model_states ?? {};
+    data.app_model_states = modelStates;
 
     let models = app.modelList;
 

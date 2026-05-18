@@ -89,6 +89,10 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     'plots_bkg_img_url',
     'plots_bkg_img_w',
     'plots_bkg_img_h',
+
+    // ── Per-model in-memory state cache ───────────────────────────────────────
+    // Contains live atom/ModelView references; rebuilt as models are switched.
+    'app_model_states',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -88,6 +88,20 @@ const ACTIONS = {
     'mode-jcoupling': ({ appint }) => { appint.setInteractionMode('jcoupling'); },
     'mode-euler':     ({ appint }) => { appint.setInteractionMode('euler'); },
 
+    // ── Structure navigation ───────────────────────────────────────────────────
+    'model-prev': ({ appint }) => {
+        const models = appint.models;
+        if (models.length < 2) return;
+        const idx = models.indexOf(appint.currentModelName);
+        appint.display(models[(idx - 1 + models.length) % models.length]);
+    },
+    'model-next': ({ appint }) => {
+        const models = appint.models;
+        if (models.length < 2) return;
+        const idx = models.indexOf(appint.currentModelName);
+        appint.display(models[(idx + 1) % models.length]);
+    },
+
     // ── Interface ─────────────────────────────────────────────────────────────
     'toggle-theme': ({ appint }) => {
         appint.themeName = appint.themeName === 'dark' ? 'light' : 'dark';
