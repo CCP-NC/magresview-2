@@ -14,12 +14,9 @@
 
 import './MagresViewHeader.css';
 import logo from '../icons/logo.svg';
-import { FaSun, FaMoon, FaRegFolderOpen, FaMousePointer, FaFile, FaBan, FaKeyboard } from 'react-icons/fa';
-import { GiHistogram } from 'react-icons/gi';
+import { FaSun, FaMoon, FaKeyboard } from 'react-icons/fa';
 
 import React from 'react';
-import MVCustomSelect, { MVCustomSelectOption } from '../controls/MVCustomSelect';
-import MVIcon from '../icons/MVIcon';
 import { useAppInterface } from './store';
 
 function ThemeSwitcher() {
@@ -49,20 +46,21 @@ function MagresViewHeader({ onHelpOpen }) {
             <h3 id='mv-header-title'>
                 <span style={{color: 'var(--ms-color-2)'}}>M</span>agres<span style={{color: 'var(--efg-color-2)'}}>V</span>iew 2.0
             </h3>
+            {appint.currentModelName &&
+                <span className='mv-header-model-name' title={appint.currentModelName}>
+                    {appint.currentModelName}
+                </span>
+            }
         </div>
         <div className='mv-header-right'>
-            <MVCustomSelect onSelect={(v) => { appint.sidebar = v; }} selected={appint.sidebar}>
-                <MVCustomSelectOption value='load' icon={<FaRegFolderOpen />}>Load file</MVCustomSelectOption>
-                <MVCustomSelectOption value='select' icon={<FaMousePointer />}>Select and display</MVCustomSelectOption>
-                <MVCustomSelectOption value='ms' icon={<MVIcon icon='ms' color='var(--ms-color-3)'/>}>Magnetic Shielding</MVCustomSelectOption>
-                <MVCustomSelectOption value='efg' icon={<MVIcon icon='efg' color='var(--efg-color-3)'/>}>Electric Field Gradient</MVCustomSelectOption>
-                <MVCustomSelectOption value='dip' icon={<MVIcon icon='dip' color='var(--dip-color-3)'/>}>Dipolar Couplings</MVCustomSelectOption>
-                <MVCustomSelectOption value='jcoup' icon={<MVIcon icon='jcoup' color='var(--jcoup-color-3)'/>}>J Couplings</MVCustomSelectOption>
-                <MVCustomSelectOption value='euler' icon={<MVIcon icon='euler' color='var(--bkg-color-3)'/>}>Euler Angles</MVCustomSelectOption>
-                <MVCustomSelectOption value='plots' icon={<GiHistogram />}>Spectral plots</MVCustomSelectOption>
-                <MVCustomSelectOption value='files' icon={<FaFile />}>Report files</MVCustomSelectOption>
-                <MVCustomSelectOption value='none' icon={<FaBan />}>No sidebar</MVCustomSelectOption>
-            </MVCustomSelect>            
+            <button
+                    className={`mv-header-adv-btn${appint.advancedMode ? ' active' : ''}`}
+                    onClick={() => { appint.advancedMode = !appint.advancedMode; }}
+                    title={appint.advancedMode ? 'Advanced mode on — click to disable' : 'Enable advanced mode — reveals additional options in each sidebar panel'}
+                    aria-pressed={appint.advancedMode}
+                >
+                    Advanced mode
+                </button>
             <span className='mv-hor-sep-3'></span>
             <button
                     className='mv-header-help-btn'

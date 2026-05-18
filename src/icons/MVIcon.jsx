@@ -23,10 +23,10 @@ function MVIcon(props) {
     }
 
     const Icon = icons[props.icon];
-    const color = (props.color || '#ffffff');
+    const color = (props.color || 'currentColor');
 
     return (
-        <span className='mv-icon-wrapper' style={{'--path-fill': color}}>
+        <span className='mv-icon-wrapper' style={{ color }}>
             <Icon className='mv-icon' {...props}/>
         </span>
         );

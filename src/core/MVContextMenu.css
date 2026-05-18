@@ -1,0 +1,58 @@
+.mv-ctx-menu {
+  position: fixed;
+  z-index: 9000;
+
+  min-width: 180px;
+  background-color: var(--bkg-color-3);
+  border: 1px solid var(--mid-color-1);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+
+  padding: 0.25em 0;
+  font-size: 0.85em;
+  user-select: none;
+  overflow: hidden;
+}
+
+.mv-ctx-header {
+  padding: 0.4em 0.9em 0.35em;
+  font-size: 0.92em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--fwd-color-1);
+  background: var(--bkg-color-2);
+}
+
+.mv-ctx-divider {
+  height: 1px;
+  background: var(--mid-color-1);
+  margin: 0.2em 0;
+  opacity: 0.5;
+}
+
+.mv-ctx-item {
+  display: block;
+  width: 100%;
+  padding: 0.45em 0.9em;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--fwd-color-2);
+  font-size: 1em;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+
+.mv-ctx-item:hover {
+  background: var(--bkg-color-2);
+  color: var(--fwd-color-1);
+}
+
+.mv-ctx-item:active {
+  background: var(--bkg-color-1);
+}
+
+.mv-ctx-item[data-accent] {
+  color: var(--dip-color-2);
+}

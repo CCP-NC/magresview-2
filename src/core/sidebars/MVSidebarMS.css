@@ -1,3 +1,10 @@
+.mv-ms-btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4em;
+    width: 100%;
+}
+
 .mv-msref-table {
     display: flex;
     flex-direction: column;

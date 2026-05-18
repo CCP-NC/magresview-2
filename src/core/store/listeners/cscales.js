@@ -54,6 +54,14 @@ function colorScaleListener(state) {
 
         let minv = _.min(values);
         let maxv = _.max(values);
+
+        // Allow user to pin custom limits via the advanced panel
+        const override = state.cscale_lims_override;
+        if (Array.isArray(override) && override.length === 2) {
+            minv = override[0];
+            maxv = override[1];
+        }
+
         let cs = getColorScale(minv, maxv, cmap);
         let colors = values.map((v) => cs.getColor(v).toHexString());
 

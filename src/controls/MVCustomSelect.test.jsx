@@ -16,39 +16,34 @@ test('render MVCustomSelect', async () => {
     const cselElement = screen.getByTitle('mv-cselect');
     expect(cselElement).toBeInTheDocument();
 
-    const mainElement = cselElement.firstChild;
+    const mainElement = cselElement.querySelector('.mv-cselect-main');
     expect(mainElement).toBeInTheDocument();
 
-    const ddownElement = mainElement.nextSibling;
+    // Dropdown renders as a portal into document.body — must open first
+    await user.click(mainElement);
+    const ddownElement = document.querySelector('.mv-cselect-ddown-portal');
     expect(ddownElement).toBeInTheDocument();
 
-    const firstOption = ddownElement.firstChild;
-    expect(firstOption).toBeInTheDocument();
+    const opts = ddownElement.querySelectorAll('.mv-cselect-opt');
+    expect(opts).toHaveLength(2); // non-option <div> is filtered out
 
-    const secondOption = firstOption.nextSibling;
-    expect(secondOption).toBeInTheDocument();
-
-    const thirdOption = secondOption.nextSibling;
-    expect(thirdOption).not.toBeInTheDocument();
-
-    // Now test selecting - use fireEvent for dropdown options since they have pointer-events: none when closed
-    await user.click(mainElement);
+    const firstOption = opts[0];
+    const secondOption = opts[1];
 
     fireEvent.click(firstOption);
     expect(value).toBe('opt1');
 
-    // the dropdown should close,
-    // when we click on the option above
-    // so we need to reopen it
+    // the dropdown closes after a click, so reopen for second option
     await user.click(mainElement);
-
-    fireEvent.click(secondOption);
+    const ddownElement2 = document.querySelector('.mv-cselect-ddown-portal');
+    fireEvent.click(ddownElement2.querySelectorAll('.mv-cselect-opt')[1]);
     expect(value).toBe('opt2');
 
-    // Test opening and closing
+    // Test opening and closing via mouseLeave on the portal dropdown
     await user.click(mainElement);
     expect(cselElement.classList.contains('mv-cselect-closed')).toBe(false);
-    fireEvent.mouseLeave(cselElement);
+    const ddownElement3 = document.querySelector('.mv-cselect-ddown-portal');
+    fireEvent.mouseLeave(ddownElement3);
     expect(cselElement.classList.contains('mv-cselect-closed')).toBe(true);    
 
     cleanup();

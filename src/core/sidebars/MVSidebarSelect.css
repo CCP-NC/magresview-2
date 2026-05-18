@@ -1,0 +1,152 @@
+/* ── Isotope sidebar trigger ──────────────────────────────────────────────── */
+
+.mv-iso-sidebar-btn-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.4em;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.mv-iso-sidebar-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+/* ── Isotope modal content ────────────────────────────────────────────────── */
+
+.mv-iso-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 340px;
+    max-width: 480px;
+}
+
+.mv-iso-section {
+    padding: 0.75em 1em;
+}
+
+.mv-iso-section-title {
+    margin: 0 0 0.6em 0;
+    font-size: 0.82em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mid-color-2);
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+}
+
+.mv-iso-section-hint {
+    font-weight: 400;
+    font-size: 0.88em;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--mid-color-1);
+}
+
+/* By-element grid: symbol | dropdown | apply-btn */
+.mv-iso-el-grid {
+    display: grid;
+    grid-template-columns: 2.2em 1fr auto;
+    align-items: center;
+    gap: 0.35em 0.6em;
+}
+
+.mv-iso-el-symbol {
+    font-weight: 800;
+    font-size: 1em;
+    color: var(--fwd-color-1);
+    text-align: right;
+}
+
+.mv-iso-apply-btn {
+    background: none;
+    border: 1px solid var(--mid-color-1);
+    border-radius: 3px;
+    color: var(--mid-color-2);
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 0.25em 0.55em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+    letter-spacing: 0.03em;
+}
+
+.mv-iso-apply-btn:hover:not(:disabled) {
+    color: var(--fwd-color-1);
+    border-color: var(--fwd-color-2);
+    background: color-mix(in srgb, var(--fwd-color-2) 10%, transparent);
+}
+
+.mv-iso-apply-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* Divider */
+.mv-iso-divider {
+    height: 1px;
+    background: var(--mid-color-1);
+    margin: 0 1em;
+    opacity: 0.5;
+}
+
+/* By-site */
+.mv-iso-site-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    padding-right: 0.2em;
+}
+
+.mv-iso-site-list::-webkit-scrollbar {
+    width: 4px;
+}
+.mv-iso-site-list::-webkit-scrollbar-track { background: transparent; }
+.mv-iso-site-list::-webkit-scrollbar-thumb {
+    background: var(--mid-color-1);
+    border-radius: 2px;
+}
+
+.mv-iso-site-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6em;
+}
+
+.mv-iso-site-group-el {
+    font-weight: 800;
+    font-size: 0.9em;
+    color: var(--mid-color-2);
+    min-width: 2em;
+    text-align: right;
+    padding-top: 0.3em;
+    flex-shrink: 0;
+}
+
+.mv-iso-site-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3em;
+    flex: 1;
+}
+
+.mv-iso-site-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.mv-iso-site-label {
+    font-family: monospace;
+    font-size: 0.82em;
+    color: var(--fwd-color-2);
+    min-width: 4em;
+    flex-shrink: 0;
+}

@@ -14,8 +14,6 @@
 
 import './MVSidebarEuler.css';
 
-import { useRef, useEffect } from 'react';
-
 import MagresViewSidebar from './MagresViewSidebar';
 import { useEulerInterface } from '../store';
 import { saveContents, copyContents } from '../../utils';
@@ -30,22 +28,6 @@ function MVSidebarEuler(props) {
     const eulint = useEulerInterface();
 
     console.log('[MVSidebarEuler rendered]');
-
-    const intRef = useRef();
-    intRef.current = eulint;
-
-    useEffect(() => {
-        let eulint = intRef.current;
-
-        // Only keep events bound when this sidebar is visible!
-        if (props.show) {
-            eulint.bind();
-        }
-        else {
-            eulint.unbind();
-        }
-
-    }, [props.show]);
 
     const otherTensor = {
         ms: 'efg',
@@ -67,32 +49,46 @@ function MVSidebarEuler(props) {
     const hasSel = (eulint.atomA && eulint.atomB);
 
     return (<MagresViewSidebar show={props.show} title='Euler angles'>
-        <p>
-            Left and right click on atoms to pick a pair of atoms, A and B respectively (which can be the same). Use the switches below to select the pair
-            of tensors of interest.
-        </p>
         <div className='mv-sidebar-block'>
-            <h3>Atom A</h3>
-            <div className='mv-euler-agrid'>
-                <span className='header'>Label:</span>
-                <span>{eulint.atomLabelA}</span>
-                <div className='mv-euler-agrid-switch'>
-                    <span>Shielding</span>
-                    <MVSwitch on={ eulint.tensorA === 'efg' } onClick={() => { eulint.tensorA = otherTensor[eulint.tensorA]; }} 
-                              colorFalse='var(--ms-color-2)' colorTrue='var(--efg-color-2)'/>
-                    <span>EFG</span>
-                </div>
+            <p style={{margin: '0 0 0.6em', fontSize: '0.85em', color: 'var(--mid-color-2)'}}>Click a button to enter picking mode, then click an atom in the viewer.</p>
+            <div className='mv-euler-pick-row'>
+                <button
+                    className={`mv-euler-pick-btn mv-euler-pick-a${eulint.step === 'A' ? ' active' : ''}`}
+                    onClick={() => { eulint.step = 'A'; }}
+                >
+                    {eulint.step === 'A' && <span className='mv-euler-pick-dot'>&#9679;</span>}
+                    Atom A
+                </button>
+                <button
+                    className={`mv-euler-pick-btn mv-euler-pick-b${eulint.step === 'B' ? ' active' : ''}`}
+                    onClick={() => { eulint.step = 'B'; }}
+                >
+                    {eulint.step === 'B' && <span className='mv-euler-pick-dot'>&#9679;</span>}
+                    Atom B
+                </button>
+            </div>
+            <div className='mv-euler-pick-labels'>
+                <span className={`mv-euler-pick-label-val${eulint.atomA ? '' : ' unset'}`}>{eulint.atomLabelA}</span>
+                <span className={`mv-euler-pick-label-val${eulint.atomB ? '' : ' unset'}`}>{eulint.atomLabelB}</span>
             </div>
         </div>
         <div className='mv-sidebar-block'>
-            <h3>Atom B</h3>
-            <div className='mv-euler-agrid'>
-                <span className='header'>Label:</span>
-                <span>{eulint.atomLabelB}</span>
-                <div className='mv-euler-agrid-switch'>
+            <h3>Tensor type</h3>
+            <div className='mv-euler-tensors'>
+                <span className='mv-euler-tensor-label'>A</span>
+                <div className='mv-euler-agrid-switch' style={{flex: 1}}>
                     <span>Shielding</span>
-                    <MVSwitch on={ eulint.tensorB === 'efg' } onClick={() => { eulint.tensorB = otherTensor[eulint.tensorB]; }} 
-                              colorFalse='var(--ms-color-2)' colorTrue='var(--efg-color-2)'/>
+                    <MVSwitch on={ eulint.tensorA === 'efg' } onClick={() => { eulint.tensorA = otherTensor[eulint.tensorA]; }}
+                               colorFalse='var(--ms-color-2)' colorTrue='var(--efg-color-2)'/>
+                    <span>EFG</span>
+                </div>
+            </div>
+            <div className='mv-euler-tensors'>
+                <span className='mv-euler-tensor-label'>B</span>
+                <div className='mv-euler-agrid-switch' style={{flex: 1}}>
+                    <span>Shielding</span>
+                    <MVSwitch on={ eulint.tensorB === 'efg' } onClick={() => { eulint.tensorB = otherTensor[eulint.tensorB]; }}
+                               colorFalse='var(--ms-color-2)' colorTrue='var(--efg-color-2)'/>
                     <span>EFG</span>
                 </div>
             </div>
