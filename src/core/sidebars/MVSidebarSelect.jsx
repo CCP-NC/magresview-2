@@ -127,7 +127,7 @@ function MVSidebarSelect(props) {
         console.log('Binding select clicks');
         let selint = selRef.current;
         selint.selectionOn = props.show;
-    }, [props.show, selint.app]); // The dependency on app guarantees this is executed AFTER the app itself is loaded
+    }, [props.show, selint.app, selint.defaultDisplayed]); // defaultDisplayed changes on every model switch, ensuring callbacks are re-registered with fresh atom indices
 
     return (<MagresViewSidebar show={props.show} title='Select and display'>
         <div className='mv-sidebar-block'>

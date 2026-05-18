@@ -54,6 +54,15 @@ export const HOTKEY_GROUPS = [
         ],
     },
     {
+        id:    'structures',
+        label: 'Structures',
+        color: 'var(--jc-color-1)',
+        shortcuts: [
+            { id: 'model-prev', key: '[', display: '[', description: 'Previous structure' },
+            { id: 'model-next', key: ']', display: ']', description: 'Next structure' },
+        ],
+    },
+    {
         id:    'interface',
         label: 'Interface',
         color: 'var(--efg-color-1)',
