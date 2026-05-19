@@ -243,6 +243,8 @@ export function parseSessionDocument(json) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AUTOSAVE_KEY = 'magresview2_autosave';
+const AUTOSAVE_CLEAR_TIME_KEY = 'magresview2_autosave_clear_time';
+const AUTOSAVE_CLEAR_INTERVAL_DAYS = 30;
 
 // Module-level guard: once quota is exceeded we stop attempting subsequent
 // autosaves for the lifetime of the page (re-trying would just fail again
@@ -251,9 +253,11 @@ let _quotaExceeded = false;
 
 /**
  * Serialize the current state and write it to localStorage.
- * A no-op when the viewer has no models loaded, when localStorage is
- * unavailable (private-browsing quota, iframe sandbox, etc.), or after a
- * QuotaExceededError has already been signalled this session.
+ * A no-op when:
+ * - Autosave is disabled (app_autosave_enabled === false)
+ * - The viewer has no models loaded
+ * - localStorage is unavailable
+ * - QuotaExceededError has already occurred this session
  *
  * On QuotaExceededError the function dispatches app_autosave_warning=true so
  * the UI can prompt the user to save manually.
@@ -264,10 +268,13 @@ export function autosaveSession(store) {
     if (_quotaExceeded) return;
     try {
         const state = store.getState();
+        if (state.app_autosave_enabled === false) return;
+        
         const viewer = state.app_viewer;
         if (!viewer || !(viewer.modelList?.length > 0)) return;
         const doc = buildSessionDocument(state, viewer);
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(doc));
+        localStorage.setItem(AUTOSAVE_CLEAR_TIME_KEY, new Date().toISOString());
     } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
             _quotaExceeded = true;
@@ -301,9 +308,35 @@ export function loadAutosavedSession() {
 export function clearAutosavedSession() {
     try {
         localStorage.removeItem(AUTOSAVE_KEY);
+        localStorage.setItem(AUTOSAVE_CLEAR_TIME_KEY, new Date().toISOString());
     } catch (e) {
         // Ignore — localStorage may be unavailable.
     }
+}
+
+/**
+ * Check if session data should be auto-cleared (older than 30 days).
+ * If so, clear it and return true. Otherwise return false.
+ * 
+ * @returns {boolean} - true if data was cleared
+ */
+export function checkAndClearExpiredSessionData() {
+    try {
+        const lastClearStr = localStorage.getItem(AUTOSAVE_CLEAR_TIME_KEY);
+        if (!lastClearStr) return false;
+        
+        const lastClear = new Date(lastClearStr);
+        const now = new Date();
+        const daysSince = (now - lastClear) / (1000 * 60 * 60 * 24);
+        
+        if (daysSince > AUTOSAVE_CLEAR_INTERVAL_DAYS) {
+            clearAutosavedSession();
+            return true;
+        }
+    } catch (e) {
+        console.warn('[MagresView] Failed to check expiry:', e);
+    }
+    return false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
