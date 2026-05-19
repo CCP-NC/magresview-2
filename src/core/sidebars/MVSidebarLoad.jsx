@@ -9,13 +9,15 @@ import MVFile from '../../controls/MVFile';
 import MVBox from '../../controls/MVBox';
 import MVButton from '../../controls/MVButton';
 import MVCheckBox from '../../controls/MVCheckBox';
+import MVModal from '../../controls/MVModal';
 import MVListSelect, { MVListSelectOption } from '../../controls/MVListSelect';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
 import MVTooltip from '../../controls/MVTooltip';
 import { useAppInterface } from '../store';
 import magresStore from '../store';
-import { downloadSession, parseSessionDocument, SESSION_EXTENSION } from '../store/session';
+import { downloadSession, parseSessionDocument, SESSION_EXTENSION, clearAutosavedSession, checkAndClearExpiredSessionData } from '../store/session';
 
+import './MVPrivacySettings.css';
 
 import React, { useState, useRef } from 'react';
 /**
@@ -44,7 +46,9 @@ function MVSidebarLoad(props) {
     const [ state, setState ] = useState({
         load_message: '',
         load_message_status: null,
-        list_selected: ''
+        list_selected: '',
+        clearConfirmation: false,
+        privacyModalOpen: false
     });
 
     const appint = useAppInterface();
@@ -56,6 +60,26 @@ function MVSidebarLoad(props) {
     function saveSession() {
         if (!appint.initialised || appint.models.length === 0) return;
         downloadSession(magresStore);
+    }
+
+    function toggleAutosave(enabled) {
+        appint.autosaveEnabled = enabled;
+    }
+
+    function handleClearSessionData() {
+        clearAutosavedSession();
+        appint.autosaveEnabled = false;
+        setState(s => ({
+            ...s,
+            clearConfirmation: true
+        }));
+        // Reset confirmation message after 3 seconds
+        setTimeout(() => {
+            setState(s => ({
+                ...s,
+                clearConfirmation: false
+            }));
+        }, 3000);
     }
 
     function loadSession(files) {
@@ -173,6 +197,52 @@ function MVSidebarLoad(props) {
                 </MVButton>
             </div>
             <span className='sep-1' />
+            <div className='mv-autosave-row'>
+                <div className={`mv-autosave-status-inline ${!appint.autosaveEnabled ? 'disabled' : ''}`}>
+                    <div className='status-dot'></div>
+                    <span>Autosave {appint.autosaveEnabled ? 'on' : 'off'}</span>
+                </div>
+                <button className='mv-privacy-link' onClick={() => setState(s => ({...s, privacyModalOpen: true}))}>
+                    Privacy settings
+                </button>
+            </div>
+            <MVModal
+                title='Privacy & Session Settings'
+                display={state.privacyModalOpen}
+                hasOverlay={true}
+                noFooter={true}
+                onClose={() => setState(s => ({...s, privacyModalOpen: false}))}
+            >
+                <div className='mv-privacy-card'>
+                    <div className='mv-privacy-toggle'>
+                        <div className='toggle-info'>
+                            <div className='toggle-label'>Save sessions locally</div>
+                            <div className='toggle-hint'>Automatically saves your work to browser storage between sessions</div>
+                        </div>
+                        <div className='toggle-control'>
+                            <MVCheckBox onCheck={toggleAutosave} checked={appint.autosaveEnabled} />
+                        </div>
+                    </div>
+
+                    <div className='mv-risk-advisory'>
+                        <div>
+                            <strong>Shared computers:</strong> Other users accessing this browser profile can restore and view your data. Disable autosave or clear session data when using a shared machine.
+                        </div>
+                    </div>
+
+                    <div className='mv-clear-data-section'>
+                        <div className='section-label'>Clear stored data</div>
+                        <button className='mv-clear-button' onClick={handleClearSessionData}>
+                            <MdDeleteForever /> Clear all autosaved data
+                        </button>
+                        {state.clearConfirmation && (
+                            <div className='mv-confirmation-message'>
+                                Data cleared — autosave disabled
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </MVModal>
             <div className='mv-sidebar-block'>
                 <div className='mv-sidebar-tooltip-grid'>
                     <div>Display unwrapped molecular units?&nbsp;</div>

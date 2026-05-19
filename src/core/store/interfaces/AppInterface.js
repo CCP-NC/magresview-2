@@ -44,6 +44,8 @@ const initialAppState = {
     app_vdw_scaling: 1.0,
     app_advanced_mode: false,
     app_autosave_warning: false, // set to true when localStorage quota is exceeded
+    app_autosave_enabled: true, // enable/disable autosave; configurable by user
+    app_autosave_last_clear: null, // ISO timestamp of last session data clear (for auto-clear after 30 days)
     // In-memory cache of per-model visualization state.  Keyed by model name;
     // saved when switching away, restored when switching back.  Not persisted
     // to disk (contains live atom/ModelView references).
@@ -383,6 +385,18 @@ class AppInterface extends BaseInterface {
         this.dispatch({
             type: 'set',
             key: 'app_autosave_warning',
+            value: v
+        });
+    }
+
+    get autosaveEnabled() {
+        return this.state.app_autosave_enabled;
+    }
+
+    set autosaveEnabled(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'app_autosave_enabled',
             value: v
         });
     }
