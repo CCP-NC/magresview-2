@@ -202,23 +202,30 @@ function appReloadModel(state, m) {
 }
 
 function appDeleteModel(state, m) {
-    
-    let app = state.app_viewer;
-    let data = {};
+    const app = state.app_viewer;
 
-    // Delete a model and remove it from the per-model state cache
+    // Resolve deletion context before mutating modelList.
+    const wasDisplayed = app.modelName === m;
+    const deletedIdx = app.modelList.indexOf(m);
+
+    // Delete model and drop any cached per-model UI state for it.
     app.deleteModel(m);
     const { [m]: _dropped, ...modelStates } = state.app_model_states ?? {};
-    data.app_model_states = modelStates;
 
-    let models = app.modelList;
-
-    if (!app.model && models.length > 0) {
-        // Let's display a different one
-        data = { ...data, ...appDisplayModel(state, models[0]) };
+    const remainingModels = app.modelList;
+    if (!wasDisplayed || deletedIdx < 0 || remainingModels.length === 0) {
+        return { app_model_states: modelStates };
     }
 
-    return data;
+    // Display the adjacent model (next, or previous if deleted was last).
+    const nextIdx = Math.min(deletedIdx, remainingModels.length - 1);
+    const nextModel = remainingModels[nextIdx];
+    const stateForDisplay = { ...state, app_model_states: modelStates };
+
+    return {
+        app_model_states: modelStates,
+        ...appDisplayModel(stateForDisplay, nextModel),
+    };
 }
 
 class AppInterface extends BaseInterface {

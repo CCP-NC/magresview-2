@@ -109,6 +109,13 @@ function MVSidebarLoad(props) {
         });
     }
 
+    function iconAction(callback) {
+        return (e) => {
+            e.stopPropagation();
+            callback();
+        };
+    }
+
     function makeModelOption(m, i) {
 
         let model_icon;        
@@ -116,13 +123,29 @@ function MVSidebarLoad(props) {
             model_icon = <AiFillEye size={22}/>;
         }
         else {
-            model_icon = <AiOutlineEyeInvisible size={22} onClick={() => { appint.display(m); }} />
+            model_icon = (
+                <AiOutlineEyeInvisible
+                    size={22}
+                    title='Display model'
+                    onClick={iconAction(() => { appint.display(m); })}
+                />
+            );
         }
 
         return (<MVListSelectOption key={i} value={m} icon={model_icon}>
             {m}
-            <IoMdRefresh style={{color: 'var(--dark-color-1)'}} size={22} onClick={() => { appint.reload(m); }}/>
-            <MdDeleteForever style={{color: 'var(--err-color-2)'}} size={22} onClick={() => { appint.delete(m); }}/>
+            <IoMdRefresh
+                style={{color: 'var(--dark-color-1)'}}
+                size={22}
+                title='Reload model'
+                onClick={iconAction(() => { appint.reload(m); })}
+            />
+            <MdDeleteForever
+                style={{color: 'var(--err-color-2)'}}
+                size={22}
+                title='Delete model'
+                onClick={iconAction(() => { appint.delete(m); })}
+            />
         </MVListSelectOption>);
     }
 
