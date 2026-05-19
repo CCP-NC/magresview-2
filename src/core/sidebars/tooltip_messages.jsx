@@ -13,6 +13,7 @@ export const tooltip_molecular_crystal = <div>
         <b>No:</b> display structure exactly as in the loaded file.
     </p>
 </div>;
+
 export const tooltip_nmr_active = <div>
     <p> MagresView will default to assuming NMR-active isotopes for each element, rather than the most abundant isotope. <br />
         You can disable this by unchecking this box. <br />

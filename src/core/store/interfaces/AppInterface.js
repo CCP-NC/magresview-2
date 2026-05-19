@@ -16,7 +16,7 @@ import _ from 'lodash';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
 import { makeSelector, BaseInterface } from '../utils';
-import { CallbackMerger, ClickHandler } from '../../../utils';
+import { CallbackMerger, ClickHandler, centerDisplayed } from '../../../utils';
 
 import { initialSelState } from './SelInterface';
 import { initialCScaleState } from './CScaleInterface';
@@ -43,7 +43,27 @@ const initialAppState = {
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
     app_use_nmr_isos: true,
     app_vdw_scaling: 1.0,
+    app_autosave_warning: false, // set to true when localStorage quota is exceeded
+    app_autosave_enabled: true, // enable/disable autosave; configurable by user
+    app_autosave_last_clear: null, // ISO timestamp of last session data clear (for auto-clear after 30 days)
+    // In-memory cache of per-model visualization state.  Keyed by model name;
+    // saved when switching away, restored when switching back.  Not persisted
+    // to disk (contains live atom/ModelView references).
+    app_model_states: {},
 };
+
+// Keys that are snapshotted and restored per-model — exactly the keys reset
+// by appDisplayModel.  Derived automatically so new state added to any of
+// these initial-state objects is included automatically.
+const PER_MODEL_STATE_KEYS = [
+    ...Object.keys(initialSelState),
+    ...Object.keys(initialCScaleState),
+    ...Object.keys(initialMSState),
+    ...Object.keys(initialEFGState),
+    ...Object.keys(initialDipState),
+    ...Object.keys(initialJCoupState),
+    ...Object.keys(initialEulerState),
+];
 
 // Functions meant to operate on the app alone.
 // These exist outside of the AppInterface because they will be invoked
@@ -51,10 +71,22 @@ const initialAppState = {
 function appDisplayModel(state, m) {
     let app = state.app_viewer;
     let cm = app.model;
+    let currentName = app.modelName;
 
+    let modelStates = state.app_model_states ?? {};
     let data = {};
+
     if (cm) {
-        // We turn visualizations off
+        // Snapshot the current model's visualization state + camera before
+        // switching away, so they can be restored when returning to it.
+        const snapshot = {};
+        for (const key of PER_MODEL_STATE_KEYS) {
+            snapshot[key] = state[key];
+        }
+        snapshot._camera = app.getCameraState?.() ?? null;
+        modelStates = { ...modelStates, [currentName]: snapshot };
+
+        // Start from initial (off) values for the incoming model
         data = {
             ...initialSelState,
             ...initialCScaleState,
@@ -64,16 +96,55 @@ function appDisplayModel(state, m) {
             ...initialJCoupState,
             ...initialEulerState
         };
+
+        // If the target model has been visited before, restore its saved state.
+        // _camera is kept only in the snapshot object, not spread into Redux state.
+        if (modelStates[m]) {
+            const { _camera: _c, ...savedRedux } = modelStates[m];
+            data = { ...data, ...savedRedux };
+        }
     }
 
-    // Return data for dispatch
+    // Switch the model directly on the viewer — exactly as restoreSession does —
+    // so that all visualization listeners that follow fire on the correct model.
+    // We do NOT use app_model_queued / Events.DISPLAY here because DISPLAY fires
+    // last in the priority cascade (priority 0), after all render listeners
+    // (priority 1-2) have already run on the old model.
+    app.displayModel(m);
+    app.theme = state.app_theme;
+    if (app.model?.box) {
+        app.model.box.color = state.app_theme.FwdColor3;
+    }
+
+    // Restore camera for a returning model; center the view for a first visit.
+    const savedCamera = modelStates[m]?._camera ?? null;
+    if (savedCamera) {
+        app.setCameraState?.(savedCamera);
+    } else {
+        centerDisplayed(app);
+    }
+
+    // Return data for dispatch.  app_model_queued is null because the model
+    // switch already happened above.  Skip Events.DISPLAY for the same reason.
     return {
         ...data,
-        app_model_queued: m,
-        listen_update: [Events.SEL_LABELS, Events.CSCALE,
-                        Events.MS_ELLIPSOIDS, Events.MS_LABELS,
-                        Events.EFG_ELLIPSOIDS, Events.EFG_LABELS, 
-                        Events.DIP_LINKS, Events.JC_LINKS]
+        app_model_states: modelStates,
+        app_default_displayed: app.displayed,
+        app_model_queued: null,
+        listen_update: [
+            Events.VIEWS,
+            Events.SEL_LABELS,
+            Events.CELL,
+            Events.CSCALE,
+            Events.MS_ELLIPSOIDS,
+            Events.MS_LABELS,
+            Events.EFG_ELLIPSOIDS,
+            Events.EFG_LABELS,
+            Events.DIP_LINKS,
+            Events.JC_LINKS,
+            Events.EUL_ANGLES,
+            Events.PLOTS_RECALC,
+        ]
     };
 }
 
@@ -86,10 +157,20 @@ function appReloadModel(state, m) {
         vdwScaling: state.app_vdw_scaling
     });
 
-    let data = {};
+    // Clear the cached state for this model — atom references are now stale
+    const { [m]: _dropped, ...modelStates } = state.app_model_states ?? {};
 
-    // We turn visualizations off
-    data = {
+    // Switch directly (same as appDisplayModel) so listeners fire on the
+    // freshly-reloaded model, not the pre-reload one.
+    app.displayModel(m);
+    app.theme = state.app_theme;
+    if (app.model?.box) {
+        app.model.box.color = state.app_theme.FwdColor3;
+    }
+    centerDisplayed(app);
+
+    // Reset all visualizations to off for the fresh model
+    const data = {
         ...initialSelState,
         ...initialCScaleState,
         ...initialMSState,
@@ -102,30 +183,51 @@ function appReloadModel(state, m) {
     // Return data for dispatch
     return {
         ...data,
-        app_model_queued: m,
-        listen_update: [Events.SEL_LABELS, Events.CSCALE,
-                        Events.MS_ELLIPSOIDS, Events.MS_LABELS,
-                        Events.EFG_ELLIPSOIDS, Events.EFG_LABELS, 
-                        Events.DIP_LINKS, Events.JC_LINKS]
+        app_model_states: modelStates,
+        app_default_displayed: app.displayed,
+        app_model_queued: null,
+        listen_update: [
+            Events.VIEWS,
+            Events.SEL_LABELS,
+            Events.CELL,
+            Events.CSCALE,
+            Events.MS_ELLIPSOIDS,
+            Events.MS_LABELS,
+            Events.EFG_ELLIPSOIDS,
+            Events.EFG_LABELS,
+            Events.DIP_LINKS,
+            Events.JC_LINKS,
+            Events.EUL_ANGLES,
+            Events.PLOTS_RECALC,
+        ]
     };
 }
 
 function appDeleteModel(state, m) {
-    
-    let app = state.app_viewer;
-    let data = {};
+    const app = state.app_viewer;
 
-    // Delete a model
+    // Resolve deletion context before mutating modelList.
+    const wasDisplayed = app.modelName === m;
+    const deletedIdx = app.modelList.indexOf(m);
+
+    // Delete model and drop any cached per-model UI state for it.
     app.deleteModel(m);
+    const { [m]: _dropped, ...modelStates } = state.app_model_states ?? {};
 
-    let models = app.modelList;
-
-    if (!app.model && models.length > 0) {
-        // Let's display a different one
-        data = appDisplayModel(state, models[0]);
+    const remainingModels = app.modelList;
+    if (!wasDisplayed || deletedIdx < 0 || remainingModels.length === 0) {
+        return { app_model_states: modelStates };
     }
 
-    return data;
+    // Display the adjacent model (next, or previous if deleted was last).
+    const nextIdx = Math.min(deletedIdx, remainingModels.length - 1);
+    const nextModel = remainingModels[nextIdx];
+    const stateForDisplay = { ...state, app_model_states: modelStates };
+
+    return {
+        app_model_states: modelStates,
+        ...appDisplayModel(stateForDisplay, nextModel),
+    };
 }
 
 class AppInterface extends BaseInterface {
@@ -242,6 +344,30 @@ class AppInterface extends BaseInterface {
         });
     }
 
+    get autosaveWarning() {
+        return this.state.app_autosave_warning;
+    }
+
+    set autosaveWarning(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'app_autosave_warning',
+            value: v
+        });
+    }
+
+    get autosaveEnabled() {
+        return this.state.app_autosave_enabled;
+    }
+
+    set autosaveEnabled(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'app_autosave_enabled',
+            value: v
+        });
+    }
+
 
     initialise(elem) {
         console.log('Initialising CrystVis app on element ' + elem);
@@ -290,7 +416,7 @@ class AppInterface extends BaseInterface {
         function onLoad(contents, name, extension) {
             var success = app.loadModels(contents, extension, name, params);
 
-            // Find a valid one to load
+            // Find a valid model name for display
             var to_display = null;
             _.map(success, (v, n) => {
                 if (v === 0) {                 
@@ -343,6 +469,155 @@ class AppInterface extends BaseInterface {
             type: 'call',
             function: appDeleteModel,
             arguments: [m]
+        });
+    }
+
+    /**
+     * Load all models from a parsed session document and then restore all
+     * serialized settings in one atomic dispatch.
+     *
+     * The two-phase approach (load → restore) is required because model loading
+     * is asynchronous (FileReader) while Redux dispatch is synchronous. We load
+     * all files first, then in the merged callback we display the active model
+     * directly on the viewer, restore camera orientation, reconstruct the atom
+     * selection, and dispatch a single bulk update that reinstates all settings
+     * and queues all relevant listeners.
+     *
+     * @param {Object} doc  Parsed session document (from parseSessionDocument)
+     */
+    restoreSession(doc) {
+        if (!this.initialised) return;
+
+        const app = this.viewer;
+        const intf = this;
+
+        const modelEntries = Object.entries(doc.models ?? {});
+        if (modelEntries.length === 0) return;
+
+        // Clear all currently loaded models so that model names from the session
+        // document are loaded without collision suffixes (crystvis-js appends
+        // "_1", "_2" etc. to avoid duplicates — that would break activeModel
+        // lookup). unloadAll() is a single atomic render pass.
+        app.unloadAll();
+
+        const merger = new CallbackMerger(modelEntries.length, () => {
+            // ── Phase 2: all files loaded ────────────────────────────────────
+            // Apply the theme to the canvas first (displayListener normally
+            // does this, but we bypass it here).
+            const themeName = doc.settings?.app_theme_name ?? 'dark';
+            const theme = themes[themeName] ?? themes.dark;
+            app.theme = theme;
+
+            // Display the active model directly on the viewer (no dispatch
+            // reset) so that app.displayed is populated before listeners run.
+            const targetModel = doc.activeModel ?? app.modelList[0];
+            if (targetModel && app.modelList.includes(targetModel)) {
+                app.displayModel(targetModel);
+                // Replicate the housekeeping that displayListener normally does
+                centerDisplayed(app);
+                if (app.model?.box) {
+                    app.model.box.color = theme.FwdColor3;
+                }
+            }
+
+            // ── Resolve atom references ───────────────────────────────────────
+            // dip_central_atom and jc_central_atom are live atom objects that
+            // cannot be serialized. They were saved as crystLabel strings in
+            // doc.atomRefs. Re-resolve them from the now-loaded model so that
+            // the DIP_LINKS / JC_LINKS listeners can draw the sphere and links.
+            //
+            // We filter to app.displayed._indices (non-ghost atoms only), exactly
+            // as SelInterface does for label queries, so the sphere is centred on
+            // the real atom and not a periodic image.
+            const atomRefs = doc.atomRefs ?? {};
+            const ddIndices = app.displayed?._indices ?? null;
+            function resolveAtom(label) {
+                if (!label || !app.model) return null;
+                let indices = app.model._queryLabels([label]);
+                if (ddIndices) {
+                    indices = indices.filter(i => ddIndices.includes(i));
+                }
+                return indices.length > 0 ? app.model.view(indices).atoms[0] : null;
+            }
+
+            // ── Restore atom selection ────────────────────────────────────────
+            // sel_selected_view was saved as an array of crystLabel strings in
+            // doc.selections.sel_selected. Reconstruct it via viewFromLabels()
+            // so the user's selection is visible again after restore.
+            const selLabels = doc.selections?.sel_selected ?? null;
+            const selView = (selLabels?.length > 0 && app.model)
+                ? app.model.viewFromLabels(selLabels)
+                : null;
+
+            // ── Phase 3: restore all settings + fire all render listeners ────
+            intf.dispatch({
+                type: 'update',
+                data: {
+                    // All serialized settings from the session document.
+                    // NON_SERIALIZABLE_KEYS were already excluded on save so
+                    // this is safe to spread directly.
+                    ...doc.settings,
+
+                    // app_theme is excluded from serialization (it is derived
+                    // from app_theme_name). Re-derive it here so every listener
+                    // reads the correct theme object for colors.
+                    app_theme_name: themeName,
+                    app_theme: theme,
+                    app_default_displayed: app.displayed,
+                    app_model_queued: null,
+
+                    // Atom references restored from crystLabel strings
+                    dip_central_atom: resolveAtom(atomRefs.dip_central_atom),
+                    jc_central_atom:  resolveAtom(atomRefs.jc_central_atom),
+
+                    // Atom selection restored from crystLabel strings
+                    sel_selected_view: selView,
+
+                    // Fire every render listener so the canvas matches the
+                    // restored settings.  We deliberately skip Events.DISPLAY
+                    // because we called app.displayModel() directly above.
+                    listen_update: [
+                        Events.VIEWS,
+                        Events.SEL_LABELS,
+                        Events.CELL,
+                        Events.CSCALE,
+                        Events.MS_ELLIPSOIDS,
+                        Events.MS_LABELS,
+                        Events.EFG_ELLIPSOIDS,
+                        Events.EFG_LABELS,
+                        Events.DIP_LINKS,
+                        Events.JC_LINKS,
+                        Events.EUL_ANGLES,
+                        Events.PLOTS_RECALC,
+                    ],
+                },
+            });
+
+            // ── Restore camera ─────────────────────────────────────────────────
+            // Called AFTER the dispatch so that all listeners (VIEWS, CELL, etc.)
+            // have already run. Any listener that calls centerDisplayed() (e.g.
+            // viewsListener when sel === displ) would overwrite the camera;
+            // restoring last guarantees the saved orientation survives.
+            if (doc.camera) {
+                app.setCameraState(doc.camera);
+            }
+        });
+
+        // ── Phase 1: load each model from stored source text ─────────────────
+        // Each entry in doc.models carries its own source (text + extension) and
+        // the original loading parameters (supercell, molecularCrystal, …) as
+        // captured by getModelSource() / getModelParameters() at save time.
+        modelEntries.forEach(([modelName, modelData]) => {
+            const { text, extension } = modelData.source;
+            const params = modelData.params ?? {
+                supercell: [3, 3, 3],
+                molecularCrystal: doc.settings?.app_load_as_mol ?? null,
+                useNMRActiveIsotopes: doc.settings?.app_use_nmr_isos ?? true,
+                vdwScaling: doc.settings?.app_vdw_scaling ?? 1.0,
+            };
+
+            const result = app.loadModels(text, extension, modelName, params);
+            merger.call(result);
         });
     }
 

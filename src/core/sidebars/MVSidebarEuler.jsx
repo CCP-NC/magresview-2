@@ -29,7 +29,6 @@ function MVSidebarEuler(props) {
 
     const eulint = useEulerInterface();
 
-    console.log('[MVSidebarEuler rendered]');
 
     const intRef = useRef();
     intRef.current = eulint;

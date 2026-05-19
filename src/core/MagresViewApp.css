@@ -54,3 +54,26 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--fwd-color-3);
 }
+
+/* ── Autosave restore banner ─────────────────────────────────────────────── */
+.mv-restore-banner {
+  position: fixed;
+  bottom: 2em;
+  /* Sit to the right of the sidebar */
+  left: calc(var(--sidebar-width) + 2em);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  padding: 0.75em 1.25em;
+  background-color: var(--bkg-color-1);
+  border: 1px solid var(--mid-color-1);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.mv-restore-banner-text {
+  color: var(--fwd-color-2);
+  font-size: 0.9em;
+  margin-right: 0.25em;
+}

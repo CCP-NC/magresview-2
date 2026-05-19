@@ -31,7 +31,6 @@ function MVSidebarEFG(props) {
 
     const efgint = useEFGInterface();
 
-    console.log('[MVSidebarEFG rendered]');
 
     var has_efg = false;
     if (props.show) {

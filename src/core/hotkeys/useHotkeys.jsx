@@ -29,6 +29,8 @@ import {
     useEFGInterface,
     usePlotsInterface,
 } from '../store';
+import magresStore from '../store';
+import { downloadSession } from '../store/session';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +41,7 @@ import {
 function ignoreInputs(fn) {
     return (e) => {
         const tag = e.target?.tagName?.toUpperCase();
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
         fn(e);
     };
 }
@@ -79,9 +81,29 @@ const ACTIONS = {
         }
     },
 
+    // ── Structure navigation ───────────────────────────────────────────────────
+    'model-prev': ({ appint }) => {
+        const models = appint.models;
+        if (models.length < 2) return;
+        const idx = models.indexOf(appint.currentModelName);
+        if (idx === -1) return;
+        appint.display(models[(idx - 1 + models.length) % models.length]);
+    },
+    'model-next': ({ appint }) => {
+        const models = appint.models;
+        if (models.length < 2) return;
+        const idx = models.indexOf(appint.currentModelName);
+        if (idx === -1) return;
+        appint.display(models[(idx + 1) % models.length]);
+    },
+
     // ── Interface ─────────────────────────────────────────────────────────────
     'toggle-theme': ({ appint }) => {
         appint.themeName = appint.themeName === 'dark' ? 'light' : 'dark';
+    },
+    'show-ref-table': ({ msint }) => { msint.showRefTable = true; },
+    'save-session': ({ appint }) => {
+        if (appint.initialised && appint.models.length > 0) downloadSession(magresStore);
     },
     'show-help': ({ setHelpOpen }) => {
         setHelpOpen(prev => !prev);

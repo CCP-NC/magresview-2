@@ -10,6 +10,11 @@ import resolve from '@rollup/plugin-node-resolve';
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './', // Relative paths for GitHub Pages
+  resolve: {
+    // crystcif-parse v0.3.0 uses mathjs v15 (same as top-level); dedupe collapses
+    // the two physical copies into one.
+    dedupe: ['mathjs'],
+  },
   build: {
     outDir: './dist',
     assetsDir: 'assets',

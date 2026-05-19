@@ -21,7 +21,8 @@ import { useHotkeys } from './hotkeys/useHotkeys';
 import MVHotkeyHelp from './hotkeys/MVHotkeyHelp';
 
 import { chainClasses } from '../utils';
-import { useAppInterface } from './store';
+import { useAppInterface, useMSInterface } from './store';
+import { MVReferenceTable } from './sidebars/MVSidebarMS';
 
 import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
@@ -37,13 +38,17 @@ import MVSidebarPlots from './sidebars/MVSidebarPlots';
 import MVSidebarFiles from './sidebars/MVSidebarFiles';
 
 import MVPlot1D from './plot/MVPlot1D';
+import { loadAutosavedSession, clearAutosavedSession } from './store/session';
+import MVButton from '../controls/MVButton';
 
 function MagresViewPage() {
 
     const [hovered, setHovered] = useState(false);
+    const [restoreDoc, setRestoreDoc] = useState(null);
     const { helpOpen, setHelpOpen } = useHotkeys();
 
     let appint = useAppInterface();
+    let msint = useMSInterface();
 
     const appRef = useRef(appint);
     const pageRef = useRef(null);
@@ -62,6 +67,12 @@ function MagresViewPage() {
         }
         
         appRef.current.initialise('#mv-appwindow');
+
+        // Offer to restore the last autosaved session, if one exists.
+        const autosaved = loadAutosavedSession();
+        if (autosaved) {
+            setRestoreDoc(autosaved);
+        }
 
         return () => {
             console.log('Destroying app');
@@ -118,8 +129,23 @@ function MagresViewPage() {
                 <div id='mv-appwindow' className='mv-background'/>
                 <MagresViewScreenshot />
                 <div className='drag-overlay' />
+            { restoreDoc && (
+                <div className='mv-restore-banner'>
+                    <span className='mv-restore-banner-text'>Restore your last session?</span>
+                    <MVButton onClick={() => {
+                        appint.restoreSession(restoreDoc);
+                        clearAutosavedSession();
+                        setRestoreDoc(null);
+                    }}>Restore</MVButton>
+                    <MVButton onClick={() => {
+                        clearAutosavedSession();
+                        setRestoreDoc(null);
+                    }}>Dismiss</MVButton>
+                </div>
+            )}
             { /* Modals */ }
                 <MVPlot1D />
+                <MVReferenceTable display={msint.showRefTable} close={() => { msint.showRefTable = false; }} />
             </div>);
 }
 

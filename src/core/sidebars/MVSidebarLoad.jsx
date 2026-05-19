@@ -3,17 +3,23 @@ import MagresViewSidebar from './MagresViewSidebar';
 import { AiFillEye, AiOutlineEyeInvisible } from 'react-icons/ai';
 import { IoMdRefresh } from 'react-icons/io';
 import { MdDeleteForever } from 'react-icons/md';
+import { FaSave, FaFolderOpen } from 'react-icons/fa';
 
 import MVFile from '../../controls/MVFile';
 import MVBox from '../../controls/MVBox';
+import MVButton from '../../controls/MVButton';
 import MVCheckBox from '../../controls/MVCheckBox';
+import MVModal from '../../controls/MVModal';
 import MVListSelect, { MVListSelectOption } from '../../controls/MVListSelect';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
 import MVTooltip from '../../controls/MVTooltip';
 import { useAppInterface } from '../store';
+import magresStore from '../store';
+import { downloadSession, parseSessionDocument, SESSION_EXTENSION, clearAutosavedSession, checkAndClearExpiredSessionData } from '../store/session';
 
+import './MVPrivacySettings.css';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 /**
  * MagresView 2.0
  *
@@ -40,15 +46,69 @@ function MVSidebarLoad(props) {
     const [ state, setState ] = useState({
         load_message: '',
         load_message_status: null,
-        list_selected: ''
+        list_selected: '',
+        clearConfirmation: false,
+        privacyModalOpen: false
     });
 
     const appint = useAppInterface();
     const models = appint.models;
+    const sessionInputRef = useRef(null);
 
-    console.log('[MVSidebarLoad rendered]');
 
     // Methods
+    function saveSession() {
+        if (!appint.initialised || appint.models.length === 0) return;
+        downloadSession(magresStore);
+    }
+
+    function toggleAutosave(enabled) {
+        appint.autosaveEnabled = enabled;
+    }
+
+    function handleClearSessionData() {
+        clearAutosavedSession();
+        appint.autosaveEnabled = false;
+        setState(s => ({
+            ...s,
+            clearConfirmation: true
+        }));
+        // Reset confirmation message after 3 seconds
+        setTimeout(() => {
+            setState(s => ({
+                ...s,
+                clearConfirmation: false
+            }));
+        }, 3000);
+    }
+
+    function loadSession(files) {
+        const file = files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            let doc;
+            try {
+                doc = parseSessionDocument(e.target.result);
+            } catch (err) {
+                setState(s => ({
+                    ...s,
+                    load_message: 'Could not load session: ' + err.message,
+                    load_message_status: 'error'
+                }));
+                return;
+            }
+            appint.restoreSession(doc);
+            setState(s => ({
+                ...s,
+                list_selected: doc.activeModel ?? '',
+                load_message: 'Session restored successfully.',
+                load_message_status: 'success'
+            }));
+        };
+        reader.readAsText(file);
+    }
+
     function loadModel(f) {
 
         appint.load(f, (success) => {
@@ -73,6 +133,13 @@ function MVSidebarLoad(props) {
         });
     }
 
+    function iconAction(callback) {
+        return (e) => {
+            e.stopPropagation();
+            callback();
+        };
+    }
+
     function makeModelOption(m, i) {
 
         let model_icon;        
@@ -80,13 +147,29 @@ function MVSidebarLoad(props) {
             model_icon = <AiFillEye size={22}/>;
         }
         else {
-            model_icon = <AiOutlineEyeInvisible size={22} onClick={() => { appint.display(m); }} />
+            model_icon = (
+                <AiOutlineEyeInvisible
+                    size={22}
+                    title='Display model'
+                    onClick={iconAction(() => { appint.display(m); })}
+                />
+            );
         }
 
         return (<MVListSelectOption key={i} value={m} icon={model_icon}>
             {m}
-            <IoMdRefresh style={{color: 'var(--dark-color-1)'}} size={22} onClick={() => { appint.reload(m); }}/>
-            <MdDeleteForever style={{color: 'var(--err-color-2)'}} size={22} onClick={() => { appint.delete(m); }}/>
+            <IoMdRefresh
+                style={{color: 'var(--dark-color-1)'}}
+                size={22}
+                title='Reload model'
+                onClick={iconAction(() => { appint.reload(m); })}
+            />
+            <MdDeleteForever
+                style={{color: 'var(--err-color-2)'}}
+                size={22}
+                title='Delete model'
+                onClick={iconAction(() => { appint.delete(m); })}
+            />
         </MVListSelectOption>);
     }
 
@@ -94,6 +177,72 @@ function MVSidebarLoad(props) {
         <div className='mv-sidebar-block'>
             <MVFile filetypes={file_formats.join(',')} onSelect={loadModel} notext={true} multiple={true}/>
             <span className='sep-1' />
+            <div className='mv-sidebar-row'>
+                <MVButton onClick={saveSession} disabled={!appint.initialised || appint.models.length === 0}>
+                    <FaSave style={{marginRight: '0.35em'}}/> Save session
+                </MVButton>
+                {/* Hidden file input wired to the Load session button below */}
+                <input
+                    ref={sessionInputRef}
+                    type='file'
+                    accept={'.' + SESSION_EXTENSION}
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                        if (e.target.files?.length > 0) loadSession(e.target.files);
+                        e.target.value = null;
+                    }}
+                />
+                <MVButton onClick={() => sessionInputRef.current?.click()}>
+                    <FaFolderOpen style={{marginRight: '0.35em'}}/> Load session
+                </MVButton>
+            </div>
+            <span className='sep-1' />
+            <div className='mv-autosave-row'>
+                <div className={`mv-autosave-status-inline ${!appint.autosaveEnabled ? 'disabled' : ''}`}>
+                    <div className='status-dot'></div>
+                    <span>Autosave {appint.autosaveEnabled ? 'on' : 'off'}</span>
+                </div>
+                <button className='mv-privacy-link' onClick={() => setState(s => ({...s, privacyModalOpen: true}))}>
+                    Privacy settings
+                </button>
+            </div>
+            <MVModal
+                title='Privacy & Session Settings'
+                display={state.privacyModalOpen}
+                hasOverlay={true}
+                noFooter={true}
+                onClose={() => setState(s => ({...s, privacyModalOpen: false}))}
+            >
+                <div className='mv-privacy-card'>
+                    <div className='mv-privacy-toggle'>
+                        <div className='toggle-info'>
+                            <div className='toggle-label'>Save sessions locally</div>
+                            <div className='toggle-hint'>Automatically saves your work to browser storage between sessions</div>
+                        </div>
+                        <div className='toggle-control'>
+                            <MVCheckBox onCheck={toggleAutosave} checked={appint.autosaveEnabled} />
+                        </div>
+                    </div>
+
+                    <div className='mv-risk-advisory'>
+                        <div>
+                            <strong>Shared computers:</strong> Other users accessing this browser profile can restore and view your data. Disable autosave or clear session data when using a shared machine.
+                        </div>
+                    </div>
+
+                    <div className='mv-clear-data-section'>
+                        <div className='section-label'>Clear stored data</div>
+                        <button className='mv-clear-button' onClick={handleClearSessionData}>
+                            <MdDeleteForever /> Clear all autosaved data
+                        </button>
+                        {state.clearConfirmation && (
+                            <div className='mv-confirmation-message'>
+                                Data cleared — autosave disabled
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </MVModal>
             <div className='mv-sidebar-block'>
                 <div className='mv-sidebar-tooltip-grid'>
                     <div>Display unwrapped molecular units?&nbsp;</div>
@@ -125,6 +274,12 @@ function MVSidebarLoad(props) {
             {models.map(makeModelOption)}
         </MVListSelect>
         <span className='sep-1' />
+        { appint.autosaveWarning && (
+            <MVBox status='error' onClose={() => { appint.autosaveWarning = false; }}>
+                <strong>Autosave unavailable</strong> — your browser storage is full.
+                Use <em>Save session</em> above to keep your work.
+            </MVBox>
+        )}
         <MVBox status={state.load_message_status} onClose={() => {setState({...state, load_message_status: ''})}}>
             {state.load_message}
         </MVBox>
