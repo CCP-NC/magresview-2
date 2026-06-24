@@ -17,7 +17,7 @@
     "color-scales": "^3.0.2",
     "colormap": "^2.3.2",
     "immutable": "^5.1.4",
-    "mathjs": "^15.1.0",
+    "mathjs": "^15.2.0",
     "normalize.css": "^8.0.1",
     "plotly.js-dist-min": "^3.4.0",
     "react": "^18.3.1",
@@ -92,5 +92,10 @@
     "vite-plugin-node-polyfills": "^0.24.0",
     "vite-plugin-svgr": "^4.5.0",
     "vitest": "^4.0.16"
+  },
+  "overrides": {
+    "mathjs": "^15.2.0",
+    "esbuild": "^0.28.1",
+    "lodash": "^4.18.1"
   }
 }
