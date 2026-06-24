@@ -1,0 +1,3 @@
+# Session as a shareable workspace snapshot
+
+A Session captures enough state to reload the same model files and reproduce the same scientific visualization (camera, atom selection, and all visualization settings for MS, EFG, Dipolar, J-Coupling, Euler, and plots). It deliberately excludes UI chrome such as theme, active sidebar, open modals, interaction mode, and advanced-mode visibility. The model source text is embedded in the session document so that sessions remain self-contained and shareable; a reduced scientific representation would sacrifice fidelity and portability. Sessions replace the current workspace on restore rather than merging with it.
