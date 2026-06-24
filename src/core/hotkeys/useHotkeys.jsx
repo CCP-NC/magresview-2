@@ -108,16 +108,12 @@ const ACTIONS = {
     'toggle-theme': ({ appint }) => {
         appint.themeName = appint.themeName === 'dark' ? 'light' : 'dark';
     },
-    'show-ref-table': ({ msint }) => { msint.showRefTable = true; },
-    'save-session': ({ appint }) => {
-        if (appint.initialised && appint.models.length > 0) downloadSession(magresStore);
-    },
-    'show-help': ({ setHelpOpen }) => {
-        setHelpOpen(prev => !prev);
-    },
     'show-ref-table': ({ appint, setRefTableOpen }) => {
         appint.sidebar = 'ms';
         setRefTableOpen(true);
+    },
+    'show-help': ({ setHelpOpen }) => {
+        setHelpOpen(prev => !prev);
     },
     'show-iso-modal': ({ appint, setIsoModalOpen }) => {
         appint.sidebar = 'select';
