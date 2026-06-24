@@ -15,7 +15,7 @@ import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSel
 import MVTooltip from '../../controls/MVTooltip';
 import { useAppInterface } from '../store';
 import magresStore from '../store';
-import { downloadSession, parseSessionDocument, SESSION_EXTENSION, clearAutosavedSession, checkAndClearExpiredSessionData } from '../store/session';
+import { downloadSession, parseSessionDocument, SESSION_EXTENSION, clearAutosavedSession } from '../store/session';
 
 import './MVPrivacySettings.css';
 

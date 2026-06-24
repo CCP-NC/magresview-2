@@ -6,18 +6,17 @@
  * A session document is a plain JSON object that captures:
  *   - All serializable Redux state keys (settings, preferences, NMR vis toggles)
  *   - The raw text source + loading parameters of every loaded model
- *     (obtained from the viewer via getModelSource() / getModelParameters())
  *   - The name of the currently active model
- *   - Camera orientation (position, target, zoom) via getCameraState()
- *   - Atom selection state (sel_selected_view) as crystLabel strings via toLabels()
+ *   - Camera orientation
+ *   - Atom selection state as crystLabel strings
  *
- * The format is intentionally plain and forward-compatible: unknown keys are
- * silently ignored on restore, and a version field allows future migrations.
+ * The format is intentionally plain: unknown keys are silently ignored on restore,
+ * and a version field allows future migrations if the format ever changes.
  */
 
 import { saveContents } from '../../utils';
 
-export const SESSION_VERSION = 2;
+export const SESSION_VERSION = 1;
 
 /**
  * File extension used when saving session files.
@@ -85,7 +84,6 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     'plots_data',
 
     // ── Background image (blob URLs don't survive serialisation) ─────────────
-    // Future: encode as base64 data URL.
     'plots_bkg_img_url',
     'plots_bkg_img_w',
     'plots_bkg_img_h',
@@ -119,18 +117,11 @@ export function serializeSettings(state) {
  * Build the full session document from the current Redux state and the live
  * CrystVis viewer instance.
  *
- * Model sources and parameters are read directly from the viewer via
- * getModelSource() / getModelParameters() — no Redux state required beyond
- * the modelList.
- *
  * @param {Object} state   Full Redux state
  * @param {Object} viewer  CrystVis instance
  * @returns {Object}  Session document ready for JSON.stringify
  */
 export function buildSessionDocument(state, viewer) {
-    // Collect model source text + loading parameters from the viewer.
-    // getModelSource(name) → { text, extension }
-    // getModelParameters(name) → { supercell, molecularCrystal, … }
     const models = {};
     for (const name of (viewer?.modelList ?? [])) {
         models[name] = {
@@ -139,9 +130,6 @@ export function buildSessionDocument(state, viewer) {
         };
     }
 
-    // Serialize the current atom selection as crystLabel strings so it
-    // survives the model reload on restore.  An empty or null view is stored
-    // as null (no selection to restore).
     const selLabels = state.sel_selected_view?.toLabels?.() ?? null;
 
     return {
@@ -150,23 +138,15 @@ export function buildSessionDocument(state, viewer) {
         models,
         settings: serializeSettings(state),
 
-        // Atom references: atom objects cannot be JSON-serialized, so we store
-        // their crystLabel strings and re-resolve them after the model reloads.
-        // eul_atom_A / eul_atom_B omitted here because EulerInterface resets
-        // them when the sidebar is re-opened; they are interaction-driven.
         atomRefs: {
             dip_central_atom: state.dip_central_atom?.crystLabel ?? null,
             jc_central_atom:  state.jc_central_atom?.crystLabel  ?? null,
         },
 
-        // Atom selection views serialised as crystLabel string arrays.
-        // On restore, model.viewFromLabels() reconstructs the live ModelView.
         selections: {
             sel_selected: selLabels?.length > 0 ? selLabels : null,
         },
 
-        // Camera orientation: position, target, and zoom captured from the
-        // current OrbitControls state via getCameraState().
         camera: viewer?.getCameraState?.() ?? null,
     };
 }
@@ -204,38 +184,14 @@ export function parseSessionDocument(json) {
         throw new Error('Session file is missing the settings field.');
     }
 
-    if (doc.version > SESSION_VERSION) {
+    if (doc.version !== SESSION_VERSION) {
         throw new Error(
-            `Session file was saved with a newer version of MagresView ` +
-            `(format v${doc.version}, this application supports up to v${SESSION_VERSION}). ` +
-            `Please upgrade MagresView.`
+            `Session file uses format v${doc.version}, but this version of MagresView ` +
+            `supports format v${SESSION_VERSION}.`
         );
     }
 
-    // Run any migrations needed to bring the document up to SESSION_VERSION.
-    // Each function receives the doc and returns a new doc at the next version.
-    // Add an entry here whenever SESSION_VERSION is bumped.
-    //
-    // History:
-    //   v1 → v2: added top-level `atomRefs` and `selections` fields (previously
-    //            absent); both default to null / empty which is correct for old
-    //            files, so no data transformation is required — only version bump.
-    const migrations = {
-        // 1: (doc) => { /* transform v1 → v2 */ return { ...doc, version: 2 }; },
-    };
-
-    let current = doc;
-    for (let v = current.version; v < SESSION_VERSION; v++) {
-        const migrate = migrations[v];
-        if (migrate) {
-            current = migrate(current);
-        } else {
-            // No transform needed — bump the version and continue.
-            current = { ...current, version: v + 1 };
-        }
-    }
-
-    return current;
+    return doc;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -243,8 +199,6 @@ export function parseSessionDocument(json) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AUTOSAVE_KEY = 'magresview2_autosave';
-const AUTOSAVE_CLEAR_TIME_KEY = 'magresview2_autosave_clear_time';
-const AUTOSAVE_CLEAR_INTERVAL_DAYS = 30;
 
 // Module-level guard: once quota is exceeded we stop attempting subsequent
 // autosaves for the lifetime of the page (re-trying would just fail again
@@ -274,7 +228,6 @@ export function autosaveSession(store) {
         if (!viewer || !(viewer.modelList?.length > 0)) return;
         const doc = buildSessionDocument(state, viewer);
         localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(doc));
-        localStorage.setItem(AUTOSAVE_CLEAR_TIME_KEY, new Date().toISOString());
     } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
             _quotaExceeded = true;
@@ -308,35 +261,9 @@ export function loadAutosavedSession() {
 export function clearAutosavedSession() {
     try {
         localStorage.removeItem(AUTOSAVE_KEY);
-        localStorage.setItem(AUTOSAVE_CLEAR_TIME_KEY, new Date().toISOString());
     } catch (e) {
         // Ignore — localStorage may be unavailable.
     }
-}
-
-/**
- * Check if session data should be auto-cleared (older than 30 days).
- * If so, clear it and return true. Otherwise return false.
- * 
- * @returns {boolean} - true if data was cleared
- */
-export function checkAndClearExpiredSessionData() {
-    try {
-        const lastClearStr = localStorage.getItem(AUTOSAVE_CLEAR_TIME_KEY);
-        if (!lastClearStr) return false;
-        
-        const lastClear = new Date(lastClearStr);
-        const now = new Date();
-        const daysSince = (now - lastClear) / (1000 * 60 * 60 * 24);
-        
-        if (daysSince > AUTOSAVE_CLEAR_INTERVAL_DAYS) {
-            clearAutosavedSession();
-            return true;
-        }
-    } catch (e) {
-        console.warn('[MagresView] Failed to check expiry:', e);
-    }
-    return false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
