@@ -28,7 +28,6 @@ function MVSidebarDip(props) {
 
     const dipint = useDipInterface();
 
-    console.log('[MVSidebarDip rendered]');
 
     return (<MagresViewSidebar show={props.show} title='Dipolar couplings'>
         <div className='mv-sidebar-block'>

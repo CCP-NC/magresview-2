@@ -71,13 +71,8 @@ function MVReferenceTable(props) {
 
 function MVSidebarMS(props) {
 
-    const [ state, setState ] = useState({
-        showRefTable: false
-    });
-
     const msint = useMSInterface();
 
-    console.log('[MVSidebarMS rendered]');
 
     var has_ms = false;
     if (props.show) {
@@ -92,10 +87,10 @@ function MVSidebarMS(props) {
                       onChange={(s) => { msint.ellipsoidScale = s; }} disabled={!msint.hasEllipsoids}>Ellipsoid scale</MVRange>
                 <div className='mv-ms-btn-row'>
                     <MVButton onClick={() => { msint.ellipsoidScale = 0; }} disabled={!msint.hasEllipsoids}>Auto scale</MVButton>
-                    <MVButton onClick={() => { setState({...state, showRefTable: true}) }}>Set References</MVButton>
+                    <MVButton onClick={() => { msint.showRefTable = true; }}>Set References</MVButton>
                 </div>
-             <MVReferenceTable display={state.showRefTable || !!props.refTableOpen}
-                 close={() => { setState({...state, showRefTable: false}); props.onRefTableClose?.(); }}/>
+             <MVReferenceTable display={msint.showRefTable || !!props.refTableOpen}
+                 close={() => { msint.showRefTable = false; props.onRefTableClose?.(); }}/>
              <MVRadioGroup label='Show labels' onSelect={(v) => { msint.labelsMode = v; }} selected={msint.labelsMode} name='ms_label_radio'>
                 <MVRadioButton value='none'>None</MVRadioButton>
                 <MVRadioButton value='iso'>Isotropy (ppm)</MVRadioButton>

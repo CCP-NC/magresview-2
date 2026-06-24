@@ -1,56 +1,43 @@
 /**
- * MagresView 2.0 — Keyboard Shortcut Definitions
+ * MagresView 2.0 — Keyboard Shortcuts Definitions
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * HOW TO ADD A NEW SHORTCUT
  * ─────────────────────────────────────────────────────────────────────────────
  *
- *  1. Add an entry in the appropriate group below (or create a new group).
- *     Each shortcut needs:
- *       id          — a unique camelCase string that links to an action handler
- *       key         — the tinykeys key string (see tinykeys docs for sequences)
- *       display     — human-readable key label shown in the help overlay
- *       description — one-line description shown in the help overlay
+ *  1. Add a group entry to HOTKEY_GROUPS below. If a suitable group already
+ *     exists, add the shortcut to its `shortcuts` array.
  *
- *  2. In useHotkeys.jsx, add a matching entry to the ACTIONS object:
- *       yourId: (interfaces) => { ... call interface methods here ... }
+ *  2. Each shortcut needs:
  *
- * Key string format (tinykeys):
- *   - Single characters: 'm', 'e', '1'
- *   - With modifier:     '$mod+k'  (Ctrl on Win/Linux, Cmd on macOS)
- *   - Special keys:      'Escape', 'ArrowLeft', 'ArrowRight'
- *   - Shift combos:      '?' is '$mod+/' on some layouts; prefer using
- *                        'Shift+/' or just '?' — tinykeys handles it.
+ *       id      : unique string used to wire the shortcut to an action in
+ *                 useHotkeys.jsx
+ *       key     : tinykeys key sequence (see https://github.com/jamiebuilds/tinykeys)
+ *       display : human-readable version shown in the help dialog
+ *       description: short explanation shown in the help dialog
+ *
+ *  3. Add a matching handler in useHotkeys.jsx ACTIONS.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
+/** Shortcut groups, in the order they appear in the help dialog. */
 export const HOTKEY_GROUPS = [
     {
-        id:    'panels',
-        label: 'Panels',
-        color: 'var(--fwd-color-2)',
-        shortcuts: [
-            { id: 'sidebar-load',   key: '1', display: '1', description: 'Load file' },
-            { id: 'sidebar-select', key: '2', display: '2', description: 'Select & display' },
-            { id: 'sidebar-ms',     key: '3', display: '3', description: 'Magnetic shielding' },
-            { id: 'sidebar-efg',    key: '4', display: '4', description: 'Electric field gradient' },
-            { id: 'sidebar-dip',    key: '5', display: '5', description: 'Dipolar couplings' },
-            { id: 'sidebar-jcoup',  key: '6', display: '6', description: 'J-couplings' },
-            { id: 'sidebar-euler',  key: '7', display: '7', description: 'Euler angles' },
-            { id: 'sidebar-plots',  key: '8', display: '8', description: 'Spectral plots' },
-            { id: 'sidebar-files',  key: '9', display: '9', description: 'Report files' },
-            { id: 'sidebar-hide',   key: '0', display: '0', description: 'Hide sidebar' },
-        ],
-    },
-    {
-        id:    'visualisation',
-        label: 'Visualisation',
+        id:    'sidebar',
+        label: 'Sidebar',
         color: 'var(--ms-color-1)',
         shortcuts: [
-            { id: 'toggle-ms-ellipsoids',  key: 'm', display: 'M', description: 'Toggle MS ellipsoids' },
-            { id: 'toggle-efg-ellipsoids', key: 'f', display: 'F', description: 'Toggle EFG ellipsoids' },
-            { id: 'toggle-plots',          key: 'p', display: 'P', description: 'Toggle spectral plot' },
+            { id: 'sidebar-load',   key: 'l', display: 'L', description: 'Open load files sidebar' },
+            { id: 'sidebar-select', key: 's', display: 'S', description: 'Open select sidebar' },
+            { id: 'sidebar-ms',     key: 'm', display: 'M', description: 'Open MS sidebar' },
+            { id: 'sidebar-efg',    key: 'f', display: 'F', description: 'Open EFG sidebar' },
+            { id: 'sidebar-dip',    key: 'd', display: 'D', description: 'Open Dipolar sidebar' },
+            { id: 'sidebar-jcoup',  key: 'j', display: 'J', description: 'Open J-Coupling sidebar' },
+            { id: 'sidebar-euler',  key: 'e', display: 'E', description: 'Open Euler sidebar' },
+            { id: 'sidebar-plots',  key: 'p', display: 'P', description: 'Open Plots sidebar' },
+            { id: 'sidebar-files',  key: 'o', display: 'O', description: 'Open Files sidebar' },
+            { id: 'sidebar-hide',   key: 'Escape', display: 'Esc', description: 'Close sidebar' },
         ],
     },
     {
@@ -65,15 +52,25 @@ export const HOTKEY_GROUPS = [
         ],
     },
     {
+        id:    'structures',
+        label: 'Structures',
+        color: 'var(--jc-color-1)',
+        shortcuts: [
+            { id: 'model-prev', key: '[', display: '[', description: 'Previous structure' },
+            { id: 'model-next', key: ']', display: ']', description: 'Next structure' },
+        ],
+    },
+    {
         id:    'interface',
         label: 'Interface',
         color: 'var(--efg-color-1)',
         shortcuts: [
-            { id: 'toggle-theme',    key: 't',       display: 'T',  description: 'Toggle dark / light theme' },
-            { id: 'show-ref-table',    key: 'r',       display: 'R',  description: 'Open chemical shift references' },
+            { id: 'toggle-theme',    key: 't',       display: 'T',        description: 'Toggle dark / light theme' },
+            { id: 'show-ref-table', key: 'r',       display: 'R',        description: 'Set chemical shift references' },
             { id: 'show-iso-modal',    key: 'i',       display: 'I',  description: 'Open isotope setter' },
-            // tinykeys matches on event.key. Shift+/ produces event.key='?' so bind as 'Shift+?'.
-            { id: 'show-help',      key: 'Shift+?', display: '?',  description: 'Show / hide this help' },
+            { id: 'save-session',   key: '$mod+s',  display: 'Ctrl+S',   description: 'Save session' },
+            // tinykeys matches on event.key. Shift+/ produces event.key='?' so bind as 'Shift+'.
+            { id: 'show-help',      key: 'Shift+?', display: '?',        description: 'Show / hide this help' },
         ],
     },
 ];

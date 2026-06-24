@@ -29,7 +29,6 @@ function MVSidebarJCoup(props) {
 
     const jcint = useJCoupInterface();
 
-    console.log('[MVSidebarJCoup rendered]');
 
     var has_jc = false;
     if (props.show) {

@@ -29,6 +29,8 @@ import {
     useEFGInterface,
     usePlotsInterface,
 } from '../store';
+import magresStore from '../store';
+import { downloadSession } from '../store/session';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +41,7 @@ import {
 function ignoreInputs(fn) {
     return (e) => {
         const tag = e.target?.tagName?.toUpperCase();
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
         fn(e);
     };
 }
@@ -86,16 +88,32 @@ const ACTIONS = {
     'mode-jcoupling': ({ appint }) => { appint.setInteractionMode('jcoupling'); },
     'mode-euler':     ({ appint }) => { appint.setInteractionMode('euler'); },
 
+    // ── Structure navigation ───────────────────────────────────────────────────
+    'model-prev': ({ appint }) => {
+        const models = appint.models;
+        if (models.length < 2) return;
+        const idx = models.indexOf(appint.currentModelName);
+        if (idx === -1) return;
+        appint.display(models[(idx - 1 + models.length) % models.length]);
+    },
+    'model-next': ({ appint }) => {
+        const models = appint.models;
+        if (models.length < 2) return;
+        const idx = models.indexOf(appint.currentModelName);
+        if (idx === -1) return;
+        appint.display(models[(idx + 1) % models.length]);
+    },
+
     // ── Interface ─────────────────────────────────────────────────────────────
     'toggle-theme': ({ appint }) => {
         appint.themeName = appint.themeName === 'dark' ? 'light' : 'dark';
     },
-    'show-help': ({ setHelpOpen }) => {
-        setHelpOpen(prev => !prev);
-    },
     'show-ref-table': ({ appint, setRefTableOpen }) => {
         appint.sidebar = 'ms';
         setRefTableOpen(true);
+    },
+    'show-help': ({ setHelpOpen }) => {
+        setHelpOpen(prev => !prev);
     },
     'show-iso-modal': ({ appint, setIsoModalOpen }) => {
         appint.sidebar = 'select';

@@ -201,7 +201,6 @@ function MVSidebarSelect(props) {
         props.onIsoModalClose?.();
     }
 
-    console.log('[MVSidebarSelect rendered]');
 
     function selectMode(v) {
         selint.selectionMode = v;
@@ -218,6 +217,14 @@ function MVSidebarSelect(props) {
     function setN(v) {
         selint.selectionBondN = v;
     }
+
+    const selRef = useRef();
+    selRef.current = selint;
+
+    useEffect(() => {
+        let selint = selRef.current;
+        selint.selectionOn = props.show;
+    }, [props.show, selint.app, selint.defaultDisplayed]); // defaultDisplayed changes on every model switch, ensuring callbacks are re-registered with fresh atom indices
 
     return (<MagresViewSidebar show={props.show} title='Select and display'>
         <div className='mv-sidebar-block'>
