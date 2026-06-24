@@ -12,7 +12,6 @@
  * 
  */
 
-import _ from 'lodash';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
 import { makeSelector, BaseInterface } from '../utils';
@@ -43,6 +42,7 @@ const initialAppState = {
     app_load_as_mol: null, // crystvis-js will try to figure out what's appropriate...
     app_use_nmr_isos: true,
     app_vdw_scaling: 1.0,
+    app_advanced_mode: false,
 };
 
 // Functions meant to operate on the app alone.
@@ -198,11 +198,44 @@ class AppInterface extends BaseInterface {
     }
 
     set sidebar(v) {
-        this.dispatch({
-            type: 'set',
-            key: 'app_sidebar',
-            value: v
-        });
+        // Auto-enable the relevant coupling display when switching to those panels
+        // so the user can immediately click an atom without a separate checkbox.
+        const data = { app_sidebar: v };
+        if (v === 'dip')   data.dip_links_on = true;
+        if (v === 'jcoup') data.jc_links_on  = true;
+        this.dispatch({ type: 'update', data });
+    }
+
+    get advancedMode() {
+        return this.state.app_advanced_mode;
+    }
+
+    set advancedMode(v) {
+        this.dispatch({ type: 'update', data: { app_advanced_mode: v } });
+    }
+
+    /**
+     * Interaction mode is derived from the active sidebar.
+     * 'dip' → 'dipolar', 'jcoup' → 'jcoupling', 'euler' → 'euler',
+     * all other sidebars → 'select'.
+     */
+    get interactionMode() {
+        const sidebar = this.state.app_sidebar;
+        if (sidebar === 'dip')   return 'dipolar';
+        if (sidebar === 'jcoup') return 'jcoupling';
+        if (sidebar === 'euler') return 'euler';
+        return 'select';
+    }
+
+    /**
+     * Switch to a specialised interaction mode by switching the corresponding
+     * sidebar.  Passing 'select' switches to the Select & Display sidebar.
+     */
+    setInteractionMode(mode) {
+        const sidebarMap = { select: 'select', dipolar: 'dip', jcoupling: 'jcoup', euler: 'euler' };
+        const target = sidebarMap[mode];
+        // Route through the sidebar setter so auto-enable logic fires for dip/jcoup
+        if (target) this.sidebar = target;
     }
 
     get loadAsMol() {
@@ -256,6 +289,26 @@ class AppInterface extends BaseInterface {
             CrystVis.RIGHT_CLICK
         ]);
 
+        // Override CrystVis's default box-selection handler so it dispatches
+        // through Redux instead of setting vis.selected directly.
+        // Shift+drag adds all atoms inside the box to the current selection,
+        // matching the Shift+click "add" behaviour.
+        const dispatch = this.dispatch;
+        vis.onAtomBox((boxView) => {
+            dispatch({
+                type: 'call',
+                function: (state, bv) => {
+                    const cur = state.sel_selected_view;
+                    const newSel = cur ? cur.or(bv) : bv;
+                    return {
+                        sel_selected_view: newSel,
+                        listen_update: [Events.VIEWS]
+                    };
+                },
+                arguments: [boxView]
+            });
+        });
+
         if (!this.initialised) {
             this.dispatch({
                 type: 'update',
@@ -292,8 +345,8 @@ class AppInterface extends BaseInterface {
 
             // Find a valid one to load
             var to_display = null;
-            _.map(success, (v, n) => {
-                if (v === 0) {                 
+            Object.entries(success).forEach(([n, v]) => {
+                if (v === 0) {
                     to_display = n;
                 }
             });
@@ -319,7 +372,7 @@ class AppInterface extends BaseInterface {
             reader.readAsText(f);
         }
 
-        _.forEach(files, parseOne);
+        Array.from(files).forEach(parseOne);
     }
 
     display(m) {

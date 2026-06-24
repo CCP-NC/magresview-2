@@ -21,10 +21,13 @@ import { useHotkeys } from './hotkeys/useHotkeys';
 import MVHotkeyHelp from './hotkeys/MVHotkeyHelp';
 
 import { chainClasses } from '../utils';
-import { useAppInterface } from './store';
+import { useAppInterface, useSelInterface, useDipInterface, useEulerInterface, useJCoupInterface } from './store';
 
 import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
+import MVStatusBar from './MVStatusBar';
+import MVModeToolbar from './MVModeToolbar';
+import MVContextMenu from './MVContextMenu';
 
 import MVSidebarLoad from './sidebars/MVSidebarLoad';
 import MVSidebarSelect from './sidebars/MVSidebarSelect';
@@ -41,12 +44,26 @@ import MVPlot1D from './plot/MVPlot1D';
 function MagresViewPage() {
 
     const [hovered, setHovered] = useState(false);
-    const { helpOpen, setHelpOpen } = useHotkeys();
+    const { helpOpen, setHelpOpen, refTableOpen, setRefTableOpen, isoModalOpen, setIsoModalOpen } = useHotkeys();
 
     let appint = useAppInterface();
+    let selint = useSelInterface();
+    let dipint = useDipInterface();
+    let eulint = useEulerInterface();
+    let jcint  = useJCoupInterface();
 
     const appRef = useRef(appint);
     const pageRef = useRef(null);
+
+    // Keep interface refs current so effects can safely access latest state
+    const selRef = useRef(selint);
+    const dipRef = useRef(dipint);
+    const eulRef = useRef(eulint);
+    const jcRef  = useRef(jcint);
+    selRef.current = selint;
+    dipRef.current = dipint;
+    eulRef.current = eulint;
+    jcRef.current  = jcint;
 
     useEffect(() => {
         // Focus the page container so hotkeys work immediately on load,
@@ -70,6 +87,48 @@ function MagresViewPage() {
             }
         };
     }, []);
+
+    // Centralised click-handler bind/unbind.
+    // The active sidebar determines which interface owns mouse clicks:
+    //   dip   → dipolar coupling picker  (always bound; isOn auto-enabled on entry)
+    //   jcoup → J-coupling picker         (always bound; isOn auto-enabled on entry)
+    //   euler → Euler-angle atom picker
+    //   any other sidebar → normal atom selection (always enabled)
+    // selApp is app_viewer — including it as a dep ensures the effect re-fires
+    // once the viewer finishes initialising (app_click_handler becomes non-null),
+    // which fixes the "first click does nothing on fresh load" bug.
+    const sidebar = appint.sidebar;
+    const selApp  = selint.app;
+    useEffect(() => {
+        const sel = selRef.current;
+        const dip = dipRef.current;
+        const eul = eulRef.current;
+        const jc  = jcRef.current;
+
+        if (sidebar === 'dip') {
+            sel.unbind();
+            dip.bind();   // isOn was auto-enabled by sidebar setter
+            jc.unbind();
+            eul.unbind();
+        } else if (sidebar === 'jcoup') {
+            sel.unbind();
+            dip.unbind();
+            jc.bind();    // isOn was auto-enabled by sidebar setter
+            eul.unbind();
+        } else if (sidebar === 'euler') {
+            sel.unbind();
+            dip.unbind();
+            jc.unbind();
+            eul.bind();
+        } else {
+            // All other sidebars: selection always active.
+            sel.bind();
+            dip.unbind();
+            jc.unbind();
+            eul.unbind();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sidebar, selApp]);
 
 
     // Handling the dragging events
@@ -106,9 +165,12 @@ function MagresViewPage() {
                  onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
                 <MagresViewHeader onHelpOpen={() => setHelpOpen(true)} />
                 <MVHotkeyHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+                <MVModeToolbar />
                 <MVSidebarLoad show={appint.sidebar === 'load'} />
-                <MVSidebarSelect show={appint.sidebar === 'select'} />
-                <MVSidebarMS show={appint.sidebar === 'ms'} />
+                <MVSidebarSelect isoModalOpen={isoModalOpen} onIsoModalClose={() => setIsoModalOpen(false)} show={appint.sidebar === 'select'} />
+                <MVSidebarMS show={appint.sidebar === 'ms'}
+                    refTableOpen={refTableOpen}
+                    onRefTableClose={() => setRefTableOpen(false)} />
                 <MVSidebarEFG show={appint.sidebar === 'efg'} />
                 <MVSidebarDip show={appint.sidebar === 'dip'} />
                 <MVSidebarJCoup show={appint.sidebar === 'jcoup'} />
@@ -116,6 +178,8 @@ function MagresViewPage() {
                 <MVSidebarPlots show={appint.sidebar === 'plots'} />
                 <MVSidebarFiles show={appint.sidebar === 'files'} />
                 <div id='mv-appwindow' className='mv-background'/>
+                <MVStatusBar />
+                <MVContextMenu />
                 <MagresViewScreenshot />
                 <div className='drag-overlay' />
             { /* Modals */ }

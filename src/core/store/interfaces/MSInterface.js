@@ -12,7 +12,7 @@
  * 
  */
 
-import _ from 'lodash';
+
 
 import { Events } from '../listeners';
 import CScaleInterface, { makeCScaleSelector } from './CScaleInterface';
@@ -110,9 +110,9 @@ class MSInterface extends CScaleInterface {
             return [];
 
         // Find the elements, then return the respective references as pairs
-        const elements = _.uniq(this.state.app_viewer.model.symbols);
+        const elements = [...new Set(this.state.app_viewer.model.symbols)];
         const refs = this.state.ms_references;
-        return _.fromPairs(elements.map((el) => [el, refs[el] || '']));
+        return Object.fromEntries(elements.map((el) => [el, refs[el] || '']));
     }
 
     updateReferenceTable(data) {

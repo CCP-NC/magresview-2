@@ -22,6 +22,7 @@ import CrystVis from '@ccp-nc/crystvis-js';
 const LC = CrystVis.LEFT_CLICK;
 const SLC = CrystVis.LEFT_CLICK + CrystVis.SHIFT_BUTTON;
 const CLC = CrystVis.LEFT_CLICK + CrystVis.CTRL_BUTTON;
+const RC = CrystVis.RIGHT_CLICK;
 
 const initialSelState = {
     sel_selected_view: null,
@@ -34,13 +35,19 @@ const initialSelState = {
     sel_hlight: true,
     sel_sites_view: null,
     sel_sites_labels_type: 'none',
-    sel_show_cell: true
+    sel_show_cell: true,
+    sel_context_atom: null,
+    sel_context_pos: null,
 };
 
 class SelInterface extends BaseInterface {
 
     get app() {
         return this.state.app_viewer;
+    }
+
+    get selectionCount() {
+        return this.state.sel_selected_view?.length || 0;
     }
 
     get selected() {
@@ -326,7 +333,17 @@ class SelInterface extends BaseInterface {
 
         if (selFunc) {
             handler.setCallback('sel', LC, (a, e) => { intf.selected = selFunc(a, e); });
-            handler.setCallback('sel', SLC, (a, e) => { intf.selected = app.selected.or(selFunc(a, e)); });
+            // Shift+click toggles: adds atoms not yet in the selection,
+            // removes atoms that are already in it.
+            handler.setCallback('sel', SLC, (a, e) => {
+                const clicked = selFunc(a, e);
+                const cur = app.selected;
+                const curSet = new Set(cur?._indices || []);
+                const allIn = clicked._indices.length > 0 &&
+                              clicked._indices.every(i => curSet.has(i));
+                intf.selected = allIn ? cur.remove(clicked) : cur.or(clicked);
+            });
+            // Ctrl+click still removes, kept as a power-user alias.
             handler.setCallback('sel', CLC, (a, e) => { intf.selected = app.selected.remove(selFunc(a, e)); });
         }
         else {
@@ -336,12 +353,132 @@ class SelInterface extends BaseInterface {
             handler.setCallback('sel', CLC);
         }
 
+        // Right-click always opens a context menu, regardless of selection mode.
+        handler.setCallback('sel', RC, (a, e) => {
+            if (!a) return;
+            intf.dispatch({ type: 'update', data: {
+                sel_context_atom: a,
+                sel_context_pos: { x: e.clientX, y: e.clientY }
+            }});
+        });
+
         this.dispatch({type: 'update', data: {
             sel_mode: mode,
             sel_sphere_r: options.r,
             sel_bond_n: options.n,
             sel_on: options.on
         }});
+    }
+
+    /**
+     * Re-register ClickHandler callbacks based on current stored state.
+     * Always enables selection (forces on:true).
+     */
+    bind() {
+        this.setSelection(this.selectionMode, {
+            on: true,
+            r: this.selectionSphereR,
+            n: this.selectionBondN
+        });
+    }
+
+    /**
+     * Remove ClickHandler callbacks without altering the stored sel_on state.
+     * Call this when switching away from 'select' interaction mode.
+     */
+    unbind() {
+        const handler = this.state.app_click_handler;
+        if (!handler) return;
+        handler.setCallback('sel', LC);
+        handler.setCallback('sel', SLC);
+        handler.setCallback('sel', CLC);
+        handler.setCallback('sel', RC);
+    }
+
+    // ── Context menu ──────────────────────────────────────────────────────────
+
+    get contextAtom() { return this.state.sel_context_atom; }
+    get contextPos()  { return this.state.sel_context_pos; }
+
+    clearContextMenu() {
+        this.dispatch({ type: 'update', data: { sel_context_atom: null, sel_context_pos: null } });
+    }
+
+    // ── Programmatic selection helpers (used by context menu) ─────────────────
+
+    invertSelection() {
+        const model = this.state.app_viewer?.model;
+        if (!model) return;
+        const displayedIndices = new Set(this.displayed?._indices || []);
+        const selectedIndices  = new Set(this.selected?._indices  || []);
+        const inverted = [...displayedIndices].filter(i => !selectedIndices.has(i));
+        this.selected = model.view(inverted);
+    }
+
+    addToSelection(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        const indices = model._queryLabels([atom.crystLabel]);
+        if (!indices?.length) return;
+        const cur = this.selected;
+        this.selected = cur ? cur.or(model.view(indices)) : model.view(indices);
+    }
+
+    removeFromSelection(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        const indices = model._queryLabels([atom.crystLabel]);
+        if (!indices?.length) return;
+        const cur = this.selected;
+        if (cur) this.selected = cur.remove(model.view(indices));
+    }
+
+    selectMolecule(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        const indices = model._queryMolecule(atom);
+        if (!indices?.length) return;
+        this.selected = model.view(indices);
+    }
+
+    selectSameElement(atom) {
+        const model = this.state.app_viewer?.model;
+        if (!model || !atom) return;
+        let indices = model._queryElements(atom.element);
+        if (!indices?.length) return;
+        // Restrict to the default displayed view (unit cell) so this matches
+        // the behaviour of the sidebar's element selection mode.
+        const dd_indices = this.state.app_default_displayed?._indices;
+        if (dd_indices) {
+            indices = indices.filter(i => dd_indices.includes(i));
+        }
+        this.selected = model.view(indices);
+    }
+
+    // ── Global isotope setters ────────────────────────────────────────────────
+
+    setIsotopeForElement(el, A) {
+        const model = this.state.app_viewer?.model;
+        if (!model) return;
+        const indices = model._queryElements(el);
+        if (!indices?.length) return;
+        model.view(indices).setProperty('isotope', A);
+        this.dispatch({
+            type: 'update',
+            data: { listen_update: [Events.EFG_LABELS, Events.CSCALE, Events.DIP_RENDER, Events.JC_RENDER, Events.SEL_LABELS] }
+        });
+    }
+
+    setIsotopeForSite(label, A) {
+        const model = this.state.app_viewer?.model;
+        if (!model) return;
+        const indices = model._queryLabels([label]);
+        if (!indices?.length) return;
+        model.view(indices).setProperty('isotope', A);
+        this.dispatch({
+            type: 'update',
+            data: { listen_update: [Events.EFG_LABELS, Events.CSCALE, Events.DIP_RENDER, Events.JC_RENDER, Events.SEL_LABELS] }
+        });
     }
 
 }

@@ -1,0 +1,277 @@
+.mv-status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: var(--status-bar-height, 2.5em);
+  box-sizing: border-box;
+
+  background-color: var(--bkg-color-3);
+  border-top: 2px solid var(--mode-color, var(--mid-color-1));
+  transition: border-top-color 0.25s;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0 1em;
+
+  font-size: 0.85em;
+  color: var(--mid-color-2);
+  user-select: none;
+  z-index: 900;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.mv-status-mode-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mv-status-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-weight: 600;
+  flex-shrink: 0;
+
+  background-color: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 25%, transparent);
+  border-radius: 4px;
+  padding: 0.15em 0.55em;
+  transition: background-color 0.25s, border-color 0.25s;
+}
+
+.mv-status-mode-btn {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.mv-status-mode-btn:hover,
+.mv-status-mode-btn.open {
+  background-color: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 22%, transparent);
+  border-color: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 50%, transparent);
+}
+
+.mv-status-selmode-sub {
+  font-size: 0.85em;
+  font-weight: 400;
+  opacity: 0.75;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mv-status-mode-chevron {
+  display: flex;
+  align-items: center;
+  font-size: 0.7em;
+  opacity: 0.6;
+  transition: transform 0.15s;
+}
+
+.mv-status-mode-btn.open .mv-status-mode-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Selection mode popover ── */
+.mv-selmode-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 140px;
+  background: var(--bkg-color-3);
+  border: 1px solid var(--mid-color-1);
+  border-radius: 6px;
+  box-shadow: 0 -4px 14px rgba(0,0,0,0.35);
+  z-index: 902;
+  overflow: hidden;
+  animation: mv-selmode-in 0.14s ease-out;
+}
+
+@keyframes mv-selmode-in {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+.mv-selmode-option {
+  display: block;
+  width: 100%;
+  padding: 0.45em 0.85em;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9em;
+  color: var(--fwd-color-2);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.mv-selmode-option:hover {
+  background: color-mix(in srgb, var(--fwd-color-2) 8%, transparent);
+}
+
+.mv-selmode-option.active {
+  color: var(--fwd-color-1);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--mode-color, var(--fwd-color-2)) 14%, transparent);
+}
+
+.mv-status-mode-icon {
+  display: flex;
+  align-items: center;
+  font-size: 1em;
+}
+
+.mv-status-mode-label {
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.85em;
+}
+
+.mv-status-sep {
+  color: var(--mid-color-1);
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.mv-status-hint {
+  color: var(--mid-color-2);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+}
+
+.mv-status-count {
+  flex-shrink: 0;
+  color: var(--fwd-color-2);
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  cursor: default;
+}
+
+.mv-status-count.clickable {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.mv-status-count.clickable:hover {
+  color: var(--fwd-color-1);
+}
+
+.mv-status-count.active {
+  color: var(--ms-color-2);
+}
+
+.mv-status-count:disabled {
+  cursor: default;
+  text-decoration: none;
+}
+
+/* ── Selection detail card ── */
+.mv-sel-card {
+  position: fixed;
+  bottom: var(--status-bar-height, 2.5em);
+  right: 1em;
+  width: 320px;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bkg-color-3);
+  border: 1px solid var(--mid-color-1);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.35);
+  z-index: 901;
+  animation: mv-sel-card-in 0.18s ease-out;
+}
+
+@keyframes mv-sel-card-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.mv-sel-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45em 0.75em;
+  font-size: 0.82em;
+  font-weight: 600;
+  color: var(--fwd-color-2);
+  border-bottom: 1px solid var(--mid-color-1);
+  flex-shrink: 0;
+}
+
+.mv-sel-card-close {
+  background: none;
+  border: none;
+  color: var(--mid-color-2);
+  cursor: pointer;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  font-size: 0.95em;
+  border-radius: 3px;
+}
+
+.mv-sel-card-close:hover {
+  color: var(--fwd-color-1);
+  background: var(--bkg-color-2);
+}
+
+.mv-sel-card-body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.mv-sel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8em;
+}
+
+.mv-sel-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bkg-color-2);
+  color: var(--mid-color-2);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.3em 0.6em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.9em;
+  border-bottom: 1px solid var(--mid-color-1);
+}
+
+.mv-sel-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--bkg-color-2) 50%, transparent);
+}
+
+.mv-sel-table tbody td {
+  padding: 0.28em 0.6em;
+  color: var(--fwd-color-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--mid-color-1) 40%, transparent);
+}
+
+.mv-sel-td-num  { color: var(--mid-color-2) !important; width: 2em; }
+.mv-sel-td-label { font-weight: 600; }
+.mv-sel-td-el   { color: var(--mid-color-2) !important; }
+.mv-sel-td-idx  { text-align: right; font-variant-numeric: tabular-nums; }
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 0.9em;
+  letter-spacing: 0.02em;
+}
+
+/* Light theme uses same variables so no override needed */

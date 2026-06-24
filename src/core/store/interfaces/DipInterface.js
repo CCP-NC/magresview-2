@@ -58,6 +58,17 @@ class DipInterface extends BaseInterface {
         return this.state.dip_central_atom;
     }
 
+    set centralAtom(atom) {
+        if (!atom) return;
+        this.dispatch({
+            type: 'update',
+            data: {
+                dip_central_atom: atom,
+                listen_update: [Events.DIP_LINKS]
+            }
+        });
+    }
+
     get radius() {
         return this.state.dip_radius;
     }
