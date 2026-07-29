@@ -79,7 +79,8 @@ function buildConfigs(orientation) {
         aFlip: c.source.transform,
         bFlip: c.target.transform,
         euler: c.euler,                 // radians [alpha, beta, gamma]
-        singular: c.singular.isSingular
+        singular: c.singular.isSingular,
+        relativeRotation: c.rotation
     }));
 }
 

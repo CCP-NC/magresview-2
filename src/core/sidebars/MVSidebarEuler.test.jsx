@@ -6,6 +6,7 @@ import MVSidebarEuler from './MVSidebarEuler';
 
 vi.mock('./MagresViewSidebar', () => ({
     default: ({ children }) => <div>{children}</div>,
+    MVAdvancedSection: ({ children }) => <div>{children}</div>,
 }));
 vi.mock('../../controls/MVButton', () => ({
     default: ({ children, onClick, disabled }) => (
@@ -30,10 +31,12 @@ vi.mock('../../controls/MVCustomSelect', () => ({
 vi.mock('../../utils', () => ({
     saveContents: vi.fn(),
     copyContents: vi.fn(),
+    chainClasses: (...args) => args.filter(Boolean).join(' '),
 }));
 
 vi.mock('../store', () => ({
     useEulerInterface: vi.fn(),
+    useAppInterface: vi.fn(() => ({ advancedMode: false })),
 }));
 
 import { useEulerInterface } from '../store';
@@ -106,4 +109,21 @@ test('shows a message instead of a table for continuous orientations', () => {
     render(<MVSidebarEuler show />);
     expect(screen.getByText(/axially symmetric/)).toBeTruthy();
     expect(screen.queryByRole('row')).toBeNull();
+});
+
+test('"View Rotation Matrix" opens a modal displaying rotation matrix info and copy button', async () => {
+    const user = userEvent.setup();
+    const eulint = makeEulint({
+        currentRotationMatrix: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        txtRotationMatrixReport: vi.fn(() => 'Matrix Report')
+    });
+    useEulerInterface.mockReturnValue(eulint);
+    render(<MVSidebarEuler show />);
+
+    await user.click(screen.getByText(/View Rotation Matrix/));
+    const modal = screen.getByTestId('modal');
+    expect(modal.textContent).toContain('Rotation Matrix');
+
+    await user.click(screen.getByText(/Copy Matrix/));
+    expect(copyContents).toHaveBeenCalledWith('Matrix Report');
 });

@@ -16,8 +16,8 @@ import './MVSidebarEuler.css';
 
 import { useState, useEffect } from 'react';
 
-import MagresViewSidebar from './MagresViewSidebar';
-import { useEulerInterface } from '../store';
+import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
+import { useEulerInterface, useAppInterface } from '../store';
 import { saveContents, copyContents } from '../../utils';
 
 import MVSwitch from '../../controls/MVSwitch';
@@ -25,7 +25,11 @@ import MVButton from '../../controls/MVButton';
 import MVCheckBox from '../../controls/MVCheckBox';
 import MVModal from '../../controls/MVModal';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
-import { FaCopy } from 'react-icons/fa';
+import MVCard from '../../controls/MVCard';
+import MVField from '../../controls/MVField';
+import MVTooltip from '../../controls/MVTooltip';
+import { tooltip_pas_ordering } from './tooltip_messages';
+import { FaCopy, FaDownload } from 'react-icons/fa';
 
 // Crystal frame is always available; MS/EFG only when the model carries them;
 // the A→B dipolar tensor only when two distinct atoms are picked.
@@ -64,8 +68,8 @@ function FullTable({ configs }) {
         <table className='mv-eul-results mv-eul-fulltable'>
             <thead>
                 <tr>
-                    <td>#</td><td>A</td><td>B</td>
-                    <td>&alpha;</td><td>&beta;</td><td>&gamma;</td>
+                    <th>#</th><th>A</th><th>B</th>
+                    <th>&alpha;</th><th>&beta;</th><th>&gamma;</th>
                 </tr>
             </thead>
             <tbody>
@@ -88,7 +92,7 @@ function FullTable({ configs }) {
     </div>);
 }
 
-function AnglesBlock({ eulint, onShowAll }) {
+function AnglesBlock({ eulint, onShowAll, onShowMatrix }) {
     const cls = eulint.orientationClass;
 
     if (cls === 'indeterminate')
@@ -110,7 +114,7 @@ function AnglesBlock({ eulint, onShowAll }) {
     return (<>
         <table className='mv-eul-results'>
             <thead>
-                <tr><td>&alpha;</td><td>&beta;</td><td>&gamma;</td></tr>
+                <tr><th>&alpha;</th><th>&beta;</th><th>&gamma;</th></tr>
             </thead>
             <tbody>
                 <tr>
@@ -125,19 +129,106 @@ function AnglesBlock({ eulint, onShowAll }) {
             <span className='mv-euler-cycle-count'>{eulint.activeConfig + 1} / {configs.length}</span>
             <MVButton onClick={() => eulint.cycleConfig(1)}>Next &#9654;</MVButton>
         </div>
-        <MVButton onClick={onShowAll}>Show all {configs.length} sets</MVButton>
+        <MVButton onClick={onShowAll} style={{ width: '100%' }}>Show all {configs.length} sets</MVButton>
+        <MVButton onClick={onShowMatrix} style={{ width: '100%', marginTop: '0.4em' }}>View Rotation Matrix…</MVButton>
+        <div style={{ marginTop: '0.6em', width: '100%' }}>
+            <MVCheckBox checked={eulint.disksOn} onCheck={(v) => { eulint.disksOn = v; }}>Show Euler disks</MVCheckBox>
+        </div>
         {eulint.gaugeNote && <p className='mv-euler-msg'>{eulint.gaugeNote}</p>}
     </>);
+}
+
+function RotationMatrixModal({ eulint, onClose }) {
+    const R = eulint.currentRotationMatrix;
+    const reportText = eulint.txtRotationMatrixReport();
+
+    const orderLabelA = orderOptions.find(([v]) => v === eulint.orderA)?.[1] ?? eulint.orderA;
+    const orderLabelB = orderOptions.find(([v]) => v === eulint.orderB)?.[1] ?? eulint.orderB;
+    const tensorOptions = availableTensorOptions(eulint);
+    const tensorLabelA = tensorOptions.find(([v]) => v === eulint.tensorA)?.[1] ?? eulint.tensorA;
+    const tensorLabelB = tensorOptions.find(([v]) => v === eulint.tensorB)?.[1] ?? eulint.tensorB;
+
+    const curConfig = eulint.configs[eulint.activeConfig];
+    const seq = (eulint.sequence || 'zyz').toUpperCase();
+    const sense = eulint.active ? 'Active' : 'Passive';
+
+    return (
+        <MVModal
+            title='Rotation Matrix (PAS A → PAS B)'
+            display={true}
+            hasOverlay={true}
+            draggable={true}
+            noFooter={true}
+            onClose={onClose}
+        >
+            <div className='mv-euler-matrix-modal-body'>
+                <div className='mv-euler-matrix-meta'>
+                    <div><b>Atom A:</b> {eulint.atomLabelA} ({tensorLabelA}, {orderLabelA})</div>
+                    <div><b>Atom B:</b> {eulint.atomLabelB} ({tensorLabelB}, {orderLabelB})</div>
+                    <div><b>Convention:</b> Sequence {seq} · Rotation {sense}</div>
+                    {curConfig && (
+                        <div><b>Active Set:</b> {eulint.activeConfig + 1} of {eulint.configs.length} (A flip: {curConfig.aFlip}, B flip: {curConfig.bFlip})</div>
+                    )}
+                    {curConfig && (
+                        <div><b>Euler Angles:</b> &alpha; = {curConfig.alpha.toFixed(2)}&deg;, &beta; = {curConfig.beta.toFixed(2)}&deg;, &gamma; = {curConfig.gamma.toFixed(2)}&deg;</div>
+                    )}
+                    {eulint.gaugeNote && (
+                        <div style={{ marginTop: '0.3em', color: 'var(--mid-color-2)', fontStyle: 'italic' }}>
+                            Note: {eulint.gaugeNote}
+                        </div>
+                    )}
+                </div>
+
+                <div className='mv-euler-matrix-card'>
+                    <div className='mv-euler-matrix-header'>
+                        Rotation Matrix R ({sense}, PAS A &rarr; PAS B)
+                    </div>
+                    {R ? (
+                        <table className='mv-euler-matrix-table'>
+                            <tbody>
+                                {R.map((row, i) => (
+                                    <tr key={i}>
+                                        {row.map((val, j) => (
+                                            <td key={j}>{val >= 0 ? ` ${val.toFixed(6)}` : val.toFixed(6)}</td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <p className='mv-euler-msg'>No active rotation matrix available.</p>
+                    )}
+                </div>
+
+                <div className='mv-euler-matrix-actions'>
+                    <MVButton onClick={() => copyContents(reportText)}>
+                        <FaCopy />&nbsp;Copy Matrix &amp; Info to Clipboard
+                    </MVButton>
+                </div>
+            </div>
+        </MVModal>
+    );
 }
 
 function MVSidebarEuler(props) {
 
     const eulint = useEulerInterface();
+    const appint = useAppInterface();
     const [showTable, setShowTable] = useState(false);
+    const [showMatrixModal, setShowMatrixModal] = useState(false);
+    const [conventionOpen, setConventionOpen] = useState(false);
+    const [pasOpenA, setPasOpenA] = useState(false);
+    const [pasOpenB, setPasOpenB] = useState(false);
 
     const hasSel = (eulint.atomA && eulint.atomB);
     const configs = eulint.configs;
     const tensorOptions = availableTensorOptions(eulint);
+
+    const orderLabelA = orderOptions.find(([v]) => v === eulint.orderA)?.[1] ?? eulint.orderA;
+    const orderLabelB = orderOptions.find(([v]) => v === eulint.orderB)?.[1] ?? eulint.orderB;
+    const showConvention = appint.advancedMode || conventionOpen;
+    const showPasA = appint.advancedMode || pasOpenA;
+    const showPasB = appint.advancedMode || pasOpenB;
 
     // Keep the A/B tensor selections valid for the loaded model: if a chosen
     // tensor type isn't present (e.g. default 'ms' on an EFG-only file), fall
@@ -151,70 +242,145 @@ function MVSidebarEuler(props) {
     }, [eulint.hasMSData, eulint.hasEFGData, eulint.tensorA, eulint.tensorB, eulint.atomA, eulint.atomB]);
 
     return (<MagresViewSidebar show={props.show} title='Euler angles'>
-        <div className='mv-sidebar-block'>
-            <p style={{margin: '0 0 0.6em', fontSize: '0.85em', color: 'var(--mid-color-2)'}}>
-                <b>left-click</b> to set atom A and <b>right-click</b> to set atom B.
-            </p>
-            <div className='mv-euler-pick-labels'>
-                <span className={`mv-euler-pick-label-val${eulint.atomA ? '' : ' unset'}`}>A: {eulint.atomLabelA}</span>
-                <span className={`mv-euler-pick-label-val${eulint.atomB ? '' : ' unset'}`}>B: {eulint.atomLabelB}</span>
-            </div>
-            <div className='mv-euler-swap-row'>
-                <MVButton onClick={() => eulint.swapAB()} disabled={!hasSel}>&#8646; Swap A and B</MVButton>
-            </div>
-        </div>
-        <div className='mv-sidebar-block'>
-            <h3>Tensor &amp; ordering</h3>
-            <div className='mv-euler-tensors'>
-                <span className='mv-euler-tensor-label'>A</span>
+        {/* Atom A Card */}
+        <MVCard title='Atom A' badge={{ text: eulint.atomLabelA, unset: !eulint.atomA }}>
+            <MVField label='Tensor' className='mv-euler-prominent-field'>
                 <OptionSelect options={tensorOptions} value={eulint.tensorA} onSelect={(v) => { eulint.setTensor('A', v); }} />
-                <OptionSelect options={orderOptions} value={eulint.orderA} onSelect={(v) => { eulint.orderA = v; }} />
-            </div>
-            <div className='mv-euler-tensors'>
-                <span className='mv-euler-tensor-label'>B</span>
-                <OptionSelect options={tensorOptions} value={eulint.tensorB} onSelect={(v) => { eulint.setTensor('B', v); }} />
-                <OptionSelect options={orderOptions} value={eulint.orderB} onSelect={(v) => { eulint.orderB = v; }} />
-            </div>
+            </MVField>
+            {!showPasA ? (
+                <div className='mv-euler-pas-indicator' onClick={() => setPasOpenA(true)} title='Click to set PAS ordering'>
+                    <span>PAS ordering: <b>{orderLabelA}</b></span>
+                    <span className='mv-euler-indicator-edit'>Edit ▾</span>
+                </div>
+            ) : (
+                <div className='mv-euler-pas-expanded'>
+                    <MVField label={
+                        <div className='mv-euler-field-header'>
+                            <span>PAS Ordering</span>
+                            <MVTooltip tooltipText={tooltip_pas_ordering} />
+                        </div>
+                    }>
+                        <OptionSelect options={orderOptions} value={eulint.orderA} onSelect={(v) => { eulint.orderA = v; }} />
+                    </MVField>
+                    {!appint.advancedMode && (
+                        <button className='mv-euler-pas-collapse' onClick={() => setPasOpenA(false)}>
+                            Close ▴
+                        </button>
+                    )}
+                </div>
+            )}
+        </MVCard>
+
+        {/* Swap A & B */}
+        <div className='mv-euler-swap-row'>
+            <MVButton onClick={() => eulint.swapAB()} disabled={!hasSel} style={{ width: '100%' }}>
+                &#8646; Swap Atom A and B
+            </MVButton>
         </div>
+
+        {/* Atom B Card */}
+        <MVCard title='Atom B' badge={{ text: eulint.atomLabelB, unset: !eulint.atomB }}>
+            <MVField label='Tensor' className='mv-euler-prominent-field'>
+                <OptionSelect options={tensorOptions} value={eulint.tensorB} onSelect={(v) => { eulint.setTensor('B', v); }} />
+            </MVField>
+            {!showPasB ? (
+                <div className='mv-euler-pas-indicator' onClick={() => setPasOpenB(true)} title='Click to set PAS ordering'>
+                    <span>PAS ordering: <b>{orderLabelB}</b></span>
+                    <span className='mv-euler-indicator-edit'>Edit ▾</span>
+                </div>
+            ) : (
+                <div className='mv-euler-pas-expanded'>
+                    <MVField label={
+                        <div className='mv-euler-field-header'>
+                            <span>PAS Ordering</span>
+                            <MVTooltip tooltipText={tooltip_pas_ordering} />
+                        </div>
+                    }>
+                        <OptionSelect options={orderOptions} value={eulint.orderB} onSelect={(v) => { eulint.orderB = v; }} />
+                    </MVField>
+                    {!appint.advancedMode && (
+                        <button className='mv-euler-pas-collapse' onClick={() => setPasOpenB(false)}>
+                            Close ▴
+                        </button>
+                    )}
+                </div>
+            )}
+        </MVCard>
+
+        {/* Euler Convention Section */}
         <div className='mv-sidebar-block'>
             <h3>Euler convention</h3>
-            <div className='mv-euler-agrid-switch'>
-                <MVCustomSelect selected={eulint.sequence} onSelect={(v) => { eulint.sequence = v; }}>
-                    <MVCustomSelectOption value='zyz'>ZYZ</MVCustomSelectOption>
-                    <MVCustomSelectOption value='zxz'>ZXZ</MVCustomSelectOption>
-                </MVCustomSelect>
-                <span>Passive</span>
-                <MVSwitch on={eulint.active} onClick={() => { eulint.active = !eulint.active; }} />
-                <span>Active</span>
-            </div>
+            {!showConvention ? (
+                <div
+                    className='mv-euler-convention-indicator'
+                    onClick={() => setConventionOpen(true)}
+                    title='Click to set Euler convention options'
+                >
+                    <span className='mv-euler-indicator-badge'>{(eulint.sequence || 'zyz').toUpperCase()}</span>
+                    <span className='mv-euler-indicator-badge'>{eulint.active ? 'Active' : 'Passive'}</span>
+                    <span className='mv-euler-indicator-edit'>Edit ▾</span>
+                </div>
+            ) : (
+                <div className='mv-euler-convention-expanded'>
+                    <MVField label='Sequence'>
+                        <MVCustomSelect selected={eulint.sequence} onSelect={(v) => { eulint.sequence = v; }}>
+                            <MVCustomSelectOption value='zyz'>ZYZ</MVCustomSelectOption>
+                            <MVCustomSelectOption value='zxz'>ZXZ</MVCustomSelectOption>
+                        </MVCustomSelect>
+                    </MVField>
+                    <MVField label='Rotation sense'>
+                        <div className='mv-euler-switch-row'>
+                            <span>Passive</span>
+                            <MVSwitch on={eulint.active} onClick={() => { eulint.active = !eulint.active; }} />
+                            <span>Active</span>
+                        </div>
+                    </MVField>
+                    {!appint.advancedMode && (
+                        <button className='mv-euler-pas-collapse' onClick={() => setConventionOpen(false)}>
+                            Close ▴
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
+
+        {/* Angle Results Section */}
         <div className='mv-sidebar-block'>
-            <MVCheckBox checked={eulint.disksOn} onCheck={(v) => { eulint.disksOn = v; }}>Show Euler disks</MVCheckBox>
+            <h3>Relative orientation</h3>
+            <AnglesBlock
+                eulint={eulint}
+                onShowAll={() => setShowTable(true)}
+                onShowMatrix={() => setShowMatrixModal(true)}
+            />
         </div>
-        <div className='mv-sidebar-block'>
-            <h3>Euler angles</h3>
-            <AnglesBlock eulint={eulint} onShowAll={() => setShowTable(true)} />
-        </div>
+
+        {showMatrixModal &&
+            <RotationMatrixModal
+                eulint={eulint}
+                onClose={() => setShowMatrixModal(false)}
+            />}
 
         {showTable &&
             <MVModal title={`All ${configs.length} equivalent Euler angle sets`}
                      display={true} hasOverlay={true} draggable={true} noFooter={true}
                      onClose={() => setShowTable(false)}>
                 <FullTable configs={configs} />
-                <div className='mv-euler-cycle-row' style={{marginTop: '0.6em'}}>
+                <div className='mv-euler-cycle-row' style={{marginTop: '0.8em'}}>
                     <MVButton onClick={() => { copyContents(eulint.csvTable()); }}><FaCopy />&nbsp;Copy CSV</MVButton>
-                    <MVButton onClick={() => { saveContents('data:,' + eulint.csvTable(), 'euler_angles.csv'); }}>Download CSV</MVButton>
+                    <MVButton onClick={() => { saveContents('data:,' + eulint.csvTable(), 'euler_angles.csv'); }}><FaDownload />&nbsp;Download CSV</MVButton>
                 </div>
             </MVModal>}
 
         <span className='sep-1' />
+
+        {/* Export Reports Section */}
         <div className='mv-sidebar-block'>
-            <MVButton onClick={() => { copyContents(eulint.txtReport()); }} disabled={!hasSel}><FaCopy />&nbsp;Copy to clipboard</MVButton>            
-        </div>
-        <div className='mv-sidebar-block'>
-            <MVButton onClick={() => { saveContents('data:,' + eulint.txtSelfAngleTable(), 'eulerTable.txt'); }}  disabled={!(eulint.hasMSData && eulint.hasEFGData)}>
-                Download table of MS-to-EFG angles
-            </MVButton>            
+            <MVButton onClick={() => { copyContents(eulint.txtReport()); }} disabled={!hasSel} style={{ width: '100%' }}>
+                <FaCopy />&nbsp;Copy report to clipboard
+            </MVButton>
+            <MVButton onClick={() => { saveContents('data:,' + eulint.txtSelfAngleTable(), 'eulerTable.txt'); }} disabled={!(eulint.hasMSData && eulint.hasEFGData)} style={{ width: '100%', marginTop: '0.4em' }}>
+                <FaDownload />&nbsp;Download table of MS-to-EFG angles
+            </MVButton>
         </div>
 
     </MagresViewSidebar>);

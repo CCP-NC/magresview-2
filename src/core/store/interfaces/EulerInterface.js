@@ -13,12 +13,11 @@
  */
 
 import { Events } from '../listeners';
-import { makeSelector, DataCheckInterface } from '../utils';
-import { eulerBetweenTensors } from '../../../utils';
+import { makeSelector, DataCheckInterface, getSel } from '../utils';
 
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
-import CrystVis from '@ccp-nc/crystvis-js';
+import CrystVis, { TensorData } from '@ccp-nc/crystvis-js';
 
 const LC = CrystVis.LEFT_CLICK;
 const RC = CrystVis.RIGHT_CLICK;
@@ -252,6 +251,7 @@ class EulerInterface extends DataCheckInterface {
             beta: c.euler[1] * 180 / Math.PI,
             gamma: c.euler[2] * 180 / Math.PI,
             singular: c.singular,
+            relativeRotation: c.relativeRotation,
             active: c.index === active
         }));
     }
@@ -324,12 +324,104 @@ class EulerInterface extends DataCheckInterface {
     // ── Text export ──────────────────────────────────────────────────────────
 
     txtReport() {
-        let report = 'Euler angles between tensors:\n';
-        report += `${this.tensorA} on ${this.atomLabelA}\nand\n`;
-        report += `${this.tensorB} on ${this.atomLabelB}\n\n`;
-        report += `Sequence: ${this.sequence.toUpperCase()} (${this.active ? 'active' : 'passive'})\n\n`;
-        report += `Degrees:\n${this.alpha}    ${this.beta}    ${this.gamma}\n\n`;
-        report += `Radiants:\n${this.alphaRad}     ${this.betaRad}     ${this.gammaRad}`;
+        if (!this.atomA || !this.atomB) {
+            return 'No atom pair selected for Euler angle calculation.';
+        }
+
+        const tA = tensorLabel[this.tensorA] ?? this.tensorA;
+        const tB = tensorLabel[this.tensorB] ?? this.tensorB;
+        const ordA = orderLabel[this.orderA] ?? this.orderA;
+        const ordB = orderLabel[this.orderB] ?? this.orderB;
+        const seq = (this.sequence || 'zyz').toUpperCase();
+        const sense = this.active ? 'Active' : 'Passive';
+
+        const curConfig = this._activeConfig();
+        const alphaDeg = typeof this.alpha === 'number' ? this.alpha.toFixed(2) : this.alpha;
+        const betaDeg = typeof this.beta === 'number' ? this.beta.toFixed(2) : this.beta;
+        const gammaDeg = typeof this.gamma === 'number' ? this.gamma.toFixed(2) : this.gamma;
+
+        const alphaRadVal = typeof this.alphaRad === 'number' ? this.alphaRad.toFixed(4) : this.alphaRad;
+        const betaRadVal = typeof this.betaRad === 'number' ? this.betaRad.toFixed(4) : this.betaRad;
+        const gammaRadVal = typeof this.gammaRad === 'number' ? this.gammaRad.toFixed(4) : this.gammaRad;
+
+        let report = `===================================================\n`;
+        report += `MagresView 2 — Relative Tensor Orientation Report\n`;
+        report += `===================================================\n\n`;
+
+        report += `Atom A: ${this.atomLabelA}\n`;
+        report += `  - Tensor:       ${tA}\n`;
+        report += `  - PAS Ordering: ${ordA}\n\n`;
+
+        report += `Atom B: ${this.atomLabelB}\n`;
+        report += `  - Tensor:       ${tB}\n`;
+        report += `  - PAS Ordering: ${ordB}\n\n`;
+
+        report += `Conventions:\n`;
+        report += `  - Sequence:     ${seq}\n`;
+        report += `  - Rotation:     ${sense}\n\n`;
+
+        report += `Euler Angles:\n`;
+        report += `  - Degrees:  alpha = ${alphaDeg}°,  beta = ${betaDeg}°,  gamma = ${gammaDeg}°\n`;
+        report += `  - Radians:  alpha = ${alphaRadVal} rad,  beta = ${betaRadVal} rad,  gamma = ${gammaRadVal} rad\n`;
+
+        if (curConfig) {
+            report += `\nConfiguration:\n`;
+            report += `  - Active Set:   ${this.activeConfig + 1} of ${(this.configs || []).length}\n`;
+            report += `  - Axis Flips:   Atom A = ${curConfig.aFlip}, Atom B = ${curConfig.bFlip}\n`;
+        }
+
+        if (this.gaugeNote) {
+            report += `\nNote: ${this.gaugeNote}\n`;
+        }
+
+        return report;
+    }
+
+    get currentRotationMatrix() {
+        const c = this._activeConfig();
+        if (!c) return null;
+        return c.relativeRotation;
+    }
+
+    txtRotationMatrixReport() {
+        if (!this.atomA || !this.atomB) {
+            return 'No atom pair selected for rotation matrix export.';
+        }
+
+        const R = this.currentRotationMatrix;
+        if (!R) {
+            return 'No active rotation matrix available for current orientation.';
+        }
+
+        const tA = tensorLabel[this.tensorA] ?? this.tensorA;
+        const tB = tensorLabel[this.tensorB] ?? this.tensorB;
+        const ordA = orderLabel[this.orderA] ?? this.orderA;
+        const ordB = orderLabel[this.orderB] ?? this.orderB;
+        const seq = (this.sequence || 'zyz').toUpperCase();
+        const sense = this.active ? 'Active' : 'Passive';
+        const curConfig = this._activeConfig();
+
+        const alphaDeg = typeof this.alpha === 'number' ? this.alpha.toFixed(2) : this.alpha;
+        const betaDeg = typeof this.beta === 'number' ? this.beta.toFixed(2) : this.beta;
+        const gammaDeg = typeof this.gamma === 'number' ? this.gamma.toFixed(2) : this.gamma;
+
+        let report = `===================================================\n`;
+        report += `MagresView 2 — Relative Rotation Matrix Report\n`;
+        report += `===================================================\n\n`;
+
+        report += `Atom A: ${this.atomLabelA} (${tA}, ${ordA})\n`;
+        report += `Atom B: ${this.atomLabelB} (${tB}, ${ordB})\n`;
+        report += `Sequence: ${seq}  |  Rotation Sense: ${sense}\n`;
+        if (curConfig) {
+            report += `Active Set: ${this.activeConfig + 1} of ${(this.configs || []).length} (A flip: ${curConfig.aFlip}, B flip: ${curConfig.bFlip})\n`;
+        }
+        report += `Euler Angles: alpha = ${alphaDeg}°, beta = ${betaDeg}°, gamma = ${gammaDeg}°\n\n`;
+
+        report += `Rotation Matrix R (${sense}, PAS A -> PAS B):\n`;
+        R.forEach((row) => {
+            report += `  ` + row.map((v) => (v >= 0 ? ' ' : '') + v.toFixed(6)).join('    ') + `\n`;
+        });
+
         return report;
     }
 
@@ -344,24 +436,40 @@ class EulerInterface extends DataCheckInterface {
     }
 
     txtSelfAngleTable() {
-        // Full table of MS-to-EFG tensor angles for each atom (non-interactive
-        // export; still uses the local math per ADR-0002).
         if (!(this.hasMSData && this.hasEFGData)) {
             throw Error('Both MS and EFG tensors are needed to compute the table');
         }
 
-        let targ = this.state.app_viewer.selected;
-        targ = (targ.length > 0) ? targ : this.state.app_viewer.displayed;
+        const app = this.state.app_viewer;
+        const targ = getSel(app);
+        if (!targ) return '';
 
-        const data = targ.map((a) => [a.crystLabel, a.getArrayValue('ms'), a.getArrayValue('efg')]);
+        const atoms = targ.atoms || Array.from(targ) || [];
 
-        let table = `Euler angles between MS and EFG tensors in radiants, convention: ${this.sequence.toUpperCase()}\n`;
-        let conv = this.sequence;
+        const sequence = this.sequence.toUpperCase();
+        const sense = this.active ? 'active' : 'passive';
+        let table = `Euler angles between MS (${this.orderA}) and EFG (${this.orderB}) tensors in radians, sequence: ${sequence}, rotation: ${sense}\n`;
 
-        data.forEach((d) => {
-            let [label, ms, efg] = d;
-            let [alpha, beta, gamma] = eulerBetweenTensors(ms, efg, conv);
-            table += `${label}    ${alpha}    ${beta}    ${gamma}\n`;
+        atoms.forEach((atom) => {
+            const rawMS = atom.getArrayValue('ms');
+            const rawEFG = atom.getArrayValue('efg');
+            if (!rawMS || !rawEFG) return;
+
+            const msTensor = rawMS instanceof TensorData ? rawMS : new TensorData(rawMS);
+            const efgTensor = rawEFG instanceof TensorData ? rawEFG : new TensorData(rawEFG);
+
+            const orientation = msTensor.relativeOrientationTo(efgTensor, {
+                sourceConvention: this.orderA,
+                targetConvention: this.orderB,
+                sequence: this.sequence,
+                active: this.active
+            });
+
+            const primaryConfig = orientation.configurations[0];
+            if (primaryConfig) {
+                const [alpha, beta, gamma] = primaryConfig.euler;
+                table += `${atom.crystLabel}    ${alpha}    ${beta}    ${gamma}\n`;
+            }
         });
 
         return table;

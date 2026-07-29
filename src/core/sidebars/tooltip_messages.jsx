@@ -140,3 +140,17 @@ export const tooltip_files_precision = <div>
         The number of decimal places to use in the output file.
     </p>
 </div>
+
+// --- Euler angles sidebar ---
+export const tooltip_pas_ordering = <div>
+    <p>
+        <b>PAS Ordering Convention:</b><br />
+        Determines how the Principal Axis System (PAS) eigenvectors (X, Y, Z) are assigned to the tensor eigenvalues.
+    </p>
+    <p>
+        Haeberlen: <span style={{ whiteSpace: 'nowrap' }}>|V<sub>zz</sub> &minus; V<sub>iso</sub>| &ge; |V<sub>xx</sub> &minus; V<sub>iso</sub>| &ge; |V<sub>yy</sub> &minus; V<sub>iso</sub>|.</span><br />
+        NQR: <span style={{ whiteSpace: 'nowrap' }}>|V<sub>zz</sub>| &ge; |V<sub>yy</sub>| &ge; |V<sub>xx</sub>|.</span><br />
+        Increasing: <span style={{ whiteSpace: 'nowrap' }}>V<sub>xx</sub> &le; V<sub>yy</sub> &le; V<sub>zz</sub>.</span><br />
+        Decreasing: <span style={{ whiteSpace: 'nowrap' }}>V<sub>xx</sub> &ge; V<sub>yy</sub> &ge; V<sub>zz</sub>.</span>
+    </p>
+</div>;

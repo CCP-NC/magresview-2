@@ -54,6 +54,23 @@ function MVModal(props) {
     const onAccept = props.onAccept || (() => {});
     const onClose = props.onClose || (() => {});
 
+    const isVisible = props.display !== false;
+
+    // Close modal on Escape key press
+    useEffect(() => {
+        if (!isVisible) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.stopPropagation();
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isVisible, onClose]);
+
     function onTitleMouseDown(e) {
 
         if (props.draggable && e.button === 0) {

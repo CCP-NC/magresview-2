@@ -1,97 +1,213 @@
-/* ── Atom A/B labels ─────────────────────────────────────────────────── */
-.mv-euler-pick-labels {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+/* ── Atom Selection Badges ───────────────────────────────────────────── */
+.mv-euler-atoms-row {
+    display: flex;
     gap: 0.5em;
     width: 100%;
-    margin-bottom: 0.2em;
+    margin-bottom: 0.4em;
 }
 
-.mv-euler-pick-label-val {
+.mv-euler-atom-badge {
+    flex: 1;
     text-align: center;
     font-size: 0.88em;
     font-weight: 600;
     color: var(--fwd-color-1);
     background: var(--bkg-color-2);
-    border-radius: 3px;
-    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    padding: 0.3em 0.5em;
 }
 
-.mv-euler-pick-label-val.unset {
+.mv-euler-atom-badge.unset {
     color: var(--mid-color-2);
     font-weight: 400;
     font-style: italic;
 }
 
-/* ── Tensor type row ─────────────────────────────────────────────────── */
-.mv-euler-tensors {
+/* ── Swap Row ────────────────────────────────────────────────────────── */
+.mv-euler-swap-row {
+    width: 100%;
+    margin: 0.2em 0 0.6em;
+}
+
+/* ── Form Rows & Prominent Fields ────────────────────────────────────── */
+.mv-euler-prominent-field .mv-field-label {
+    font-size: 0.82em;
+    font-weight: 700;
+    color: var(--fwd-color-2);
+}
+
+.mv-euler-prominent-field .mv-cselect-main {
+    font-size: 0.95em;
+    font-weight: 600;
+}
+
+.mv-euler-pas-hint {
+    font-size: 0.8em;
+    color: var(--mid-color-2);
+    display: block;
+    margin-top: 0.1em;
+    margin-bottom: 0.2em;
+}
+
+.mv-euler-pas-indicator {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: var(--mid-color-2);
+    background: var(--bkg-color-1);
+    border: 1px solid var(--mid-color-1);
+    border-radius: 4px;
+    padding: 0.35em 0.55em;
+    cursor: pointer;
+    margin-top: 0.2em;
+    user-select: none;
+    box-sizing: border-box;
+    width: 100%;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.mv-euler-pas-indicator:hover {
+    background: var(--bkg-color-3);
+    border-color: var(--fwd-color-2);
+}
+
+.mv-euler-pas-indicator b {
+    color: var(--fwd-color-1);
+}
+
+.mv-euler-pas-collapse {
+    background: none;
+    border: none;
+    color: var(--mid-color-2);
+    font-size: 0.75em;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-end;
+    margin-top: 0.2em;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    transition: color 0.15s, background-color 0.15s;
+}
+
+.mv-euler-pas-collapse:hover {
+    color: var(--fwd-color-1);
+    background: var(--bkg-color-2);
+}
+
+.mv-euler-pas-expanded,
+.mv-euler-convention-expanded {
+    display: flex;
+    flex-direction: column;
     gap: 0.5em;
     width: 100%;
-    margin-bottom: 0.3em;
 }
 
-.mv-euler-tensor-label {
-    font-weight: 700;
-    font-size: 0.9em;
-    width: 1em;
-    text-align: center;
-    color: var(--mid-color-2);
-}
-
-.mv-euler-agrid-switch {
-    grid-column: 1 / span 2;
-
-    font-weight: bold;
-
+.mv-euler-field-header {
     display: flex;
-    flex-direction: row;
-    justify-content: center;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
 }
 
-.mv-euler-agrid-switch span {
-    padding: 0 10px;
+.mv-euler-form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+    width: 100%;
+    margin-bottom: 0.5em;
 }
 
-.mv-eul-results {
-    width: 90%;
-    background-color: var(--bkg-color-1);
+.mv-euler-form-row label {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--mid-color-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.mv-euler-switch-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--fwd-color-1);
+}
+
+/* ── Euler Convention Indicator ──────────────────────────────────────── */
+.mv-euler-convention-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    background: var(--bkg-color-2);
+    border: 1px solid var(--mid-color-1);
+    border-radius: 4px;
+    padding: 0.35em 0.55em;
+    cursor: pointer;
+    margin-bottom: 0.4em;
+    width: 100%;
     box-sizing: border-box;
-    table-layout: fixed;
-    z-index: -1;
+    transition: background-color 0.15s, border-color 0.15s;
+    user-select: none;
+}
+
+.mv-euler-convention-indicator:hover {
+    background: var(--bkg-color-1);
+    border-color: var(--fwd-color-2);
+}
+
+.mv-euler-indicator-badge {
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--fwd-color-1);
+    background: var(--bkg-color-3);
+    border: 1px solid var(--mid-color-1);
+    padding: 0.15em 0.45em;
+    border-radius: 3px;
+}
+
+.mv-euler-indicator-edit {
+    font-size: 0.78em;
+    font-weight: 600;
+    color: var(--mid-color-2);
+    margin-left: auto;
+}
+
+/* ── Angle Results Display ───────────────────────────────────────────── */
+.mv-eul-results {
+    width: 100%;
+    background-color: var(--bkg-color-1);
+    border-collapse: collapse;
+    margin-bottom: 0.5em;
 }
 
 .mv-eul-results thead {
     background-color: var(--bkg-color-2);
 }
 
+.mv-eul-results th,
 .mv-eul-results td {
-    padding: 5px;
+    padding: 0.4em;
+    text-align: center;
 }
 
-.mv-eul-results tbody {
-    text-align: right;
+.mv-eul-results th {
+    font-size: 0.85em;
+    color: var(--mid-color-2);
 }
 
-.mv-eul-results tbody tr:hover {
-    background-color: var(--bkg-color-2);
-}
-
-.mv-euler-row-active {
-    background-color: color-mix(in srgb, var(--ok-color-2) 22%, transparent);
+.mv-eul-results td {
+    font-size: 1em;
     font-weight: 600;
 }
 
-/* ── Configuration cycling ───────────────────────────────────────────── */
 .mv-euler-cycle-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5em;
-    width: 90%;
-    margin-bottom: 0.4em;
+    width: 100%;
+    margin-bottom: 0.5em;
 }
 
 .mv-euler-cycle-count {
@@ -109,19 +225,11 @@
 .mv-euler-warn {
     color: var(--warn-color-1, #b8860b);
     background: color-mix(in srgb, var(--warn-color-1, #b8860b) 12%, transparent);
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 0.4em 0.5em;
 }
 
-/* ── Swap A/B ────────────────────────────────────────────────────────── */
-.mv-euler-swap-row {
-    display: flex;
-    justify-content: center;
-    margin-top: 0.2em;
-}
-
-/* ── Full 16-set table modal ─────────────────────────────────────────── */
-/* Shrink the modal to the (compact) table instead of the default 30vw. */
+/* ── Full 16-Set Table Modal ─────────────────────────────────────────── */
 .mv-modal:has(.mv-eul-fulltable-wrap) {
     min-width: unset;
     min-height: unset;
@@ -140,11 +248,72 @@
     border-collapse: collapse;
 }
 
-.mv-eul-fulltable td {
-    padding: 2px 10px;
+.mv-eul-fulltable td,
+.mv-eul-fulltable th {
+    padding: 0.3em 0.8em;
 }
 
 .mv-euler-flipkey {
     text-align: center;
     font-size: 0.78em;
+}
+
+/* ── Rotation Matrix Modal ────────────────────────────────────────────── */
+.mv-euler-matrix-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+    min-width: 320px;
+    max-width: 90vw;
+}
+
+.mv-euler-matrix-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+    font-size: 0.85em;
+    color: var(--fwd-color-1);
+    background: var(--bkg-color-2);
+    border: 1px solid var(--mid-color-1);
+    border-radius: 6px;
+    padding: 0.6em 0.8em;
+}
+
+.mv-euler-matrix-card {
+    background: var(--bkg-color-1);
+    border: 1px solid var(--mid-color-1);
+    border-radius: 6px;
+    padding: 0.6em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.mv-euler-matrix-header {
+    font-size: 0.82em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--mid-color-2);
+}
+
+.mv-euler-matrix-table {
+    border-collapse: collapse;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+
+.mv-euler-matrix-table td {
+    padding: 0.3em 0.8em;
+    text-align: right;
+    font-weight: 600;
+    color: var(--fwd-color-1);
+    border: 1px solid var(--mid-color-1);
+}
+
+.mv-euler-matrix-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.2em;
 }

@@ -1,0 +1,57 @@
+.mv-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bkg-color-2);
+  border: 1px solid var(--mid-color-1);
+  border-radius: 6px;
+  padding: 0.6em;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.5em;
+}
+
+.mv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.4em;
+  margin-bottom: 0.5em;
+  border-bottom: 1px solid var(--mid-color-1);
+}
+
+.mv-card-title {
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fwd-color-2);
+}
+
+.mv-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.mv-card-badge {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--fwd-color-1);
+  background: var(--bkg-color-1);
+  border: 1px solid var(--mid-color-1);
+  border-radius: 4px;
+  padding: 0.15em 0.5em;
+}
+
+.mv-card-badge.unset {
+  color: var(--mid-color-2);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.mv-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  width: 100%;
+}

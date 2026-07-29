@@ -81,7 +81,16 @@ function MVStatusBar() {
     } else if (mode === 'euler') {
         const la = eulint.atomLabelA;
         const lb = eulint.atomLabelB;
-        context = `A: ${la}  ·  B: ${lb}`;
+        const seq = (eulint.sequence || 'zyz').toUpperCase();
+        const sense = eulint.active ? 'Active' : 'Passive';
+        const cur = eulint.configs ? eulint.configs[eulint.activeConfig] : null;
+
+        let anglesStr = '';
+        if (cur) {
+            anglesStr = `  ·  α=${cur.alpha.toFixed(2)}°, β=${cur.beta.toFixed(2)}°, γ=${cur.gamma.toFixed(2)}°`;
+        }
+
+        context = `A: ${la}  ·  B: ${lb}  ·  ${seq} (${sense})${anglesStr}`;
     }
 
     // Build selection rows when card is open
