@@ -621,6 +621,8 @@ class AppInterface extends BaseInterface {
                     // Atom references restored from crystLabel strings
                     dip_central_atom: resolveAtom(atomRefs.dip_central_atom),
                     jc_central_atom:  resolveAtom(atomRefs.jc_central_atom),
+                    eul_atom_A:       resolveAtom(atomRefs.eul_atom_A),
+                    eul_atom_B:       resolveAtom(atomRefs.eul_atom_B),
 
                     // Atom selection restored from crystLabel strings
                     sel_selected_view: selView,

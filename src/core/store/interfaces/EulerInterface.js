@@ -27,20 +27,32 @@ const initialEulerState = {
     eul_atom_A: null,
     eul_newatom_A: null,
     eul_tensor_A: 'ms',
+    eul_order_A: 'haeberlen',
     eul_atom_B: null,
     eul_newatom_B: null,
     eul_tensor_B: 'ms',
-    eul_convention: 'zyz',
-    eul_results: null,
-    eul_step: 'A'   // 'A' | 'B' — which atom the next viewer click will assign
+    eul_order_B: 'haeberlen',
+    eul_convention: 'zyz',          // Euler sequence (name kept for session/export compatibility)
+    eul_active: true,               // active (true) vs passive (false) rotation sense
+    eul_disks_on: true,             // show the Euler disks in the viewer
+    eul_orientation: null,          // live RelativeTensorOrientation
+    eul_configs: [],                // plain PAS-frame configuration list for the table
+    eul_orientation_class: null,    // 'discrete' | 'continuous' | 'indeterminate' | null
+    eul_active_config: 0            // index into eul_configs
 };
 
-const tensorValues = new Set(['ms', 'efg']);
-const conventionValues = new Set(['zyz', 'zxz']);
+const tensorValues = new Set(['ms', 'efg', 'cryst', 'dipolar']);
+const orderValues = new Set(['increasing', 'decreasing', 'haeberlen', 'nqr']);
+const sequenceValues = new Set(['zyz', 'zxz']);
 
-function makeCallback(dispatch, ending='A') {    
+// Natural PAS ordering per tensor type. These all place an axial tensor's unique
+// axis on Z, giving a clean discrete Euler gauge; users may still override.
+const recommendedOrder = { ms: 'haeberlen', efg: 'nqr', cryst: 'increasing', dipolar: 'haeberlen' };
+const orderLabel = { increasing: 'Increasing', decreasing: 'Decreasing', haeberlen: 'Haeberlen', nqr: 'NQR' };
+const tensorLabel = { ms: 'Shielding', efg: 'EFG', cryst: 'Crystal frame', dipolar: 'Dipolar (A\u2192B)' };
 
-    function cback(a, e) {
+function makeCallback(dispatch, ending = 'A') {
+    return function cback(a, e) {
         dispatch({
             type: 'update',
             data: {
@@ -48,19 +60,22 @@ function makeCallback(dispatch, ending='A') {
                 listen_update: [Events.EUL_ANGLES]
             }
         });
-    }
-
-    return cback;
+    };
 }
 
+// Rebuild the orientation (inputs changed).
 function makeEulerAction(data) {
-    return {
-        type: 'update',
-        data: {
-            ...data,
-            listen_update: [Events.EUL_ANGLES]
-        }
-    };
+    return { type: 'update', data: { ...data, listen_update: [Events.EUL_ANGLES] } };
+}
+
+// Toggle the disks on/off.
+function makeDisksAction(data) {
+    return { type: 'update', data: { ...data, listen_update: [Events.EUL_DISKS] } };
+}
+
+// Change the active configuration (animate only).
+function makeConfigAction(data) {
+    return { type: 'update', data: { ...data, listen_update: [Events.EUL_CONFIG] } };
 }
 
 class EulerInterface extends DataCheckInterface {
@@ -72,47 +87,54 @@ class EulerInterface extends DataCheckInterface {
 
     get hasMSData() {
         let app = this.state.app_viewer;
-        return (app && app.model && (app.model.hasArray('ms')));            
+        return (app && app.model && (app.model.hasArray('ms')));
     }
 
     get hasEFGData() {
         let app = this.state.app_viewer;
-        return (app && app.model && (app.model.hasArray('efg')));            
+        return (app && app.model && (app.model.hasArray('efg')));
     }
 
-    get convention() {
+    // ── Euler specification ──────────────────────────────────────────────────
+
+    get sequence() {
         return this.state.eul_convention;
     }
 
-    set convention(v) {
-        if (!conventionValues.has(v))
-            throw Error('Invalid Euler angles convention');
-        this.dispatch(makeEulerAction({eul_convention: v}));
+    set sequence(v) {
+        if (!sequenceValues.has(v))
+            throw Error('Invalid Euler sequence');
+        this.dispatch(makeEulerAction({ eul_convention: v }));
     }
 
-    /** Which atom the next viewer click will assign: 'A' or 'B' */
-    get step() {
-        return this.state.eul_step;
+    get active() {
+        return this.state.eul_active;
     }
 
-    set step(v) {
-        if (v !== 'A' && v !== 'B')
-            throw Error('Invalid Euler step; must be "A" or "B"');
-        this.dispatch({ type: 'set', key: 'eul_step', value: v });
+    set active(v) {
+        this.dispatch(makeEulerAction({ eul_active: !!v }));
     }
 
-    _getAtomLabel(ending='A') {
+    _getOrder(ending = 'A') {
+        return this.state['eul_order_' + ending];
+    }
+
+    _setOrder(v, ending = 'A') {
+        if (!orderValues.has(v))
+            throw Error('Invalid PAS ordering');
+        this.dispatch(makeEulerAction({ ['eul_order_' + ending]: v }));
+    }
+
+    get orderA() { return this._getOrder('A'); }
+    set orderA(v) { this._setOrder(v, 'A'); }
+    get orderB() { return this._getOrder('B'); }
+    set orderB(v) { this._setOrder(v, 'B'); }
+
+    // ── Atom picking ─────────────────────────────────────────────────────────
+
+    _getAtomLabel(ending = 'A') {
         let a = this.state['eul_atom_' + ending];
-        if (a)
-            return a.crystLabel
-        else
-            return 'Not selected'        
-    }
-
-    _setTensorType(v, ending='A') {
-        if (!tensorValues.has(v))
-            throw Error('Invalid NMR tensor for Euler angles');
-        this.dispatch(makeEulerAction({['eul_tensor_' + ending]: v}));
+        return a ? a.crystLabel : 'Not selected';
     }
 
     setAtomA(atom) {
@@ -125,67 +147,152 @@ class EulerInterface extends DataCheckInterface {
         this.dispatch(makeEulerAction({ eul_newatom_B: atom }));
     }
 
-    get atomA() {
-        return this.state.eul_atom_A;
+    get atomA() { return this.state.eul_atom_A; }
+    get atomLabelA() { return this._getAtomLabel('A'); }
+    get atomB() { return this.state.eul_atom_B; }
+    get atomLabelB() { return this._getAtomLabel('B'); }
+
+    _setTensorType(v, ending = 'A') {
+        if (!tensorValues.has(v))
+            throw Error('Invalid NMR tensor for Euler angles');
+        this.dispatch(makeEulerAction({ ['eul_tensor_' + ending]: v }));
     }
 
-    get atomLabelA() {
-        return this._getAtomLabel('A');
+    get tensorA() { return this.state.eul_tensor_A; }
+    set tensorA(v) { this._setTensorType(v, 'A'); }
+    get tensorB() { return this.state.eul_tensor_B; }
+    set tensorB(v) { this._setTensorType(v, 'B'); }
+
+    // Set a side's tensor type and snap its ordering to that tensor's natural
+    // convention (overridable afterwards). One dispatch → one rebuild.
+    setTensor(side, v) {
+        if (!tensorValues.has(v))
+            throw Error('Invalid NMR tensor for Euler angles');
+        this.dispatch(makeEulerAction({
+            ['eul_tensor_' + side]: v,
+            ['eul_order_' + side]: recommendedOrder[v] ?? 'haeberlen'
+        }));
     }
 
-    get atomB() {
-        return this.state.eul_atom_B;
+    // A human-readable warning when an axial tensor's chosen ordering puts its
+    // unique axis on X (no simple Euler gauge); null otherwise. Recommends the
+    // tensor's natural ordering, which places the unique axis on Z.
+    get gaugeWarning() {
+        const o = this.state.eul_orientation;
+        const free = o && o.freeRotation;
+        if (!free || !free.problematic) return null;
+        const onX = free.onX || {};
+        const sides = [];
+        if (onX.source) sides.push(['A', this.state.eul_tensor_A]);
+        if (onX.target) sides.push(['B', this.state.eul_tensor_B]);
+        return sides.map(([side, t]) =>
+            `Tensor ${side} (${tensorLabel[t] ?? t}) is axially symmetric, but the ` +
+            `${orderLabel[this._getOrder(side)]} ordering puts its unique axis on X, which has ` +
+            `no simple Euler-angle gauge. Switch ${side} to ${orderLabel[recommendedOrder[t] ?? 'haeberlen']} ` +
+            `ordering to get a discrete solution.`
+        ).join(' ');
     }
 
-    get atomLabelB() {
-        return this._getAtomLabel('B');
+    // Swap the A and B picks (atom, tensor and ordering together) and rebuild.
+    // Routed through eul_newatom_* so the listener cleans up the old A atom's
+    // disks/labels. Only meaningful when both atoms are picked.
+    swapAB() {
+        const a = this.state.eul_atom_A, b = this.state.eul_atom_B;
+        if (!a || !b) return;
+        this.dispatch(makeEulerAction({
+            eul_newatom_A: b,
+            eul_newatom_B: a,
+            eul_tensor_A: this.state.eul_tensor_B,
+            eul_tensor_B: this.state.eul_tensor_A,
+            eul_order_A: this.state.eul_order_B,
+            eul_order_B: this.state.eul_order_A
+        }));
     }
 
-    get tensorA() {
-        return this.state.eul_tensor_A;
+    // ── Disks & configurations ───────────────────────────────────────────────
+
+    get disksOn() {
+        return this.state.eul_disks_on;
     }
 
-    set tensorA(v) {
-        this._setTensorType(v, 'A');
+    set disksOn(v) {
+        this.dispatch(makeDisksAction({ eul_disks_on: !!v }));
     }
 
-    get tensorB() {
-        return this.state.eul_tensor_B;
+    get orientationClass() {
+        return this.state.eul_orientation_class;
     }
 
-    set tensorB(v) {
-        this._setTensorType(v, 'B');        
+    // A short note for the discrete axial case explaining the zeroed gauge angle.
+    get gaugeNote() {
+        const o = this.state.eul_orientation;
+        if (!o || this.state.eul_orientation_class !== 'discrete' || !o.axial) return null;
+        if (o.axial.source && o.axial.target)
+            return 'Both tensors are axially symmetric: α and γ are free gauges (set to 0); β is the angle between the unique axes.';
+        if (o.axial.target)
+            return 'Tensor B is axially symmetric: γ is a free gauge (set to 0). The ring marks the free rotation about its unique axis.';
+        if (o.axial.source)
+            return 'Tensor A is axially symmetric: α is a free gauge (set to 0). The ring marks the free rotation about its unique axis.';
+        return null;
     }
 
-    _getResult(i, rad=false) {
-        let f = rad? 1.0 : 180/Math.PI;
-        let r = this.state.eul_results;
-        return r? (r[i]*f) : 'N/A';        
+    get hasDiscrete() {
+        return this.state.eul_orientation_class === 'discrete';
     }
 
-    get alpha() {
-        return this._getResult(0);
+    /** Configuration rows for the table (angles in degrees, active flag set). */
+    get configs() {
+        const active = this.state.eul_active_config;
+        return (this.state.eul_configs || []).map((c) => ({
+            index: c.index,
+            id: c.id,
+            aFlip: c.aFlip,
+            bFlip: c.bFlip,
+            alpha: c.euler[0] * 180 / Math.PI,
+            beta: c.euler[1] * 180 / Math.PI,
+            gamma: c.euler[2] * 180 / Math.PI,
+            singular: c.singular,
+            active: c.index === active
+        }));
     }
 
-    get beta() {
-        return this._getResult(1);
+    get activeConfig() {
+        return this.state.eul_active_config;
     }
 
-    get gamma() {
-        return this._getResult(2);
+    set activeConfig(i) {
+        const n = (this.state.eul_configs || []).length;
+        if (n === 0 || i < 0 || i >= n) return;
+        this.dispatch(makeConfigAction({ eul_active_config: i }));
     }
 
-    get alphaRad() {
-        return this._getResult(0, true);
+    cycleConfig(delta) {
+        const n = (this.state.eul_configs || []).length;
+        if (n === 0) return;
+        const i = ((this.state.eul_active_config + delta) % n + n) % n;
+        this.dispatch(makeConfigAction({ eul_active_config: i }));
     }
 
-    get betaRad() {
-        return this._getResult(1, true);
+    // ── Current (active configuration) angles, in degrees ────────────────────
+
+    _activeConfig() {
+        return (this.state.eul_configs || [])[this.state.eul_active_config] ?? null;
     }
 
-    get gammaRad() {
-        return this._getResult(2, true);
+    _angle(i, rad = false) {
+        const c = this._activeConfig();
+        if (!c) return 'N/A';
+        return c.euler[i] * (rad ? 1.0 : 180 / Math.PI);
     }
+
+    get alpha() { return this._angle(0); }
+    get beta() { return this._angle(1); }
+    get gamma() { return this._angle(2); }
+    get alphaRad() { return this._angle(0, true); }
+    get betaRad() { return this._angle(1, true); }
+    get gammaRad() { return this._angle(2, true); }
+
+    // ── Click binding ────────────────────────────────────────────────────────
 
     bind() {
         const dispatch = this._dispatcher;
@@ -194,23 +301,8 @@ class EulerInterface extends DataCheckInterface {
         if (!handler)
             return;
 
-        // Route the click to atom A or B based on eul_step in the CURRENT state
-        // (read at call time via the 'call' action, not at bind time).
-        handler.setCallback('eul', LC, (a, e) => {
-            dispatch({
-                type: 'call',
-                function: (state, atom) => {
-                    const step = state.eul_step;
-                    return {
-                        ['eul_newatom_' + step]: atom,
-                        listen_update: [Events.EUL_ANGLES]
-                    };
-                },
-                arguments: [a]
-            });
-        });
-
-        // Keep RC as a legacy fallback: right-click always sets atom B
+        // Left-click assigns atom A, right-click assigns atom B.
+        handler.setCallback('eul', LC, makeCallback(dispatch, 'A'));
         handler.setCallback('eul', RC, makeCallback(dispatch, 'B'));
     }
 
@@ -229,45 +321,46 @@ class EulerInterface extends DataCheckInterface {
         }));
     }
 
+    // ── Text export ──────────────────────────────────────────────────────────
+
     txtReport() {
         let report = 'Euler angles between tensors:\n';
-
         report += `${this.tensorA} on ${this.atomLabelA}\nand\n`;
         report += `${this.tensorB} on ${this.atomLabelB}\n\n`;
-
-        report += `Convention: ${this.convention.toUpperCase()}\n\n`;
-
+        report += `Sequence: ${this.sequence.toUpperCase()} (${this.active ? 'active' : 'passive'})\n\n`;
         report += `Degrees:\n${this.alpha}    ${this.beta}    ${this.gamma}\n\n`;
         report += `Radiants:\n${this.alphaRad}     ${this.betaRad}     ${this.gammaRad}`;
-
         return report;
     }
 
+    /** CSV of all equivalent configurations (angles in degrees). */
+    csvTable() {
+        const rows = this.configs;
+        let csv = '#,A flip,B flip,alpha (deg),beta (deg),gamma (deg)\n';
+        rows.forEach((c) => {
+            csv += `${c.index + 1},${c.aFlip},${c.bFlip},${c.alpha.toFixed(4)},${c.beta.toFixed(4)},${c.gamma.toFixed(4)}\n`;
+        });
+        return csv;
+    }
+
     txtSelfAngleTable() {
-        // Return a full table of MS-to-EFG tensor angles for each atom
+        // Full table of MS-to-EFG tensor angles for each atom (non-interactive
+        // export; still uses the local math per ADR-0002).
         if (!(this.hasMSData && this.hasEFGData)) {
-            // Pointless
             throw Error('Both MS and EFG tensors are needed to compute the table');
         }
 
-        // Selection if available, otherwise displayed atoms
         let targ = this.state.app_viewer.selected;
-        targ = (targ.length > 0)? targ : this.state.app_viewer.displayed;
+        targ = (targ.length > 0) ? targ : this.state.app_viewer.displayed;
 
-        const data = targ.map((a, i) => {
-            return [a.crystLabel, a.getArrayValue('ms'), a.getArrayValue('efg')];
-        });
+        const data = targ.map((a) => [a.crystLabel, a.getArrayValue('ms'), a.getArrayValue('efg')]);
 
-        let table = `Euler angles between MS and EFG tensors in radiants, convention: ${this.convention.toUpperCase()}\n`;
-        let conv = this.convention;
+        let table = `Euler angles between MS and EFG tensors in radiants, convention: ${this.sequence.toUpperCase()}\n`;
+        let conv = this.sequence;
 
-        data.forEach((d, i) => {
-
+        data.forEach((d) => {
             let [label, ms, efg] = d;
-
-
             let [alpha, beta, gamma] = eulerBetweenTensors(ms, efg, conv);
-
             table += `${label}    ${alpha}    ${beta}    ${gamma}\n`;
         });
 
@@ -278,11 +371,8 @@ class EulerInterface extends DataCheckInterface {
 function useEulerInterface() {
     let state = useSelector(makeSelector('eul', ['app_viewer', 'app_click_handler']), shallowEqual);
     let dispatcher = useDispatch();
-
-    let intf = new EulerInterface(state, dispatcher);
-
-    return intf;
+    return new EulerInterface(state, dispatcher);
 }
 
 export default useEulerInterface;
-export { initialEulerState };
+export { initialEulerState, EulerInterface };

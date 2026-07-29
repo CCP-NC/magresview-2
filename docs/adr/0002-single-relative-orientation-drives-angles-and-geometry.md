@@ -1,0 +1,3 @@
+# One RelativeTensorOrientation drives both angles and geometry
+
+The Euler feature builds a single `RelativeTensorOrientation` (via crystvis-js `TensorData.relativeOrientationTo`) and reads both the angle table and the 3D disk geometry from that one object. MagresView's previous local Euler math (`utils-rotation.js`) is removed from the interactive path, because two independent computations (local math for the table, crystvis for the disks) would drift on convention, sign and singular-angle choices and violate the requirement that displayed angles match the drawing. `utils-rotation.js` is retained only for the non-interactive bulk MS-to-EFG angle export.

@@ -33,7 +33,7 @@ const modeConfig = {
     euler: {
         label: 'Euler Angles',
         icon: <MVIcon icon='euler' color='var(--mid-color-2)' />,
-        hint: 'Pick Atom A/B, then click in viewer',
+        hint: 'Left-click to select Atom A and right-click to select Atom B',
         color: 'var(--mid-color-2)'
     }
 };

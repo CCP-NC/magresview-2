@@ -10,11 +10,13 @@ const msColor = 0xff8000;
 const efgColor = 0x0080ff;
 const dipColor = 0x00ff80;
 const jcColor = 0xff0080;
+const crystColor = 0xaaaaaa; // Crystallographic reference frame
 
 export {
     selColor,
     msColor,
     efgColor,
     dipColor,
-    jcColor
+    jcColor,
+    crystColor
 };
