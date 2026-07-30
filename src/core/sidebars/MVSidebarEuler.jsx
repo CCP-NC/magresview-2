@@ -22,6 +22,7 @@ import { saveContents, copyContents } from '../../utils';
 
 import MVSwitch from '../../controls/MVSwitch';
 import MVButton from '../../controls/MVButton';
+import MVIcon from '../../icons/MVIcon';
 import MVCheckBox from '../../controls/MVCheckBox';
 import MVModal from '../../controls/MVModal';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
@@ -30,6 +31,14 @@ import MVField from '../../controls/MVField';
 import MVTooltip from '../../controls/MVTooltip';
 import { tooltip_pas_ordering } from './tooltip_messages';
 import { FaCopy, FaDownload } from 'react-icons/fa';
+
+const tensorIcons = {
+    'ms': <MVIcon icon="ms" color='var(--ms-color-3)' />,
+    'efg': <MVIcon icon="efg" color='var(--efg-color-3)' />,
+    'dipolarAB': <MVIcon icon="dip" color='var(--dip-color-3)' />,
+    'jcouplingAB': <MVIcon icon="jcoup" color='var(--jcoup-color-3)' />,
+    'cryst': <MVIcon icon="crystal" color='var(--crystal-color-3)' />
+}
 
 // Crystal frame is always available; MS/EFG only when the model carries them;
 // the A→B dipolar tensor only when two distinct atoms are picked.
@@ -53,7 +62,7 @@ const orderOptions = [
 function OptionSelect({ options, value, onSelect }) {
     return (<MVCustomSelect selected={value} onSelect={onSelect}>
         {options.map(([v, label]) => (
-            <MVCustomSelectOption key={v} value={v}>{label}</MVCustomSelectOption>
+            <MVCustomSelectOption key={v} icon={tensorIcons[v] || null} value={v}>{label}</MVCustomSelectOption>
         ))}
     </MVCustomSelect>);
 }
@@ -138,6 +147,50 @@ function AnglesBlock({ eulint, onShowAll, onShowMatrix }) {
     </>);
 }
 
+function EigenTable({ evecs, evals, title }) {
+    if (!evecs || !Array.isArray(evecs)) {
+        return null;
+    }
+
+    const copyPAS = () => {
+        const text = evecs.map((row, i) =>
+            `v${i + 1} = (${row.map((x) => x.toFixed(6)).join(', ')})${evals && evals[i] !== undefined ? `, lambda_${i + 1} = ${evals[i].toFixed(6)}` : ''}`
+        ).join('\n');
+        copyContents(text);
+    };
+
+    return (
+        <div className='mv-euler-matrix-card'>
+            <div className='mv-euler-matrix-header'>{title}</div>
+            <div className='mv-euler-pas-list'>
+                {evecs.map((eigenvector, index) => (
+                    <div key={index} className='mv-euler-pas-row'>
+                        <span className='mv-euler-pas-vec'>
+                            v<sub>{index + 1}</sub> = (
+                            {eigenvector.map((val, i) => (
+                                <span key={i} className='mv-fixed-width'>
+                                    {val >= 0 ? ` ${val.toFixed(4)}` : val.toFixed(4)}
+                                    {i < eigenvector.length - 1 ? ', ' : ''}
+                                </span>
+                            ))}
+                            )
+                        </span>
+                        {evals && evals[index] !== undefined && (
+                            <span className='mv-euler-pas-eval'>
+                                &lambda;<sub>{index + 1}</sub> ={' '}
+                                <span className='mv-fixed-width'>{evals[index].toFixed(4)}</span>
+                            </span>
+                        )}
+                    </div>
+                ))}
+            </div>
+            <MVButton onClick={copyPAS} style={{ fontSize: '0.82em', marginTop: '0.2em' }}>
+                <FaCopy />&nbsp;Copy PAS to Clipboard
+            </MVButton>
+        </div>
+    );
+}
+
 function RotationMatrixModal({ eulint, onClose }) {
     const R = eulint.currentRotationMatrix;
     const reportText = eulint.txtRotationMatrixReport();
@@ -152,11 +205,17 @@ function RotationMatrixModal({ eulint, onClose }) {
     const seq = (eulint.sequence || 'zyz').toUpperCase();
     const sense = eulint.active ? 'Active' : 'Passive';
 
+    const pasA = eulint.pasA;
+    const pasB = eulint.pasB;
+
+    const titleA = `Principal Axis System A: ${eulint.atomLabelA} (${tensorLabelA}, ${orderLabelA})`;
+    const titleB = `Principal Axis System B: ${eulint.atomLabelB} (${tensorLabelB}, ${orderLabelB})`;
+
     return (
         <MVModal
-            title='Rotation Matrix (PAS A → PAS B)'
+            title='Principal Axis Systems & Rotation Matrix'
             display={true}
-            hasOverlay={true}
+            hasOverlay={false}
             draggable={true}
             noFooter={true}
             onClose={onClose}
@@ -179,22 +238,36 @@ function RotationMatrixModal({ eulint, onClose }) {
                     )}
                 </div>
 
+                <EigenTable evecs={pasA?.evecs} evals={pasA?.evals} title={titleA} />
+                <EigenTable evecs={pasB?.evecs} evals={pasB?.evals} title={titleB} />
+
                 <div className='mv-euler-matrix-card'>
                     <div className='mv-euler-matrix-header'>
                         Rotation Matrix R ({sense}, PAS A &rarr; PAS B)
                     </div>
                     {R ? (
-                        <table className='mv-euler-matrix-table'>
-                            <tbody>
-                                {R.map((row, i) => (
-                                    <tr key={i}>
-                                        {row.map((val, j) => (
-                                            <td key={j}>{val >= 0 ? ` ${val.toFixed(6)}` : val.toFixed(6)}</td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <>
+                            <table className='mv-euler-matrix-table'>
+                                <tbody>
+                                    {R.map((row, i) => (
+                                        <tr key={i}>
+                                            {row.map((val, j) => (
+                                                <td key={j}>{val >= 0 ? ` ${val.toFixed(6)}` : val.toFixed(6)}</td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <MVButton
+                                onClick={() => {
+                                    const text = R.map((row) => row.map((v) => v.toFixed(6)).join(', ')).join('\n');
+                                    copyContents(text);
+                                }}
+                                style={{ fontSize: '0.82em', marginTop: '0.2em' }}
+                            >
+                                <FaCopy />&nbsp;Copy Matrix to Clipboard
+                            </MVButton>
+                        </>
                     ) : (
                         <p className='mv-euler-msg'>No active rotation matrix available.</p>
                     )}
@@ -202,7 +275,7 @@ function RotationMatrixModal({ eulint, onClose }) {
 
                 <div className='mv-euler-matrix-actions'>
                     <MVButton onClick={() => copyContents(reportText)}>
-                        <FaCopy />&nbsp;Copy Matrix &amp; Info to Clipboard
+                        <FaCopy />&nbsp;Copy Report &amp; All Data to Clipboard
                     </MVButton>
                 </div>
             </div>
@@ -362,7 +435,7 @@ function MVSidebarEuler(props) {
 
         {showTable &&
             <MVModal title={`All ${configs.length} equivalent Euler angle sets`}
-                     display={true} hasOverlay={true} draggable={true} noFooter={true}
+                     display={true} hasOverlay={false} draggable={true} noFooter={true}
                      onClose={() => setShowTable(false)}>
                 <FullTable configs={configs} />
                 <div className='mv-euler-cycle-row' style={{marginTop: '0.8em'}}>

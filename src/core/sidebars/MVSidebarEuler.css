@@ -317,3 +317,36 @@
     justify-content: center;
     margin-top: 0.2em;
 }
+
+/* ── PAS Eigenvector Cards ───────────────────────────────────────────── */
+.mv-euler-pas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+    width: 100%;
+}
+
+.mv-euler-pas-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.4em 0.8em;
+    font-size: 0.88em;
+    color: var(--fwd-color-1);
+    background: var(--bkg-color-2);
+    border: 1px solid var(--mid-color-1);
+    border-radius: 4px;
+    padding: 0.35em 0.6em;
+}
+
+.mv-euler-pas-vec {
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.mv-euler-pas-eval {
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--fwd-color-1);
+}

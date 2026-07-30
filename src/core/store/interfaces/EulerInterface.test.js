@@ -224,6 +224,49 @@ describe('EulerInterface.txtRotationMatrixReport', () => {
 
         expect(R[2][2]).toBeCloseTo(Math.cos(betaRad), 6);
     });
+
+    it('returns pasA and pasB eigenvectors and eigenvalues when eul_orientation exists and updates with active config', () => {
+        const tensorA = new TensorData([[10, 0, 0], [0, 20, 0], [0, 0, 30]]);
+        const tensorB = new TensorData([[15, 0, 0], [0, 25, 0], [0, 0, 35]]);
+        const orientation = tensorA.relativeOrientationTo(tensorB, {
+            sourceConvention: 'increasing',
+            targetConvention: 'increasing'
+        });
+
+        const configs = orientation.configurations.map((c, i) => ({
+            index: i,
+            id: c.id,
+            aFlip: c.source.transform,
+            bFlip: c.target.transform,
+            sourceFrame: c.source.frame,
+            targetFrame: c.target.frame,
+            euler: c.euler,
+            singular: c.singular,
+            relativeRotation: c.rotation
+        }));
+
+        const { intf } = makeInterface({
+            eul_orientation: orientation,
+            eul_configs: configs,
+            eul_active_config: 0
+        });
+
+        expect(intf.pasA).not.toBeNull();
+        expect(intf.pasB).not.toBeNull();
+        expect(intf.pasA.evals).toEqual([10, 20, 30]);
+        expect(intf.pasA.evecs).toEqual([[1, 0, 0], [0, 1, 0], [0, 0, 1]]);
+
+        // Find a configuration where aFlip is flip-x (flips Y and Z)
+        const flipXIdx = configs.findIndex((c) => c.aFlip === 'flip-x');
+        if (flipXIdx >= 0) {
+            const intfFlipX = makeInterface({
+                eul_orientation: orientation,
+                eul_configs: configs,
+                eul_active_config: flipXIdx
+            }).intf;
+            expect(intfFlipX.pasA.evecs).toEqual([[1, 0, 0], [0, -1, 0], [0, 0, -1]]);
+        }
+    });
 });
 
 describe('EulerInterface.txtSelfAngleTable', () => {

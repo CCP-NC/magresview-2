@@ -111,7 +111,7 @@ test('shows a message instead of a table for continuous orientations', () => {
     expect(screen.queryByRole('row')).toBeNull();
 });
 
-test('"View Rotation Matrix" opens a modal displaying rotation matrix info and copy button', async () => {
+test('"View Rotation Matrix" opens a modal displaying rotation matrix info and copy buttons', async () => {
     const user = userEvent.setup();
     const eulint = makeEulint({
         currentRotationMatrix: [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
@@ -124,6 +124,6 @@ test('"View Rotation Matrix" opens a modal displaying rotation matrix info and c
     const modal = screen.getByTestId('modal');
     expect(modal.textContent).toContain('Rotation Matrix');
 
-    await user.click(screen.getByText(/Copy Matrix/));
+    await user.click(screen.getByText(/Copy Report & All Data/));
     expect(copyContents).toHaveBeenCalledWith('Matrix Report');
 });

@@ -49,6 +49,12 @@ const sequenceValues = new Set(['zyz', 'zxz']);
 const recommendedOrder = { ms: 'haeberlen', efg: 'nqr', cryst: 'increasing', dipolar: 'haeberlen' };
 const orderLabel = { increasing: 'Increasing', decreasing: 'Decreasing', haeberlen: 'Haeberlen', nqr: 'NQR' };
 const tensorLabel = { ms: 'Shielding', efg: 'EFG', cryst: 'Crystal frame', dipolar: 'Dipolar (A\u2192B)' };
+const flipDesc = {
+    'identity': 'identity',
+    'flip-x': 'flip-x (180° around X)',
+    'flip-y': 'flip-y (180° around Y)',
+    'flip-z': 'flip-z (180° around Z)'
+};
 
 function makeCallback(dispatch, ending = 'A') {
     return function cback(a, e) {
@@ -60,6 +66,11 @@ function makeCallback(dispatch, ending = 'A') {
             }
         });
     };
+}
+
+function transpose3x3(m) {
+    if (!m) return null;
+    return [0, 1, 2].map((i) => [0, 1, 2].map((j) => m[j][i]));
 }
 
 // Rebuild the orientation (inputs changed).
@@ -247,6 +258,8 @@ class EulerInterface extends DataCheckInterface {
             id: c.id,
             aFlip: c.aFlip,
             bFlip: c.bFlip,
+            sourceFrame: c.sourceFrame,
+            targetFrame: c.targetFrame,
             alpha: c.euler[0] * 180 / Math.PI,
             beta: c.euler[1] * 180 / Math.PI,
             gamma: c.euler[2] * 180 / Math.PI,
@@ -367,7 +380,7 @@ class EulerInterface extends DataCheckInterface {
         if (curConfig) {
             report += `\nConfiguration:\n`;
             report += `  - Active Set:   ${this.activeConfig + 1} of ${(this.configs || []).length}\n`;
-            report += `  - Axis Flips:   Atom A = ${curConfig.aFlip}, Atom B = ${curConfig.bFlip}\n`;
+            report += `  - Axis Flips:   Atom A = ${flipDesc[curConfig.aFlip] ?? curConfig.aFlip}, Atom B = ${flipDesc[curConfig.bFlip] ?? curConfig.bFlip}\n`;
         }
 
         if (this.gaugeNote) {
@@ -381,6 +394,32 @@ class EulerInterface extends DataCheckInterface {
         const c = this._activeConfig();
         if (!c) return null;
         return c.relativeRotation;
+    }
+
+    get pasA() {
+        const o = this.state.eul_orientation;
+        const curConfig = this._activeConfig();
+        const frame = curConfig?.sourceFrame || o?.sourceFrame;
+        if (o && o.sourceEigenvalues && frame) {
+            return {
+                evals: o.sourceEigenvalues,
+                evecs: transpose3x3(frame)
+            };
+        }
+        return null;
+    }
+
+    get pasB() {
+        const o = this.state.eul_orientation;
+        const curConfig = this._activeConfig();
+        const frame = curConfig?.targetFrame || o?.targetFrame;
+        if (o && o.targetEigenvalues && frame) {
+            return {
+                evals: o.targetEigenvalues,
+                evecs: transpose3x3(frame)
+            };
+        }
+        return null;
     }
 
     txtRotationMatrixReport() {
@@ -413,9 +452,31 @@ class EulerInterface extends DataCheckInterface {
         report += `Atom B: ${this.atomLabelB} (${tB}, ${ordB})\n`;
         report += `Sequence: ${seq}  |  Rotation Sense: ${sense}\n`;
         if (curConfig) {
-            report += `Active Set: ${this.activeConfig + 1} of ${(this.configs || []).length} (A flip: ${curConfig.aFlip}, B flip: ${curConfig.bFlip})\n`;
+            report += `Active Set: ${this.activeConfig + 1} of ${(this.configs || []).length} (A flip: ${flipDesc[curConfig.aFlip] ?? curConfig.aFlip}, B flip: ${flipDesc[curConfig.bFlip] ?? curConfig.bFlip})\n`;
         }
         report += `Euler Angles: alpha = ${alphaDeg}°, beta = ${betaDeg}°, gamma = ${gammaDeg}°\n\n`;
+
+        const pasA = this.pasA;
+        if (pasA && pasA.evecs) {
+            report += `PAS Atom A (${this.atomLabelA} - ${tA}, ${ordA}):\n`;
+            pasA.evecs.forEach((v, i) => {
+                const ev = pasA.evals ? pasA.evals[i] : undefined;
+                const evStr = ev !== undefined ? `,  lambda_${i + 1} = ${ev.toFixed(6)}` : '';
+                report += `  v${i + 1} = (${v.map((x) => (x >= 0 ? ' ' : '') + x.toFixed(6)).join(', ')})${evStr}\n`;
+            });
+            report += `\n`;
+        }
+
+        const pasB = this.pasB;
+        if (pasB && pasB.evecs) {
+            report += `PAS Atom B (${this.atomLabelB} - ${tB}, ${ordB}):\n`;
+            pasB.evecs.forEach((v, i) => {
+                const ev = pasB.evals ? pasB.evals[i] : undefined;
+                const evStr = ev !== undefined ? `,  lambda_${i + 1} = ${ev.toFixed(6)}` : '';
+                report += `  v${i + 1} = (${v.map((x) => (x >= 0 ? ' ' : '') + x.toFixed(6)).join(', ')})${evStr}\n`;
+            });
+            report += `\n`;
+        }
 
         report += `Rotation Matrix R (${sense}, PAS A -> PAS B):\n`;
         R.forEach((row) => {

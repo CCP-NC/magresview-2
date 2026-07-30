@@ -78,6 +78,8 @@ function buildConfigs(orientation) {
         id: c.id,
         aFlip: c.source.transform,
         bFlip: c.target.transform,
+        sourceFrame: c.source.frame,
+        targetFrame: c.target.frame,
         euler: c.euler,                 // radians [alpha, beta, gamma]
         singular: c.singular.isSingular,
         relativeRotation: c.rotation
