@@ -1,0 +1,26 @@
+.mv-hf-gamma-block {
+    font-size: 0.85em;
+    margin: 0.4em 0;
+}
+
+.mv-hf-gamma-block .mv-hf-gamma-title {
+    font-weight: bold;
+    margin-bottom: 0.2em;
+}
+
+.mv-hf-gamma-block table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.mv-hf-gamma-block td {
+    padding: 0.05em 0.4em 0.05em 0;
+    white-space: nowrap;
+}
+
+.mv-hf-note {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin: 0.4em 0;
+    line-height: 1.3;
+}

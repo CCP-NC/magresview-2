@@ -3,6 +3,7 @@ import useAppInterface from './interfaces/AppInterface';
 import useSelInterface from './interfaces/SelInterface';
 import useMSInterface from './interfaces/MSInterface';
 import useEFGInterface from './interfaces/EFGInterface';
+import useHFInterface from './interfaces/HFInterface';
 import useDipInterface from './interfaces/DipInterface';
 import useEulerInterface from './interfaces/EulerInterface';
 import useJCoupInterface from './interfaces/JCoupInterface';
@@ -16,6 +17,7 @@ export {
     useSelInterface, 
     useMSInterface, 
     useEFGInterface,
+    useHFInterface,
     useDipInterface,
     useJCoupInterface,
     useEulerInterface,

@@ -18,7 +18,7 @@
   "homepage": ".",
   "type": "module",
   "dependencies": {
-    "@ccp-nc/crystvis-js": "^0.7.1",
+    "@ccp-nc/crystvis-js": "^0.8.0",
     "@popperjs/core": "^2.11.8",
     "color-scales": "^3.0.2",
     "colormap": "^2.3.2",

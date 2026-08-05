@@ -4,7 +4,7 @@
 
 import _ from 'lodash';
 import { addPrefix, getSel } from '../utils';
-import { msColor, efgColor } from './colors';
+import { msColor, efgColor, hfColor } from './colors';
 
 function makeEllipsoidListener(name, color) {
     // Factory for a listener that will be used for both MS and EFG ellipsoids
@@ -60,5 +60,6 @@ function makeEllipsoidListener(name, color) {
 // Make specific instances of the listener
 const msEllipsoidListener = makeEllipsoidListener('ms', msColor);
 const efgEllipsoidListener = makeEllipsoidListener('efg', efgColor);
+const hfEllipsoidListener = makeEllipsoidListener('hf', hfColor);
 
-export { msEllipsoidListener, efgEllipsoidListener };
+export { msEllipsoidListener, efgEllipsoidListener, hfEllipsoidListener };

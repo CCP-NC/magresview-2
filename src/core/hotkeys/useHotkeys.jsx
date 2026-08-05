@@ -59,6 +59,7 @@ const ACTIONS = {
     'sidebar-select': ({ appint }) => { appint.sidebar = 'select'; },
     'sidebar-ms':     ({ appint }) => { appint.sidebar = 'ms'; },
     'sidebar-efg':    ({ appint }) => { appint.sidebar = 'efg'; },
+    'sidebar-hf':     ({ appint }) => { appint.sidebar = 'hf'; },
     'sidebar-dip':    ({ appint }) => { appint.sidebar = 'dip'; },
     'sidebar-jcoup':  ({ appint }) => { appint.sidebar = 'jcoup'; },
     'sidebar-euler':  ({ appint }) => { appint.sidebar = 'euler'; },

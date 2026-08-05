@@ -35,7 +35,8 @@ function getNMRData(view, datatype, tenstype='ms', reftable=null) {
     let units = '';
     let tens_units = {
         ms: 'ppm',
-        efg: 'au'
+        efg: 'au',
+        hf: 'MHz'
     }[tenstype];
     let values = null;
     let tensors = view.map((a) => (a.getArrayValue(tenstype)));

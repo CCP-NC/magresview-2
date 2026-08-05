@@ -34,6 +34,7 @@ import MVSidebarLoad from './sidebars/MVSidebarLoad';
 import MVSidebarSelect from './sidebars/MVSidebarSelect';
 import MVSidebarMS from './sidebars/MVSidebarMS';
 import MVSidebarEFG from './sidebars/MVSidebarEFG';
+import MVSidebarHF from './sidebars/MVSidebarHF';
 import MVSidebarDip from './sidebars/MVSidebarDip';
 import MVSidebarJCoup from './sidebars/MVSidebarJCoup';
 import MVSidebarEuler from './sidebars/MVSidebarEuler';
@@ -183,6 +184,7 @@ function MagresViewPage() {
                     refTableOpen={refTableOpen}
                     onRefTableClose={() => setRefTableOpen(false)} />
                 <MVSidebarEFG show={appint.sidebar === 'efg'} />
+                <MVSidebarHF show={appint.sidebar === 'hf'} />
                 <MVSidebarDip show={appint.sidebar === 'dip'} />
                 <MVSidebarJCoup show={appint.sidebar === 'jcoup'} />
                 <MVSidebarEuler show={appint.sidebar === 'euler'} />

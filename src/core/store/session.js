@@ -64,6 +64,7 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     'cscale_displ',
     'ms_view',
     'efg_view',
+    'hf_view',
     'dip_view',
     'jc_view',
 

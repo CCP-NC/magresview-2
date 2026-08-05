@@ -100,7 +100,8 @@ function MVModal(props) {
     }
 
     let modal = (<div className={chainClasses('mv-control mv-modal', props.draggable? 'mv-modal-draggable' : '', 
-                                              props.resizable? 'mv-modal-resizable' : '')} style={modalStyle}>
+                                              props.resizable? 'mv-modal-resizable' : '',
+                                              props.className || '')} style={modalStyle}>
         <div className='mv-modal-title' onMouseDown={onTitleMouseDown}>
             {props.title} 
             <IconContext.Provider value={{color: 'var(--fwd-color-1)'}}>

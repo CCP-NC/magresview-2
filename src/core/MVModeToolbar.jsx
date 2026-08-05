@@ -49,37 +49,44 @@ const sidebars = [
         accentVar: '--efg-color-2'
     },
     {
+        key: 'hf',
+        label: 'HF',
+        title: 'Hyperfine Tensor (5)',
+        icon: (c) => <MVIcon icon='hf' color={c} />,
+        accentVar: '--hf-color-2'
+    },
+    {
         key: 'dip',
         label: 'Dipolar',
-        title: 'Dipolar Couplings (5)',
+        title: 'Dipolar Couplings (6)',
         icon: (c) => <MVIcon icon='dip' color={c} />,
         accentVar: '--dip-color-2'
     },
     {
         key: 'jcoup',
         label: 'J-Coup',
-        title: 'J Couplings (6)',
+        title: 'J Couplings (7)',
         icon: (c) => <MVIcon icon='jcoup' color={c} />,
         accentVar: '--jcoup-color-2'
     },
     {
         key: 'euler',
         label: 'Euler',
-        title: 'Euler Angles (7)',
+        title: 'Euler Angles (8)',
         icon: (c) => <MVIcon icon='euler' color={c} />,
         accentVar: '--mid-color-2'
     },
     {
         key: 'plots',
         label: 'Plots',
-        title: 'Spectral plots (8)',
+        title: 'Spectral plots (9)',
         icon: <GiHistogram />,
         accentVar: '--ms-color-2'
     },
     {
         key: 'files',
         label: 'Files',
-        title: 'Report files (9)',
+        title: 'Report files (10)',
         icon: <FaFile />,
         accentVar: '--fwd-color-2'
     },
