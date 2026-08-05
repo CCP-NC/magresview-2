@@ -80,5 +80,6 @@ function makeLabelListener(name, shiftfunc) {
 const selLabelListener = makeLabelListener('sel_sites', (r) => ([r, r, 0]));
 const msLabelListener = makeLabelListener('ms', (r) => ([1.414*r, 0.0, 0.0]));
 const efgLabelListener = makeLabelListener('efg', (r) => ([r, -r, 0.0]));
+const hfLabelListener = makeLabelListener('hf', (r) => ([0.0, -1.414*r, 0.0]));
 
-export { selLabelListener, msLabelListener, efgLabelListener };
+export { selLabelListener, msLabelListener, efgLabelListener, hfLabelListener };

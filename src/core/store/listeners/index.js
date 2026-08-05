@@ -23,8 +23,8 @@
 
 import { displayListener } from './display';
 import { viewsListener } from './views';
-import { msEllipsoidListener, efgEllipsoidListener } from './ellipsoids';
-import { selLabelListener, msLabelListener, efgLabelListener } from './labels';
+import { msEllipsoidListener, efgEllipsoidListener, hfEllipsoidListener } from './ellipsoids';
+import { selLabelListener, msLabelListener, efgLabelListener, hfLabelListener } from './labels';
 import { colorScaleListener } from './cscales';
 import { cellListener } from './cell';
 import { dipCalculateLinksListener, dipDisplayLinksListener, 
@@ -47,6 +47,8 @@ const listeners = {
     [Events.MS_LABELS]:         msLabelListener,
     [Events.EFG_ELLIPSOIDS]:    efgEllipsoidListener,
     [Events.EFG_LABELS]:        efgLabelListener,
+    [Events.HF_ELLIPSOIDS]:     hfEllipsoidListener,
+    [Events.HF_LABELS]:         hfLabelListener,
     [Events.EUL_ANGLES]:        eulerAngleListener,
     [Events.PLOTS_RECALC]:      plotsListener,
     [Events.DIP_LINKS]:         dipCalculateLinksListener,

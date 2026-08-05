@@ -32,6 +32,7 @@ export const HOTKEY_GROUPS = [
             { id: 'sidebar-select', key: 's', display: 'S', description: 'Open select sidebar' },
             { id: 'sidebar-ms',     key: 'm', display: 'M', description: 'Open MS sidebar' },
             { id: 'sidebar-efg',    key: 'f', display: 'F', description: 'Open EFG sidebar' },
+            { id: 'sidebar-hf',     key: 'h', display: 'H', description: 'Open Hyperfine sidebar' },
             { id: 'sidebar-dip',    key: 'd', display: 'D', description: 'Open Dipolar sidebar' },
             { id: 'sidebar-jcoup',  key: 'j', display: 'J', description: 'Open J-Coupling sidebar' },
             { id: 'sidebar-euler',  key: 'e', display: 'E', description: 'Open Euler sidebar' },

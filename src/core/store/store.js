@@ -7,6 +7,7 @@ import { initialSelState } from './interfaces/SelInterface';
 import { initialCScaleState } from './interfaces/CScaleInterface';
 import { initialMSState } from './interfaces/MSInterface';
 import { initialEFGState } from './interfaces/EFGInterface';
+import { initialHFState } from './interfaces/HFInterface';
 import { initialDipState } from './interfaces/DipInterface';
 import { initialJCoupState } from './interfaces/JCoupInterface';
 import { initialEulerState } from './interfaces/EulerInterface';
@@ -21,6 +22,7 @@ const initialState = {
     ...initialCScaleState,
     ...initialMSState,
     ...initialEFGState,
+    ...initialHFState,
     ...initialDipState,
     ...initialJCoupState,
     ...initialEulerState,

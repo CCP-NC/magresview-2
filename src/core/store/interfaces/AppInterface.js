@@ -21,6 +21,7 @@ import { initialSelState } from './SelInterface';
 import { initialCScaleState } from './CScaleInterface';
 import { initialMSState } from './MSInterface';
 import { initialEFGState } from './EFGInterface';
+import { initialHFState } from './HFInterface';
 import { initialDipState } from './DipInterface';
 import { initialJCoupState } from './JCoupInterface';
 import { initialEulerState } from './EulerInterface';
@@ -59,6 +60,7 @@ const PER_MODEL_STATE_KEYS = [
     ...Object.keys(initialCScaleState),
     ...Object.keys(initialMSState),
     ...Object.keys(initialEFGState),
+    ...Object.keys(initialHFState),
     ...Object.keys(initialDipState),
     ...Object.keys(initialJCoupState),
     ...Object.keys(initialEulerState),
@@ -91,6 +93,7 @@ function appDisplayModel(state, m) {
             ...initialCScaleState,
             ...initialMSState,
             ...initialEFGState,
+            ...initialHFState,
             ...initialDipState,
             ...initialJCoupState,
             ...initialEulerState
@@ -139,6 +142,8 @@ function appDisplayModel(state, m) {
             Events.MS_LABELS,
             Events.EFG_ELLIPSOIDS,
             Events.EFG_LABELS,
+            Events.HF_ELLIPSOIDS,
+            Events.HF_LABELS,
             Events.DIP_LINKS,
             Events.JC_LINKS,
             Events.EUL_ANGLES,
@@ -174,6 +179,7 @@ function appReloadModel(state, m) {
         ...initialCScaleState,
         ...initialMSState,
         ...initialEFGState,
+        ...initialHFState,
         ...initialDipState,
         ...initialJCoupState,
         ...initialEulerState
@@ -194,6 +200,8 @@ function appReloadModel(state, m) {
             Events.MS_LABELS,
             Events.EFG_ELLIPSOIDS,
             Events.EFG_LABELS,
+            Events.HF_ELLIPSOIDS,
+            Events.HF_LABELS,
             Events.DIP_LINKS,
             Events.JC_LINKS,
             Events.EUL_ANGLES,
@@ -283,6 +291,7 @@ class AppInterface extends BaseInterface {
                     Events.SEL_LABELS, Events.CSCALE,
                     Events.MS_ELLIPSOIDS, Events.MS_LABELS,
                     Events.EFG_ELLIPSOIDS, Events.EFG_LABELS,
+                    Events.HF_ELLIPSOIDS, Events.HF_LABELS,
                     Events.DIP_LINKS, Events.JC_LINKS
                 ]
             }
@@ -637,6 +646,8 @@ class AppInterface extends BaseInterface {
                         Events.MS_LABELS,
                         Events.EFG_ELLIPSOIDS,
                         Events.EFG_LABELS,
+                        Events.HF_ELLIPSOIDS,
+                        Events.HF_LABELS,
                         Events.DIP_LINKS,
                         Events.JC_LINKS,
                         Events.EUL_ANGLES,

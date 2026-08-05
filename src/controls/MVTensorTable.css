@@ -1,0 +1,68 @@
+.mv-tensor-table-modal.mv-modal-resizable {
+    width: 900px;
+    max-width: 95vw;
+    height: 480px;
+}
+
+.mv-tensor-table-modal .mv-modal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.mv-tensor-table-wrapper {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+}
+
+.mv-tensor-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.mv-tensor-table th,
+.mv-tensor-table td {
+    padding: 0.35em 0.8em;
+    text-align: right;
+    border-bottom: 1px solid var(--mid-color-1);
+}
+
+.mv-tensor-table th {
+    position: sticky;
+    top: 0;
+    background: var(--bkg-color-2);
+    text-align: right;
+    font-weight: bold;
+    z-index: 1;
+}
+
+.mv-tensor-table th:nth-child(-n+3),
+.mv-tensor-table td:nth-child(-n+3) {
+    text-align: left;
+}
+
+.mv-tensor-table tbody tr:hover {
+    background: var(--bkg-color-1);
+}
+
+.mv-tensor-table-evals {
+    font-family: monospace;
+}
+
+.mv-tensor-table-empty {
+    padding: 1em;
+    opacity: 0.8;
+}
