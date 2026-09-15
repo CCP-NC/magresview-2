@@ -43,10 +43,10 @@ function msSetReferences(state, refs=null) {
     }
 
     // We then update the state and refresh the ms labels, in case any changes
-    // are needed
+    // are needed. EFG labels can also depend on references (d_obs).
     return {
         ms_references: new_refs,
-        listen_update: [Events.MS_LABELS, Events.CSCALE, Events.PLOTS_RECALC]
+        listen_update: [Events.MS_LABELS, Events.EFG_LABELS, Events.CSCALE, Events.PLOTS_RECALC]
     };
 }
 

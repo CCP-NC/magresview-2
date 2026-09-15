@@ -104,4 +104,105 @@ function jCoupling(a1, a2) {
     return T.isotropy;
 }
 
-export { dipolarCoupling, dipolarTensor, jCoupling };
+/**
+ * Gyromagnetic ratio of 1H in rad/s/T, used to express B0 as the equivalent
+ * proton Larmor frequency.
+ */
+const GAMMA_H = 267522128.0;
+
+/**
+ * Larmor frequency (in Hz, absolute value) of a nucleus with gyromagnetic
+ * ratio gamma (rad/s/T) in a field B0 (T).
+ *
+ * @param  {Number} gamma   Gyromagnetic ratio in rad/s/T
+ * @param  {Number} B0      Magnetic field in T
+ *
+ * @return {Number}         Larmor frequency in Hz
+ */
+function larmorFrequency(gamma, B0) {
+    return Math.abs(gamma*B0/(2*Math.PI));
+}
+
+/**
+ * Quadrupolar product P_Q = C_Q*sqrt(1 + eta^2/3). Returned in the same
+ * units as C_Q, keeping its sign.
+ *
+ * @param  {Number} CQ      Quadrupolar coupling constant
+ * @param  {Number} eta     EFG asymmetry parameter
+ *
+ * @return {Number}         Quadrupolar product, same units as CQ
+ */
+function quadrupoleProduct(CQ, eta) {
+    return CQ*Math.sqrt(1.0 + eta*eta/3.0);
+}
+
+/**
+ * Second-order quadrupolar-induced shift (in ppm) of the central transition
+ * under MAS — the isotropic (rotation-invariant) centre-of-gravity term:
+ *
+ *   d_QIS = -(3/40) * (P_Q/nu0)^2 * [I(I+1) - 3/4] / [I^2 (2I-1)^2] * 1e6
+ *
+ * Equivalent to soprano's NMRFlags.Q_2_SHIFT contribution for the central
+ * transition (see docs/adr/0008).
+ *
+ * @param  {Number} PQ      Quadrupolar product in Hz
+ * @param  {Number} I       Nuclear spin quantum number (must be > 1/2)
+ * @param  {Number} nu0     Larmor frequency of the nucleus in Hz
+ *
+ * @return {Number}         Second-order quadrupolar-induced shift in ppm
+ */
+function secondOrderShift(PQ, I, nu0) {
+    const x = PQ/nu0;
+    return -(3.0/40.0)*x*x*(I*(I+1) - 0.75)/(I*I*(2*I - 1)*(2*I - 1))*1e6;
+}
+
+/**
+ * Quadrupolar data for an atom at a given field. Returns null unless the
+ * atom is a quadrupolar site (isotope spin > 1/2 with a defined quadrupole
+ * moment) with EFG data.
+ *
+ * @param  {AtomImage} a    Atom
+ * @param  {Number} B0      Magnetic field in T (only needed for qis)
+ *
+ * @return {Object}         { spin, CQ, PQ, qis } with CQ and PQ in Hz and
+ *                          qis in ppm (qis is null if B0 is not given),
+ *                          or null for non-quadrupolar sites
+ */
+function quadrupolarData(a, B0=null) {
+
+    const iD = a.isotopeData;
+
+    if (!iD || !(iD.spin > 0.5) || !iD.Q) {
+        return null;
+    }
+
+    let T;
+    try {
+        T = a.getArrayValue('efg');
+    }
+    catch (e) {
+        return null;
+    }
+    if (!T) {
+        return null;
+    }
+
+    const CQ = T.efgAtomicToHz(iD.Q).haeberlen_eigenvalues[2];
+    const PQ = quadrupoleProduct(CQ, T.asymmetry);
+
+    let qis = null;
+    if (B0 && iD.gamma) {
+        qis = secondOrderShift(PQ, iD.spin, larmorFrequency(iD.gamma, B0));
+    }
+
+    return {
+        spin: iD.spin,
+        CQ: CQ,
+        PQ: PQ,
+        qis: qis
+    };
+}
+
+export { dipolarCoupling, dipolarTensor, jCoupling,
+         GAMMA_H, larmorFrequency, quadrupoleProduct, secondOrderShift,
+         quadrupolarData };

@@ -1,0 +1,17 @@
+.mv-sidebar .mv-efg-section-label {
+    margin-top: 10px;
+    font-weight: bold;
+    color: var(--efg-color-2);
+}
+
+.mv-sidebar .mv-efg-b0-row {
+    align-items: center;
+    margin-top: 5px;
+}
+
+.mv-sidebar .mv-efg-refs-hint {
+    margin-top: 5px;
+    font-size: 0.85em;
+    font-style: italic;
+    opacity: 0.8;
+}

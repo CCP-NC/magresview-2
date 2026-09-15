@@ -1,5 +1,16 @@
 import _ from 'lodash';
-import { dipolarCoupling, jCoupling } from '../../utils';
+import { dipolarCoupling, jCoupling, quadrupolarData } from '../../utils';
+
+// Datatypes combining MS and EFG data for quadrupolar sites. These return
+// null for non-quadrupolar sites (spin <= 1/2), which callers must tolerate.
+const quadDatatypes = ['PQ', 'qis', 'dobs'];
+
+// Parse a B0 state value (string) into a positive number in T, or null if
+// invalid
+function parseB0(v) {
+    const B0 = parseFloat(v);
+    return (isNaN(B0) || B0 <= 0) ? null : B0;
+}
 
 function makeSelector(prefix, extras=[]) {
     // Creates and returns a selector function for a given prefix
@@ -30,7 +41,7 @@ function getSel(app) {
     }
 }
 
-function getNMRData(view, datatype, tenstype='ms', reftable=null) {
+function getNMRData(view, datatype, tenstype='ms', reftable=null, options={}) {
 
     let units = '';
     let tens_units = {
@@ -93,6 +104,55 @@ function getNMRData(view, datatype, tenstype='ms', reftable=null) {
                 return T.efgAtomicToHz(iD.Q).haeberlen_eigenvalues[2] / 1e6;
             });
             units = 'MHz'; // if this changes, change formatNumber as well!
+            break;
+        case 'PQ':
+            // Quadrupolar product; null for non-quadrupolar sites
+            values = view.atoms.map((a) => {
+                const qd = quadrupolarData(a);
+                return qd ? qd.PQ/1e6 : null;
+            });
+            units = 'MHz'; // if this changes, change formatNumber as well!
+            break;
+        case 'qis':
+            // Second-order quadrupolar-induced shift of the central
+            // transition under MAS; needs options.B0 (in T)
+            values = view.atoms.map((a) => {
+                const qd = quadrupolarData(a, options.B0);
+                return qd ? qd.qis : null;
+            });
+            units = 'ppm';
+            break;
+        case 'dobs':
+            // Observed shift d_obs = d_iso + d_QIS; needs options.B0 and a
+            // chemical shift reference table (MS references). Null where
+            // either is missing or the site is not quadrupolar.
+            if (!reftable) {
+                values = view.atoms.map(() => null);
+                units = 'ppm';
+                break;
+            }
+            values = view.atoms.map((a) => {
+                const qd = quadrupolarData(a, options.B0);
+                if (!qd || qd.qis === null) {
+                    return null;
+                }
+                const ref = reftable[a.element];
+                if (ref === null || ref === undefined || ref === '') {
+                    return null;
+                }
+                let msT;
+                try {
+                    msT = a.getArrayValue('ms');
+                }
+                catch (e) {
+                    return null;
+                }
+                if (!msT) {
+                    return null;
+                }
+                return (ref - msT.isotropy) + qd.qis;
+            });
+            units = 'ppm';
             break;
         default:
             break;
@@ -210,6 +270,8 @@ export {
     addPrefix,
     getSel,
     getNMRData,
+    quadDatatypes,
+    parseB0,
     formatNumber,
     getLinkLabel,
     BaseInterface,

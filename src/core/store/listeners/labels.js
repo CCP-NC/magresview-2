@@ -2,7 +2,7 @@
  * Listeners for the rendering of labels
  */
 
-import { addPrefix, getSel, getNMRData, formatNumber } from '../utils';
+import { addPrefix, getSel, getNMRData, formatNumber, parseB0 } from '../utils';
 
 function makeLabelListener(name, shiftfunc) {
     // Factory for a function that will be used for both MS and EFG with
@@ -39,8 +39,15 @@ function makeLabelListener(name, shiftfunc) {
         if (mode !== 'none') {
 
             if (name !== 'sel_sites') {
+                // d_obs combines the EFG data with the MS chemical shift
+                // reference table; field-dependent quantities need B0
+                if (mode === 'dobs') {
+                    ref_table = state.ms_references;
+                }
+                const options = { B0: parseB0(state[addPrefix(name, 'B0')]) };
+
                 // Get the data
-                let [units, values] = getNMRData(next_view, mode, name, ref_table);
+                let [units, values] = getNMRData(next_view, mode, name, ref_table, options);
                 // get precision depending on name
                 let precision = state[addPrefix(name, 'precision')];
                 

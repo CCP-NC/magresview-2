@@ -154,3 +154,108 @@ export const tooltip_pas_ordering = <div>
         Decreasing: <span style={{ whiteSpace: 'nowrap' }}>V<sub>xx</sub> &ge; V<sub>yy</sub> &ge; V<sub>zz</sub>.</span>
     </p>
 </div>;
+// --- EFG sidebar: quantity definitions (MathML) ---
+// React 18 does not namespace MathML elements created via JSX, so the
+// equations are static trusted strings injected with dangerouslySetInnerHTML.
+const MathEq = ({ src }) => (
+    <div className='mv-math-eq' dangerouslySetInnerHTML={{ __html: src }} />
+);
+
+export const tooltip_efg_Q = <div>
+    <p><b>Quadrupolar coupling constant</b></p>
+    <MathEq src='<math display="block">
+        <msub><mi>C</mi><mi>Q</mi></msub><mo>=</mo>
+        <mfrac>
+            <mrow><mi>e</mi><mi>Q</mi><msub><mi>V</mi><mrow><mi>z</mi><mi>z</mi></mrow></msub></mrow>
+            <mi>h</mi>
+        </mfrac>
+    </math>' />
+    <p>
+        Q is the nuclear quadrupole moment of the isotope assigned to each
+        site (see the <b>Select and display</b> tab).
+    </p>
+</div>;
+
+export const tooltip_efg_Vzz = <div>
+    <p><b>Largest EFG principal component</b> (atomic units)</p>
+    <MathEq src='<math display="block">
+        <mrow>
+            <mo>|</mo><msub><mi>V</mi><mrow><mi>z</mi><mi>z</mi></mrow></msub><mo>|</mo>
+            <mo>&#8805;</mo>
+            <mo>|</mo><msub><mi>V</mi><mrow><mi>y</mi><mi>y</mi></mrow></msub><mo>|</mo>
+            <mo>&#8805;</mo>
+            <mo>|</mo><msub><mi>V</mi><mrow><mi>x</mi><mi>x</mi></mrow></msub><mo>|</mo>
+        </mrow>
+    </math>' />
+</div>;
+
+export const tooltip_efg_asymm = <div>
+    <p><b>EFG asymmetry parameter</b></p>
+    <MathEq src='<math display="block">
+        <mi>&#951;</mi><mo>=</mo>
+        <mfrac>
+            <mrow>
+                <msub><mi>V</mi><mrow><mi>x</mi><mi>x</mi></mrow></msub>
+                <mo>&#8722;</mo>
+                <msub><mi>V</mi><mrow><mi>y</mi><mi>y</mi></mrow></msub>
+            </mrow>
+            <msub><mi>V</mi><mrow><mi>z</mi><mi>z</mi></mrow></msub>
+        </mfrac>
+        <mo>,</mo><mspace width="1em"></mspace>
+        <mn>0</mn><mo>&#8804;</mo><mi>&#951;</mi><mo>&#8804;</mo><mn>1</mn>
+    </math>' />
+    <p>
+        with the principal components ordered
+        <span style={{ whiteSpace: 'nowrap' }}> |V<sub>zz</sub>| &ge; |V<sub>yy</sub>| &ge; |V<sub>xx</sub>|</span>.
+    </p>
+</div>;
+
+export const tooltip_efg_PQ = <div>
+    <p><b>Quadrupolar product</b></p>
+    <MathEq src='<math display="block">
+        <msub><mi>P</mi><mi>Q</mi></msub><mo>=</mo>
+        <msub><mi>C</mi><mi>Q</mi></msub>
+        <msqrt><mn>1</mn><mo>+</mo><mfrac><msup><mi>&#951;</mi><mn>2</mn></msup><mn>3</mn></mfrac></msqrt>
+    </math>' />
+</div>;
+
+export const tooltip_efg_qis = <div>
+    <p><b>Second-order quadrupolar-induced shift</b> (central transition, under MAS)</p>
+    <MathEq src='<math display="block">
+        <msub><mi>&#948;</mi><mtext>QIS</mtext></msub><mo>=</mo>
+        <mo>&#8722;</mo><mfrac><mn>3</mn><mn>40</mn></mfrac>
+        <msup>
+            <mrow><mo>(</mo><mfrac>
+                <msub><mi>P</mi><mi>Q</mi></msub>
+                <msub><mi>&#957;</mi><mn>0</mn></msub>
+            </mfrac><mo>)</mo></mrow>
+            <mn>2</mn>
+        </msup>
+        <mfrac>
+            <mrow><mi>I</mi><mo>(</mo><mi>I</mi><mo>+</mo><mn>1</mn><mo>)</mo><mo>&#8722;</mo><mfrac><mn>3</mn><mn>4</mn></mfrac></mrow>
+            <mrow>
+                <msup><mi>I</mi><mn>2</mn></msup>
+                <msup><mrow><mo>(</mo><mn>2</mn><mi>I</mi><mo>&#8722;</mo><mn>1</mn><mo>)</mo></mrow><mn>2</mn></msup>
+            </mrow>
+        </mfrac>
+        <mo>&#215;</mo><msup><mn>10</mn><mn>6</mn></msup>
+        <mspace width="0.5em"></mspace><mtext>ppm</mtext>
+    </math>' />
+    <p>
+        &nu;<sub>0</sub> is the Larmor frequency of the site&apos;s isotope at
+        the field B<sub>0</sub> set below. I is the nuclear spin.
+    </p>
+</div>;
+
+export const tooltip_efg_dobs = <div>
+    <p><b>Observed shift</b> (centre of gravity of the central transition in a MAS spectrum)</p>
+    <MathEq src='<math display="block">
+        <msub><mi>&#948;</mi><mtext>obs</mtext></msub><mo>=</mo>
+        <msub><mi>&#948;</mi><mtext>iso</mtext></msub><mo>+</mo>
+        <msub><mi>&#948;</mi><mtext>QIS</mtext></msub>
+    </math>' />
+    <p>
+        Requires a chemical shift reference (set in the <b>MS</b> tab) and MS
+        data. Only defined for quadrupolar sites (spin &gt; &#189;).
+    </p>
+</div>;

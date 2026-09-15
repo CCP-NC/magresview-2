@@ -15,7 +15,7 @@
 import './MVSidebarEFG.css';
 
 import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
-import { useEFGInterface } from '../store';
+import { useEFGInterface, useMSInterface } from '../store';
 import { chainClasses } from '../../utils';
 
 import React from 'react';
@@ -27,15 +27,35 @@ import MVRadioButton, { MVRadioGroup } from '../../controls/MVRadioButton';
 import MVCScaleBar from '../../controls/MVCScaleBar';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
 import MVText from '../../controls/MVText';
+import MVTooltip from '../../controls/MVTooltip';
+import { tooltip_efg_Q, tooltip_efg_Vzz, tooltip_efg_asymm,
+         tooltip_efg_PQ, tooltip_efg_qis, tooltip_efg_dobs } from './tooltip_messages';
 
 function MVSidebarEFG(props) {
 
     const efgint = useEFGInterface();
+    const msint = useMSInterface();
 
 
     var has_efg = false;
+    var has_ms = false;
     if (props.show) {
         has_efg = efgint.hasData;
+        has_ms = msint.hasData;
+    }
+
+    // d_obs = d_iso + d_QIS requires MS data (greyed out without it) and a
+    // chemical shift reference
+    const dobsSelected = (efgint.labelsMode === 'dobs' ||
+                          efgint.colorScaleType === 'efg_dobs');
+
+    // If d_obs is requested with no reference set, pop open the reference
+    // modal (the global instance in MagresViewApp, driven by the MS interface)
+    function requestReferencesIfMissing(mode) {
+        if ((mode === 'dobs' || mode === 'efg_dobs') &&
+            !efgint.hasMSRefs && msint.hasData) {
+            msint.showRefTable = true;
+        }
     }
 
     return (<MagresViewSidebar show={props.show} title='Electric Field Gradient'>
@@ -44,19 +64,41 @@ function MVSidebarEFG(props) {
              <MVRange min={0.1} max={10.0} step={0.05} value={efgint.ellipsoidScale} color={'var(--efg-color-2)'}
                       onChange={(s) => { efgint.ellipsoidScale = s; }} disabled={!efgint.hasEllipsoids}>Ellipsoid scale</MVRange>
              <MVButton onClick={() => { efgint.ellipsoidScale = 0; }} disabled={!efgint.hasEllipsoids}>Auto scale</MVButton>
-             <MVRadioGroup label='Show labels' onSelect={(v) => { efgint.labelsMode = v; }} selected={efgint.labelsMode} name='efg_label_radio' color={'var(--efg-color-2)'}>
+             <MVRadioGroup label='Show labels' onSelect={(v) => { efgint.labelsMode = v; requestReferencesIfMissing(v); }} selected={efgint.labelsMode} name='efg_label_radio' color={'var(--efg-color-2)'}>
                 <MVRadioButton value='none'>None</MVRadioButton>
-                <MVRadioButton value='Q'>Quadrupole Coupling</MVRadioButton>
-                <MVRadioButton value='e_z'>Vzz (au)</MVRadioButton>
-                <MVRadioButton value='asymm'>Asymmetry</MVRadioButton>
+                <MVRadioButton value='Q'>Quadrupole Coupling<MVTooltip tooltipText={tooltip_efg_Q} /></MVRadioButton>
+                <MVRadioButton value='e_z'>Vzz (au)<MVTooltip tooltipText={tooltip_efg_Vzz} /></MVRadioButton>
+                <MVRadioButton value='asymm'>Asymmetry<MVTooltip tooltipText={tooltip_efg_asymm} /></MVRadioButton>
+                <MVRadioButton value='PQ'>P<sub>Q</sub><MVTooltip tooltipText={tooltip_efg_PQ} /></MVRadioButton>
+                <MVRadioButton value='qis'>&delta;<sub>QIS</sub> (2nd order shift)<MVTooltip tooltipText={tooltip_efg_qis} /></MVRadioButton>
+                <MVRadioButton value='dobs' disabled={!has_ms} title={has_ms? null : 'No MS data found in this file'}>&delta;<sub>obs</sub> (&delta;<sub>iso</sub> + &delta;<sub>QIS</sub>)<MVTooltip tooltipText={tooltip_efg_dobs} /></MVRadioButton>
              </MVRadioGroup>
-             <MVRadioGroup label='Use color scale' onSelect={(v) => { efgint.colorScaleType = v; }} selected={ efgint.colorScaleType } disabled={!efgint.colorScaleAvailable}
+             <MVRadioGroup label='Use color scale' onSelect={(v) => { efgint.colorScaleType = v; requestReferencesIfMissing(v); }} selected={ efgint.colorScaleType } disabled={!efgint.colorScaleAvailable}
                            name='efg_cscale_radio' color={'var(--efg-color-2)'}>
                 <MVRadioButton value='none'>None</MVRadioButton>
                 <MVRadioButton value='efg_Q'>|Quadrupole Coupling|</MVRadioButton>
                 <MVRadioButton value='efg_e_z'>Vzz</MVRadioButton>
                 <MVRadioButton value='efg_asymm'>Asymmetry</MVRadioButton>
+                <MVRadioButton value='efg_PQ'>|P<sub>Q</sub>|</MVRadioButton>
+                <MVRadioButton value='efg_qis'>&delta;<sub>QIS</sub></MVRadioButton>
+                <MVRadioButton value='efg_dobs' disabled={!has_ms} title={has_ms? null : 'No MS data found in this file'}>&delta;<sub>obs</sub></MVRadioButton>
              </MVRadioGroup>
+             <div className='mv-efg-section-label'>Second-order quadrupolar shift</div>
+             <div className='mv-sidebar-row mv-efg-b0-row'>
+                B<sub>0</sub>:&nbsp;
+                <MVText size='6' value={String(efgint.B0)}
+                        onChange={(v) => { efgint.B0 = v; }}
+                        filter='[0-9]*(?:\.[0-9]*)?' />
+                &nbsp;T&nbsp;&nbsp;(&asymp; {efgint.larmorH !== null ? efgint.larmorH.toFixed(1) : '—'} MHz &sup1;H)
+             </div>
+             {has_ms && !efgint.hasMSRefs ?
+                <div className='mv-efg-refs-hint'>
+                    &delta;<sub>obs</sub> needs a chemical shift reference.
+                </div>
+                : null}
+             {has_ms && (dobsSelected || !efgint.hasMSRefs) ?
+                <MVButton onClick={() => { msint.showRefTable = true; }}>Set References</MVButton>
+                : null}
         <MVCScaleBar label={efgint.colorScaleType}
                     hidden={efgint.colorScaleType === 'none'}
                     lims={efgint.colorScaleLimits}
