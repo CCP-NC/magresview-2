@@ -137,6 +137,57 @@ function quadrupoleProduct(CQ, eta) {
 }
 
 /**
+ * True for half-integer nuclear spins (1/2, 3/2, 5/2, ...).
+ *
+ * Only half-integer spins possess a central transition (m = -1/2 <-> +1/2).
+ * Integer-spin quadrupolar nuclei (e.g. 2H, 6Li, 10B, 14N — all spin 1 or 3)
+ * have no such transition, so every central-transition quantity, including
+ * d_QIS, is undefined for them. See docs/adr/0008.
+ *
+ * @param  {Number} I       Nuclear spin quantum number
+ *
+ * @return {Boolean}        Whether I is a half-integer
+ */
+function isHalfIntegerSpin(I) {
+    return Number.isFinite(I) && Number.isInteger(I - 0.5);
+}
+
+/**
+ * True for nuclei that have a central transition whose second-order
+ * quadrupolar shift is meaningful: half-integer spin strictly above 1/2.
+ *
+ * @param  {Number} I       Nuclear spin quantum number
+ *
+ * @return {Boolean}        Whether d_QIS is defined for this spin
+ */
+function hasCentralTransition(I) {
+    return isHalfIntegerSpin(I) && I > 0.5;
+}
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * PERTURBATION-THEORY VALIDITY THRESHOLD
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * d_QIS is a *second-order perturbation* result: it is the leading correction
+ * in an expansion in the small parameter
+ *
+ *     x = |P_Q| / nu_0
+ *
+ * (quadrupolar product over Larmor frequency). The neglected third-order term
+ * scales as x^3, so the relative error of d_QIS is of order x. Once x is no
+ * longer small the reported shift is not trustworthy and the site really needs
+ * exact diagonalisation rather than perturbation theory.
+ *
+ * QUAD_PERTURBATION_WARN_RATIO is the single place to tune where the app
+ * starts warning. At x = 0.2 the third-order correction is already at the
+ * ~20% level, which is well beyond the precision anyone comparing against
+ * experiment would accept, so that is the default. Raise it to suppress
+ * warnings, lower it to be stricter.
+ */
+const QUAD_PERTURBATION_WARN_RATIO = 0.2;
+
+/**
  * Second-order quadrupolar-induced shift (in ppm) of the central transition
  * under MAS — the isotropic (rotation-invariant) centre-of-gravity term:
  *
@@ -145,13 +196,20 @@ function quadrupoleProduct(CQ, eta) {
  * Equivalent to soprano's NMRFlags.Q_2_SHIFT contribution for the central
  * transition (see docs/adr/0008).
  *
+ * Defined only for half-integer spin > 1/2; integer-spin nuclei have no
+ * central transition and calling this for them is a programming error.
+ *
  * @param  {Number} PQ      Quadrupolar product in Hz
- * @param  {Number} I       Nuclear spin quantum number (must be > 1/2)
+ * @param  {Number} I       Nuclear spin quantum number (half-integer > 1/2)
  * @param  {Number} nu0     Larmor frequency of the nucleus in Hz
  *
  * @return {Number}         Second-order quadrupolar-induced shift in ppm
  */
 function secondOrderShift(PQ, I, nu0) {
+    if (!hasCentralTransition(I)) {
+        throw Error('d_QIS is a central-transition quantity and is only ' +
+                    'defined for half-integer spin > 1/2; got I = ' + I);
+    }
     const x = PQ/nu0;
     return -(3.0/40.0)*x*x*(I*(I+1) - 0.75)/(I*I*(2*I - 1)*(2*I - 1))*1e6;
 }
@@ -161,11 +219,21 @@ function secondOrderShift(PQ, I, nu0) {
  * atom is a quadrupolar site (isotope spin > 1/2 with a defined quadrupole
  * moment) with EFG data.
  *
+ * C_Q and P_Q are defined for every quadrupolar site, integer spin included.
+ * d_QIS is not: it is a central-transition quantity, so it stays null for
+ * integer-spin nuclei such as 14N no matter what B0 is.
+ *
  * @param  {AtomImage} a    Atom
  * @param  {Number} B0      Magnetic field in T (only needed for qis)
  *
- * @return {Object}         { spin, CQ, PQ, qis } with CQ and PQ in Hz and
- *                          qis in ppm (qis is null if B0 is not given),
+ * @return {Object}         {
+ *                            spin,               nuclear spin I
+ *                            CQ, PQ,             in Hz
+ *                            qis,                in ppm, or null
+ *                            hasCT,              whether a central transition exists
+ *                            ratio,              |P_Q|/nu_0, or null
+ *                            perturbationValid   ratio <= threshold, or null
+ *                          }
  *                          or null for non-quadrupolar sites
  */
 function quadrupolarData(a, B0=null) {
@@ -189,20 +257,31 @@ function quadrupolarData(a, B0=null) {
 
     const CQ = T.efgAtomicToHz(iD.Q).haeberlen_eigenvalues[2];
     const PQ = quadrupoleProduct(CQ, T.asymmetry);
+    const hasCT = hasCentralTransition(iD.spin);
 
     let qis = null;
-    if (B0 && iD.gamma) {
-        qis = secondOrderShift(PQ, iD.spin, larmorFrequency(iD.gamma, B0));
+    let ratio = null;
+    let perturbationValid = null;
+    if (hasCT && B0 && iD.gamma) {
+        const nu0 = larmorFrequency(iD.gamma, B0);
+        qis = secondOrderShift(PQ, iD.spin, nu0);
+        ratio = Math.abs(PQ)/nu0;
+        perturbationValid = (ratio <= QUAD_PERTURBATION_WARN_RATIO);
     }
 
     return {
         spin: iD.spin,
         CQ: CQ,
         PQ: PQ,
-        qis: qis
+        qis: qis,
+        hasCT: hasCT,
+        ratio: ratio,
+        perturbationValid: perturbationValid
     };
 }
 
 export { dipolarCoupling, dipolarTensor, jCoupling,
          GAMMA_H, larmorFrequency, quadrupoleProduct, secondOrderShift,
+         isHalfIntegerSpin, hasCentralTransition,
+         QUAD_PERTURBATION_WARN_RATIO,
          quadrupolarData };

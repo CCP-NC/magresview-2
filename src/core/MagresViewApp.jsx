@@ -23,6 +23,7 @@ import MVHotkeyHelp from './hotkeys/MVHotkeyHelp';
 import { chainClasses } from '../utils';
 import { useAppInterface, useSelInterface, useDipInterface, useEulerInterface, useJCoupInterface, useMSInterface } from './store';
 import { MVReferenceTable } from './sidebars/MVSidebarMS';
+import MVLarmorModal from './MVLarmorModal';
 
 import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
@@ -231,6 +232,7 @@ function MagresViewPage() {
             { /* Modals */ }
                 <MVPlot1D />
                 <MVReferenceTable display={msint.showRefTable} close={() => { msint.showRefTable = false; }} />
+                <MVLarmorModal display={appint.showLarmorModal} close={() => { appint.showLarmorModal = false; }} />
             </div>);
 }
 

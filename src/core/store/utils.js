@@ -1,5 +1,6 @@
 import _ from 'lodash';
-import { dipolarCoupling, jCoupling, quadrupolarData } from '../../utils';
+import { dipolarCoupling, jCoupling, quadrupolarData,
+         GAMMA_H, larmorFrequency } from '../../utils';
 
 // Datatypes combining MS and EFG data for quadrupolar sites. These return
 // null for non-quadrupolar sites (spin <= 1/2), which callers must tolerate.
@@ -10,6 +11,24 @@ const quadDatatypes = ['PQ', 'qis', 'dobs'];
 function parseB0(v) {
     const B0 = parseFloat(v);
     return (isNaN(B0) || B0 <= 0) ? null : B0;
+}
+
+/**
+ * The external field, in T, as a number — or null if the current input is not
+ * a valid field. `app_B0` is the single, model-wide source of truth (ADR 0009);
+ * nothing else in the store holds a field value.
+ */
+function getB0(state) {
+    return parseB0(state.app_B0);
+}
+
+/**
+ * Equivalent 1H Larmor frequency in MHz for the store's current B0, or null
+ * if the current input is not a valid field.
+ */
+function larmorHMHz(state) {
+    const B0 = getB0(state);
+    return B0 === null ? null : larmorFrequency(GAMMA_H, B0)/1e6;
 }
 
 function makeSelector(prefix, extras=[]) {
@@ -39,6 +58,29 @@ function getSel(app) {
     else {
         return null;
     }
+}
+
+/**
+ * The atoms a 1D spectrum is computed over: the current selection, or
+ * everything displayed if nothing is selected, narrowed to the chosen element.
+ * Returns null when there is nothing to work on (no model loaded).
+ *
+ * Both the plots listener and PlotsInterface go through this, so the sidebar
+ * can never be describing a different set of atoms from the one the plot was
+ * actually built from.
+ *
+ * Note that ModelView.find already searches *within* the view it is called on,
+ * so no further intersection is needed to narrow by element.
+ */
+function elementView(state) {
+    const app = state.app_viewer;
+    if (!app?.model) return null;
+
+    const view = getSel(app);
+    if (!view) return null;
+
+    const element = state.plots_element;
+    return element ? view.find({ elements: [element] }) : view;
 }
 
 function getNMRData(view, datatype, tenstype='ms', reftable=null, options={}) {
@@ -269,9 +311,12 @@ export {
     makeSelector, 
     addPrefix,
     getSel,
+    elementView,
     getNMRData,
     quadDatatypes,
     parseB0,
+    getB0,
+    larmorHMHz,
     formatNumber,
     getLinkLabel,
     BaseInterface,

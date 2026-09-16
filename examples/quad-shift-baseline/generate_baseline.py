@@ -34,7 +34,20 @@ from soprano.properties.nmr import (
 
 B0 = 14.1  # T; must match the fixture's B0 field
 
+# Must match QUAD_PERTURBATION_WARN_RATIO in src/utils/utils-nmr.jsx.
+PERTURBATION_WARN_RATIO = 0.2
+
 NMR_DATA = _get_nmr_data()
+
+
+def has_central_transition(spin):
+    """True for half-integer spins above 1/2.
+
+    Only these have an m = -1/2 <-> +1/2 transition, so only these have a
+    delta_QIS. Integer-spin quadrupolar nuclei (2H, 6Li, 10B, 14N, ...) do
+    not, even though C_Q and P_Q are perfectly well defined for them.
+    """
+    return spin > 0.5 and (2 * spin) % 2 == 1
 
 
 def make_tensor(evals, seed):
@@ -73,6 +86,13 @@ SITES = [
     ("O", 17, [-0.6, -1.2, 1.8], [200.0, 260.0, 320.0], 287.5, 37),
     # 1H, I=1/2: not a quadrupolar site, expected null in the JS layer
     ("H", 1, [-0.1, -0.1, 0.2], [25.0, 30.0, 35.0], 30.7, 41),
+    # 14N, I=1: a genuine quadrupolar site (C_Q, P_Q defined) with NO central
+    # transition, so delta_QIS must come back null. Regression guard: applying
+    # the CT formula here gives a spurious shift of several hundred ppm.
+    ("N", 14, [-0.30, -0.40, 0.70], [-50.0, 10.0, 90.0], 190.0, 53),
+    # 59Co, I=7/2, huge Q: |P_Q|/nu_0 lands beyond second-order perturbation
+    # validity, so the app must flag it rather than quote the number.
+    ("Co", 59, [-0.17, -0.23, 0.40], [3000.0, 3400.0, 4100.0], 8000.0, 67),
 ]
 
 
@@ -107,22 +127,46 @@ def main():
             "s_iso": siso,
         }
 
+        has_ct = has_central_transition(spin)
+        entry["has_central_transition"] = has_ct
+
         if spin > 0.5:
             chi = EFGQuadrupolarConstant(isotopes=isotopes)(atoms)[0]  # Hz
             eta = EFGAsymmetry.get(atoms)[0]
             pq = EFGQuadrupolarProduct(isotopes=isotopes)(atoms)[0]  # Hz
             nu0 = abs(gamma) * B0 / (2 * np.pi)  # Hz
-            qis = second_order_shift_ct(chi, eta, spin, nu0)
+            ratio = abs(pq) / nu0
             entry.update(
                 {
                     "CQ_MHz": chi / 1e6,
                     "eta": eta,
                     "PQ_MHz": pq / 1e6,
                     "nu0_MHz": nu0 / 1e6,
-                    "qis_ppm": qis,
-                    "dobs_ppm": (ref - siso) + qis,
                 }
             )
+            if has_ct:
+                qis = second_order_shift_ct(chi, eta, spin, nu0)
+                entry.update(
+                    {
+                        "ratio": ratio,
+                        "perturbation_valid": bool(ratio <= PERTURBATION_WARN_RATIO),
+                        "qis_ppm": qis,
+                        "dobs_ppm": (ref - siso) + qis,
+                    }
+                )
+            else:
+                # No central transition: delta_QIS and hence delta_obs are
+                # undefined, NOT zero and NOT the CT expression evaluated at
+                # integer I. The perturbation ratio only gates the delta_QIS
+                # warning, so it is undefined here too. See docs/adr/0008.
+                entry.update(
+                    {
+                        "ratio": None,
+                        "perturbation_valid": None,
+                        "qis_ppm": None,
+                        "dobs_ppm": None,
+                    }
+                )
         else:
             entry.update(
                 {
@@ -130,6 +174,8 @@ def main():
                     "eta": None,
                     "PQ_MHz": None,
                     "nu0_MHz": None,
+                    "ratio": None,
+                    "perturbation_valid": None,
                     "qis_ppm": None,
                     "dobs_ppm": None,
                 }

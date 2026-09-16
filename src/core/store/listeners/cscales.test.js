@@ -43,7 +43,7 @@ function makeState(view, overrides={}) {
         cscale_lims: [0, 1],
         cscale_lims_override: null,
         cscale_units: '',
-        efg_B0: '14.1',
+        app_B0: '14.1',     // single, model-wide external field (ADR 0009)
         ms_references: {},
         ...overrides
     };

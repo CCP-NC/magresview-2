@@ -15,7 +15,7 @@
 import './MVSidebarEFG.css';
 
 import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
-import { useEFGInterface, useMSInterface } from '../store';
+import { useEFGInterface, useMSInterface, useAppInterface } from '../store';
 import { chainClasses } from '../../utils';
 
 import React from 'react';
@@ -33,6 +33,7 @@ import { tooltip_efg_Q, tooltip_efg_Vzz, tooltip_efg_asymm,
 
 function MVSidebarEFG(props) {
 
+    const appint = useAppInterface();
     const efgint = useEFGInterface();
     const msint = useMSInterface();
 
@@ -84,13 +85,12 @@ function MVSidebarEFG(props) {
                 <MVRadioButton value='efg_dobs' disabled={!has_ms} title={has_ms? null : 'No MS data found in this file'}>&delta;<sub>obs</sub></MVRadioButton>
              </MVRadioGroup>
              <div className='mv-efg-section-label'>Second-order quadrupolar shift</div>
+             {/* B0 is global and edited in one place only — the spectrometer
+                 field dialog (ADR 0009). Shown read-only here. */}
              <div className='mv-sidebar-row mv-efg-b0-row'>
-                B<sub>0</sub>:&nbsp;
-                <MVText size='6' value={String(efgint.B0)}
-                        onChange={(v) => { efgint.B0 = v; }}
-                        filter='[0-9]*(?:\.[0-9]*)?' />
-                &nbsp;T&nbsp;&nbsp;(&asymp; {efgint.larmorH !== null ? efgint.larmorH.toFixed(1) : '—'} MHz &sup1;H)
+                B<sub>0</sub> = {efgint.B0} T&nbsp;&nbsp;(&asymp; {efgint.larmorH !== null ? efgint.larmorH.toFixed(1) : '—'} MHz &sup1;H)
              </div>
+             <MVButton onClick={() => { appint.showLarmorModal = true; }}>Spectrometer field&hellip;</MVButton>
              {has_ms && !efgint.hasMSRefs ?
                 <div className='mv-efg-refs-hint'>
                     &delta;<sub>obs</sub> needs a chemical shift reference.

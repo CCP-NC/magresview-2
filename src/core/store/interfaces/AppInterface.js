@@ -14,7 +14,7 @@
 
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
-import { makeSelector, BaseInterface } from '../utils';
+import { makeSelector, BaseInterface, larmorHMHz } from '../utils';
 import { CallbackMerger, ClickHandler, centerDisplayed, findMergeablePair, getMergedModelName, mergeMagresText } from '../../../utils';
 
 import { initialSelState } from './SelInterface';
@@ -43,6 +43,8 @@ const initialAppState = {
     app_use_nmr_isos: true,
     app_vdw_scaling: 1.0,
     app_advanced_mode: false,
+    app_B0: '14.1', // Model-wide external magnetic field in Tesla (instrument setting)
+    app_show_larmor_modal: false,
     app_autosave_warning: false, // set to true when localStorage quota is exceeded
     app_autosave_enabled: true, // enable/disable autosave; configurable by user
     app_merge_prompt: null, // Prompt user to merge complementary models (e.g. NMR + EFG)
@@ -383,6 +385,45 @@ class AppInterface extends BaseInterface {
 
     set advancedMode(v) {
         this.dispatch({ type: 'update', data: { app_advanced_mode: v } });
+    }
+
+    /**
+     * The single, model-wide external field B0 in tesla, kept as a string
+     * because it is edited through a text input (ADR 0009). This is the ONLY
+     * writable B0 in the app; EFGInterface and PlotsInterface expose read-only
+     * views of the same value.
+     */
+    get B0() {
+        return this.state.app_B0;
+    }
+
+    set B0(v) {
+        // Field-dependent quantities (d_QIS, d_obs) can be shown as atom
+        // labels, as a colour scale, or as 1D plot peak positions, so every
+        // one of those has to be recomputed.
+        this.dispatch({
+            type: 'update',
+            data: {
+                app_B0: v,
+                listen_update: [Events.EFG_LABELS, Events.CSCALE, Events.PLOTS_RECALC]
+            }
+        });
+    }
+
+    get larmorH() {
+        return larmorHMHz(this.state);
+    }
+
+    get showLarmorModal() {
+        return this.state.app_show_larmor_modal;
+    }
+
+    set showLarmorModal(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'app_show_larmor_modal',
+            value: v
+        });
     }
 
     /**

@@ -3,7 +3,7 @@
  */
 
 import _ from 'lodash';
-import { getSel, getNMRData, quadDatatypes, parseB0 } from '../utils';
+import { getSel, getNMRData, quadDatatypes, getB0 } from '../utils';
 import { getColorScale } from '../../../utils';
 
 function colorScaleListener(state) {
@@ -31,7 +31,7 @@ function colorScaleListener(state) {
         // d_obs combines EFG data with the MS chemical shift references
         const ref_table = (mode === 'dobs') ?
             state.ms_references : state[prefix + '_references'];
-        const options = { B0: parseB0(state[prefix + '_B0']) };
+        const options = { B0: getB0(state) };
 
         // Quadrupolar quantities are undefined (null) on non-quadrupolar
         // sites; those are greyed out rather than treated as errors

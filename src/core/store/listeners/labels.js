@@ -2,7 +2,7 @@
  * Listeners for the rendering of labels
  */
 
-import { addPrefix, getSel, getNMRData, formatNumber, parseB0 } from '../utils';
+import { addPrefix, getSel, getNMRData, formatNumber, getB0 } from '../utils';
 
 function makeLabelListener(name, shiftfunc) {
     // Factory for a function that will be used for both MS and EFG with
@@ -44,7 +44,7 @@ function makeLabelListener(name, shiftfunc) {
                 if (mode === 'dobs') {
                     ref_table = state.ms_references;
                 }
-                const options = { B0: parseB0(state[addPrefix(name, 'B0')]) };
+                const options = { B0: getB0(state) };
 
                 // Get the data
                 let [units, values] = getNMRData(next_view, mode, name, ref_table, options);

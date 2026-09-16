@@ -14,9 +14,8 @@
 
 import { Events } from '../listeners';
 import CScaleInterface, { makeCScaleSelector } from './CScaleInterface';
-import { parseB0 } from '../utils';
+import { larmorHMHz } from '../utils';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
-import { GAMMA_H, larmorFrequency } from '../../../utils';
 
 const initialEFGState = {
     efg_view: null,
@@ -24,7 +23,6 @@ const initialEFGState = {
     efg_ellipsoids_scale: 0.1,
     efg_labels_type: 'none',
     efg_precision: 2,
-    efg_B0: '14.1', // External field in T (kept as string for text input)
 };
 
 // Action creator
@@ -77,21 +75,17 @@ class EFGInterface extends CScaleInterface {
         this.dispatch(efgAction({ 'efg_precision': v }, [Events.EFG_LABELS]));
     }
 
+    // Read-only views onto the single, model-wide external field. B0 is owned
+    // by AppInterface (ADR 0009); change it via `appint.B0 = ...` or the
+    // spectrometer field dialog.
     get B0() {
-        return this.state.efg_B0;
-    }
-
-    set B0(v) {
-        // Field-dependent quantities (d_QIS, d_obs) may be shown as labels
-        // or colour scale, so both need refreshing
-        this.dispatch(efgAction({ efg_B0: v }, [Events.EFG_LABELS, Events.CSCALE]));
+        return this.state.app_B0;
     }
 
     // Equivalent 1H Larmor frequency in MHz for the current B0, or null if
     // the current input is not a valid field
     get larmorH() {
-        const B0 = parseB0(this.state.efg_B0);
-        return B0 === null ? null : larmorFrequency(GAMMA_H, B0)/1e6;
+        return larmorHMHz(this.state);
     }
 
     // True if at least one chemical shift reference is set in the MS tab;
@@ -121,14 +115,13 @@ class EFGInterface extends CScaleInterface {
         this.hasEllipsoids = initialEFGState.efg_ellipsoids_on;
         this.labelsMode = initialEFGState.efg_labels_type;
         this.precision = initialEFGState.efg_precision;
-        this.B0 = initialEFGState.efg_B0;
         
     }
 
 }
 
 function useEFGInterface() {
-    let state = useSelector(makeCScaleSelector('efg', ['app_viewer', 'ms_cscale_type', 'ms_references']), shallowEqual);
+    let state = useSelector(makeCScaleSelector('efg', ['app_viewer', 'ms_cscale_type', 'ms_references', 'app_B0']), shallowEqual);
     let dispatcher = useDispatch();
 
     let intf = new EFGInterface(state, dispatcher);

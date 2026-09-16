@@ -5,6 +5,8 @@ import { CallbackMerger, Enum, getColorScale, mergeOnly, saveImage,
 import regularExpressions from './utils-regexp';
 import { dipolarCoupling, dipolarTensor, jCoupling,
          GAMMA_H, larmorFrequency, quadrupoleProduct, secondOrderShift,
+         isHalfIntegerSpin, hasCentralTransition,
+         QUAD_PERTURBATION_WARN_RATIO,
          quadrupolarData } from './utils-nmr';
 import { rotationBetween, eulerFromRotation, rotationMatrixFromZYZ,
          eulerBetweenTensors } from './utils-rotation';
@@ -18,4 +20,6 @@ export { chainClasses, useId, CallbackMerger, getColorScale, mergeOnly, saveImag
         eulerBetweenTensors, rotationMatrixFromZYZ,
         canMergeModels, getMergedModelName, parseMagresBlocks, mergeMagresText, findMergeablePair, hasMetadataClash, getCalculationMetadata,
         GAMMA_H, larmorFrequency, quadrupoleProduct, secondOrderShift,
+        isHalfIntegerSpin, hasCentralTransition,
+        QUAD_PERTURBATION_WARN_RATIO,
         quadrupolarData };

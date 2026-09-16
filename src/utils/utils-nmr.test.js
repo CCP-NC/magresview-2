@@ -4,6 +4,8 @@ import { TensorData } from '@ccp-nc/crystvis-js';
 import { getIsotopeData } from '@ccp-nc/crystvis-js/lib/data.js';
 
 import { GAMMA_H, larmorFrequency, quadrupoleProduct, secondOrderShift,
+         isHalfIntegerSpin, hasCentralTransition,
+         QUAD_PERTURBATION_WARN_RATIO,
          quadrupolarData } from './utils-nmr';
 import { getNMRData } from '../core/store/utils';
 
@@ -56,6 +58,29 @@ describe('quadrupolar formulas', () => {
         expect(qis).toBeCloseTo(-6000*Math.pow(3/104.3, 2), 6);
     });
 
+    it('identifies half-integer spins', () => {
+        [0.5, 1.5, 2.5, 3.5, 4.5].forEach((I) => expect(isHalfIntegerSpin(I)).toBe(true));
+        [0, 1, 2, 3].forEach((I) => expect(isHalfIntegerSpin(I)).toBe(false));
+        expect(isHalfIntegerSpin(undefined)).toBe(false);
+        expect(isHalfIntegerSpin(null)).toBe(false);
+    });
+
+    it('only allows a central transition for half-integer spin above 1/2', () => {
+        [1.5, 2.5, 3.5, 4.5].forEach((I) => expect(hasCentralTransition(I)).toBe(true));
+        // spin-1/2: the m=+-1/2 pair IS the only transition, but it carries no
+        // quadrupolar shift, and these nuclei are not quadrupolar anyway
+        expect(hasCentralTransition(0.5)).toBe(false);
+        // integer spin: no m = -1/2 <-> +1/2 transition exists at all
+        [1, 2, 3].forEach((I) => expect(hasCentralTransition(I)).toBe(false));
+    });
+
+    it('refuses to evaluate d_QIS for integer spin', () => {
+        // The CT expression is finite but meaningless at integer I — for 14N
+        // it would report several hundred ppm of spurious shift. Fail loudly.
+        expect(() => secondOrderShift(3e6, 1, 43.4e6)).toThrow(/half-integer/);
+        expect(() => secondOrderShift(3e6, 3, 43.4e6)).toThrow(/half-integer/);
+    });
+
 });
 
 describe('soprano oracle baseline (docs/adr/0008)', () => {
@@ -76,7 +101,9 @@ describe('soprano oracle baseline (docs/adr/0008)', () => {
                 expect(iD.Q/site.Q_mb).toBeCloseTo(1.0, 5);
             });
 
-            it(`reproduces soprano C_Q, P_Q and d_QIS for ${label}`, () => {
+            // C_Q and P_Q are defined for every quadrupolar site, integer
+            // spin included — only d_QIS is central-transition specific.
+            it(`reproduces soprano C_Q and P_Q for ${label}`, () => {
                 const a = makeAtom(site.element, site.isotope,
                                    site.efg_tensor, site.ms_tensor);
                 const qd = quadrupolarData(a, B0);
@@ -84,7 +111,28 @@ describe('soprano oracle baseline (docs/adr/0008)', () => {
                 expect(qd).not.toBeNull();
                 expect(qd.CQ/1e6/site.CQ_MHz).toBeCloseTo(1.0, 4);
                 expect(qd.PQ/1e6/site.PQ_MHz).toBeCloseTo(1.0, 4);
+                expect(qd.hasCT).toBe(site.has_central_transition);
+            });
+
+        }
+
+        if (site.has_central_transition) {
+
+            it(`reproduces soprano d_QIS for ${label}`, () => {
+                const a = makeAtom(site.element, site.isotope,
+                                   site.efg_tensor, site.ms_tensor);
+                const qd = quadrupolarData(a, B0);
                 expect(qd.qis/site.qis_ppm).toBeCloseTo(1.0, 4);
+            });
+
+            it(`flags perturbation validity for ${label}`, () => {
+                const a = makeAtom(site.element, site.isotope,
+                                   site.efg_tensor, site.ms_tensor);
+                const qd = quadrupolarData(a, B0);
+                expect(qd.ratio).toBeCloseTo(site.ratio, 6);
+                expect(qd.perturbationValid).toBe(site.perturbation_valid);
+                expect(qd.perturbationValid)
+                    .toBe(site.ratio <= QUAD_PERTURBATION_WARN_RATIO);
             });
 
             it(`reproduces soprano d_obs for ${label}`, () => {
@@ -97,6 +145,34 @@ describe('soprano oracle baseline (docs/adr/0008)', () => {
                                                    reftable, { B0: B0 });
                 expect(units).toBe('ppm');
                 expect(values[0]/site.dobs_ppm).toBeCloseTo(1.0, 4);
+            });
+
+        }
+        else if (site.spin > 0.5) {
+
+            // Integer-spin quadrupolar site (14N): quadrupolar quantities
+            // exist, central-transition quantities do not.
+            it(`gives C_Q and P_Q but no d_QIS for the integer-spin site ${label}`, () => {
+                const a = makeAtom(site.element, site.isotope,
+                                   site.efg_tensor, site.ms_tensor);
+                const qd = quadrupolarData(a, B0);
+
+                expect(qd).not.toBeNull();
+                expect(qd.hasCT).toBe(false);
+                expect(qd.qis).toBeNull();
+                expect(qd.ratio).toBeNull();
+                expect(qd.perturbationValid).toBeNull();
+
+                const view = makeView([a]);
+                // P_Q is still reported...
+                expect(getNMRData(view, 'PQ', 'efg', null, { B0: B0 })[1][0])
+                    .not.toBeNull();
+                // ...but d_QIS and d_obs are absent, not zero
+                expect(getNMRData(view, 'qis', 'efg', null, { B0: B0 })[1][0])
+                    .toBeNull();
+                expect(getNMRData(view, 'dobs', 'efg',
+                                  { [site.element]: site.reference },
+                                  { B0: B0 })[1][0]).toBeNull();
             });
 
         }

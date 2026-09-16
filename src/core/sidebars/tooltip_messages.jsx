@@ -259,3 +259,32 @@ export const tooltip_efg_dobs = <div>
         data. Only defined for quadrupolar sites (spin &gt; &#189;).
     </p>
 </div>;
+
+// --- Spectral plots sidebar ---
+export const tooltip_plots_q2_shifts = <div>
+    <p><b>Second-order quadrupolar shift (&delta;<sub>QIS</sub>)</b></p>
+    <p>
+        Moves each peak to &delta;<sub>obs</sub> = &delta;<sub>iso</sub> +
+        &delta;<sub>QIS</sub>, the centre-of-gravity position of the central
+        transition under magic-angle spinning (MAS) at the spectrometer field
+        B<sub>0</sub>.
+    </p>
+    <p>
+        Available only in <b>shift</b> mode: &delta;<sub>QIS</sub> is a shift,
+        so it needs an axis referenced to a real standard. It is also only
+        defined for <b>half-integer</b> spins above &#189; — integer-spin
+        nuclei such as <sup>14</sup>N and <sup>2</sup>H have no central
+        transition, and are left unshifted.
+    </p>
+    <p>
+        <b>Not a lineshape simulation.</b> Peaks are moved and then broadened
+        with the chosen symmetric kernel (Lorentzian or Gaussian); no
+        quadrupolar powder pattern is computed.
+    </p>
+    <p>
+        <b>Validity.</b> &delta;<sub>QIS</sub> is second-order perturbation
+        theory in |P<sub>Q</sub>|/&nu;<sub>0</sub>. Sites where that ratio is
+        large are flagged: their peak positions need exact diagonalisation
+        instead.
+    </p>
+</div>;

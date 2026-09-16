@@ -36,3 +36,9 @@
 .mv-switch-true .mv-switch-thumb {
     transform: translateX(30px);
 }
+
+.mv-switch.mv-switch-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}

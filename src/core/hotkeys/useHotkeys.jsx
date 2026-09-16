@@ -119,6 +119,11 @@ const ACTIONS = {
         appint.sidebar = 'select';
         setIsoModalOpen(true);
     },
+    // B0 is global, so unlike the reference/isotope dialogs this one does not
+    // belong to any sidebar and its open state lives in the store.
+    'show-larmor-modal': ({ appint }) => {
+        appint.showLarmorModal = true;
+    },
 };
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
