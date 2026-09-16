@@ -12,6 +12,8 @@ const Events = new Enum([
     'EFG_ELLIPSOIDS',
     'EFG_LABELS',
     'EUL_ANGLES',
+    'EUL_DISKS',
+    'EUL_CONFIG',
     'DIP_LINKS',                // Links require two events, one before a VIEWS update, the other after
     'DIP_RENDER',
     'JC_LINKS',
@@ -28,7 +30,8 @@ const eventPriority = {
                 Events.CSCALE,                                  // is affected by displayed/selected atoms
                 Events.MS_ELLIPSOIDS, Events.MS_LABELS,         
                 Events.EFG_ELLIPSOIDS, Events.EFG_LABELS,
-                Events.EUL_ANGLES, Events.PLOTS_RECALC,
+                Events.EUL_ANGLES, Events.EUL_DISKS, Events.EUL_CONFIG,
+                Events.PLOTS_RECALC,
                 Events.DIP_RENDER, Events.JC_RENDER]),
     2: new Set([Events.VIEWS]),                                 // Changing displayed/selected atoms
     3: new Set([Events.DIP_LINKS, Events.JC_LINKS])             // Computing links and required ghosts (which changes displayed atoms)

@@ -40,23 +40,33 @@ function MagresViewSidebar(props) {
  * Forced open when the global advanced mode is active;
  * otherwise toggled locally by the user.
  */
-function MVAdvancedSection({ children }) {
+function MVAdvancedSection({ children, open, onToggle, label = 'Advanced' }) {
     const appint = useAppInterface();
     const [localOpen, setLocalOpen] = useState(false);
-    const show = appint.advancedMode || localOpen;
+    const isControlled = open !== undefined;
+    const show = appint.advancedMode || (isControlled ? open : localOpen);
+
+    const handleToggle = () => {
+        if (appint.advancedMode) return;
+        if (isControlled && onToggle) {
+            onToggle(!open);
+        } else {
+            setLocalOpen(o => !o);
+        }
+    };
 
     return (
         <div className='mv-advanced-section'>
             <button
                 className={`mv-advanced-toggle${show ? ' open' : ''}`}
-                onClick={() => { if (!appint.advancedMode) setLocalOpen(o => !o); }}
+                onClick={handleToggle}
                 aria-expanded={show}
-                title={appint.advancedMode ? 'Advanced mode is on globally' : (show ? 'Collapse advanced options' : 'Expand advanced options')}
+                title={appint.advancedMode ? 'Advanced mode is on globally' : (show ? 'Collapse options' : 'Expand options')}
             >
                 <span className='mv-advanced-chevron'>
                     {show ? <FaChevronDown /> : <FaChevronRight />}
                 </span>
-                Advanced
+                {label}
             </button>
             {show && (
                 <div className='mv-advanced-content'>

@@ -49,3 +49,5 @@ yalc.lock
 # docs
 docs/*.html
 docs/*.pdf
+
+.serena

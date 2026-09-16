@@ -1,0 +1,15 @@
+#$magres-abinitio-v1.0
+# Euler-vis stress test (generated). See README.md for expected angles.
+[atoms]
+  units lattice Angstrom
+  units atom Angstrom
+  lattice 10 0 0 0 10 0 0 0 10
+  symmetry P1
+atom Al Al 1 5 5 5
+[/atoms]
+[magres]
+  units ms ppm
+  units efg au
+  ms Al 1 30.0000000000 0.0000000000 0.0000000000 0.0000000000 30.0000000000 0.0000000000 0.0000000000 0.0000000000 30.0000000000
+  efg Al 1 -0.2303565452 0.0449738985 -2.2952529784 0.0449738985 1.2382727668 -0.6547150276 -2.2952529784 -0.6547150276 -1.0079162216
+[/magres]
