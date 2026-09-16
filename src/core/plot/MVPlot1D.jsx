@@ -143,8 +143,18 @@ function MVPlot1D() {
     }
 
     // ---- X-axis config ----
+    // Whether d_QIS was applied is reported by the plots listener, not
+    // re-derived here, so the label can never disagree with the data.
+    const quadInfo = pltint.quadInfo;
+
+    // Plotly axis titles take a small HTML subset (<sub>, <sup>, <i>, ...),
+    // NOT TeX — 'd_obs' would render with a literal underscore.
     let xAxisLabel = pltint.element ? pltint.element + ' ' : '';
-    xAxisLabel += pltint.useRefTable ? 'Chemical shift (ppm)' : 'Shielding (ppm)';
+    if (quadInfo.applied) {
+        xAxisLabel += 'Observed shift δ<sub>obs</sub> = δ<sub>iso</sub> + δ<sub>QIS</sub> (ppm)';
+    } else {
+        xAxisLabel += pltint.useRefTable ? 'Chemical shift (ppm)' : 'Shielding (ppm)';
+    }
 
     const xaxisConfig = {
         title: { text: xAxisLabel },
@@ -230,8 +240,20 @@ function MVPlot1D() {
         },
     };
 
+    let modalTitle = 'Spectral 1D plot';
+    if (pltint.element) {
+        modalTitle += ` — ${pltint.element}`;
+        if (quadInfo.applied) {
+            modalTitle += ` (δ_QIS applied, B₀ = ${pltint.B0} T`;
+            if (quadInfo.nUnreliable > 0) {
+                modalTitle += `; ⚠ ${quadInfo.nUnreliable} site(s) beyond 2nd-order validity`;
+            }
+            modalTitle += ')';
+        }
+    }
+
     return (
-        <MVModal title="Spectral 1D plot" display={show}
+        <MVModal title={modalTitle} display={show}
             noFooter={true} resizable={true} draggable={true}
             onClose={() => { pltint.mode = 'none'; }}>
             <div ref={containerRef}

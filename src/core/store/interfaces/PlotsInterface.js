@@ -16,8 +16,8 @@ import { Events } from '../listeners';
 
 import Plotly from 'plotly.js-dist-min';
 import { PLOT_DIV_ID } from '../../plot/constants';
-import { loadImage } from '../../../utils';
-import { makeSelector, DataCheckInterface } from '../utils';
+import { loadImage, hasCentralTransition } from '../../../utils';
+import { makeSelector, DataCheckInterface, elementView, getB0, larmorHMHz } from '../utils';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 // lodash
 import _ from 'lodash';
@@ -26,7 +26,13 @@ const initialPlotsState = {
     plots_mode: 'none',
     plots_element: null, // what species' spectrum to plot
     plots_use_refs: false,
-    plots_q2_shifts: true,
+    // The second-order quadrupolar shift is a physical correction that moves
+    // peaks by tens to hundreds of ppm. It is opt-in so that a plot never
+    // silently disagrees with the raw DFT d_iso the user came here to see.
+    plots_q2_shifts: false,
+    // Written by the plots listener, read by the sidebar and the plot. Derived
+    // state — never set from the UI. See store/listeners/plots.js.
+    plots_quad_info: { applied: false, nShifted: 0, nUnreliable: 0, maxRatio: null },
     plots_show_x_axis: true,
     plots_show_y_axis: true,
     plots_show_grid: true,
@@ -109,12 +115,76 @@ class PlotsInterface extends DataCheckInterface {
         this.dispatch(makePlotAction({ plots_element: v }));
     }
 
-    get useQ2Shift() {
+    get q2Shifts() {
         return this.state.plots_q2_shifts;
     }
 
-    set useQ2Shift(v) {
+    set q2Shifts(v) {
         this.dispatch(makePlotAction({ plots_q2_shifts: v }));
+    }
+
+    /**
+     * The atoms the spectrum is computed over, narrowed to the chosen element.
+     * Shares `elementView` with the plots listener, so what the sidebar says
+     * about the data and what the plot was built from cannot diverge.
+     */
+    get currentAtoms() {
+        return elementView(this.state)?.atoms ?? [];
+    }
+
+    /**
+     * Whether the second-order quadrupolar shift can be applied to the current
+     * element, and if not, why. This is the single predicate the sidebar uses
+     * to enable/disable the switch and to explain itself; the plots listener
+     * independently reports what it actually did via `quadInfo`.
+     *
+     * Returns one of:
+     *   'ok'              — d_QIS is defined for at least one atom of this element
+     *   'no-element'      — nothing chosen yet, or no atoms to describe
+     *   'no-efg'          — the model carries no EFG data at all
+     *   'not-quadrupolar' — every isotope of this element has spin <= 1/2
+     *   'integer-spin'    — quadrupolar, but integer spin: no central transition
+     *   'shielding-mode'  — d_QIS is a shift; it needs a referenced shift axis
+     *   'no-field'        — B0 is not a valid positive field
+     */
+    get quadEligibility() {
+        if (!this.element) return 'no-element';
+        if (!this.hasEFGData) return 'no-efg';
+
+        const spins = this.currentAtoms.map((a) => a.isotopeData?.spin);
+        // Say nothing rather than assert 'not quadrupolar' about an empty set;
+        // this happens transiently while a model is being swapped in.
+        if (spins.length === 0) return 'no-element';
+        if (!spins.some((I) => I > 0.5)) return 'not-quadrupolar';
+        if (!spins.some((I) => hasCentralTransition(I))) return 'integer-spin';
+
+        if (!this.useRefTable) return 'shielding-mode';
+        if (getB0(this.state) === null) return 'no-field';
+        return 'ok';
+    }
+
+    get canQuadShift() {
+        return this.quadEligibility === 'ok';
+    }
+
+    /**
+     * What the plots listener actually did on its last run: whether any peak
+     * was moved, how many, and how far outside second-order perturbation
+     * validity the worst site is. Never re-derived by the UI — see
+     * store/listeners/plots.js.
+     */
+    get quadInfo() {
+        return this.state.plots_quad_info ?? initialPlotsState.plots_quad_info;
+    }
+
+    // Read-only view onto the single, model-wide external field (ADR 0009).
+    // Writing goes through AppInterface / the spectrometer field dialog.
+    get B0() {
+        return this.state.app_B0;
+    }
+
+    get larmorH() {
+        return larmorHMHz(this.state);
     }
 
     get useRefTable() {
@@ -355,7 +425,7 @@ class PlotsInterface extends DataCheckInterface {
 
 // Hook for interface
 function usePlotsInterface() {
-    let state = useSelector(makeSelector('plots', ['app_viewer']), shallowEqual);
+    let state = useSelector(makeSelector('plots', ['app_viewer', 'app_B0', 'ms_references']), shallowEqual);
     let dispatcher = useDispatch();
 
     let intf = new PlotsInterface(state, dispatcher);

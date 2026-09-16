@@ -29,7 +29,7 @@ import { colorScaleListener } from './cscales';
 import { cellListener } from './cell';
 import { dipCalculateLinksListener, dipDisplayLinksListener, 
          jcCalculateLinksListener,  jcDisplayLinksListener } from './links';
-import { eulerAngleListener } from './euler';
+import { eulerAngleListener, eulerDisksListener, eulerConfigListener } from './euler';
 import { plotsListener } from './plots';
 import Events, { getPriorityOfEvent, getEventsWithPriority } from './events';
 
@@ -48,6 +48,8 @@ const listeners = {
     [Events.EFG_ELLIPSOIDS]:    efgEllipsoidListener,
     [Events.EFG_LABELS]:        efgLabelListener,
     [Events.EUL_ANGLES]:        eulerAngleListener,
+    [Events.EUL_DISKS]:         eulerDisksListener,
+    [Events.EUL_CONFIG]:        eulerConfigListener,
     [Events.PLOTS_RECALC]:      plotsListener,
     [Events.DIP_LINKS]:         dipCalculateLinksListener,
     [Events.DIP_RENDER]:        dipDisplayLinksListener,

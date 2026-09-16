@@ -7,6 +7,7 @@ import EFGIcon from './efg.svg?react';
 import DipIcon from './dip.svg?react';
 import JcoupIcon from './jcoup.svg?react';
 import EulerIcon from './euler.svg?react';
+import CrystalIcon from './crystal.svg?react';
 
 const icons = {
     ms: MSIcon,
@@ -14,6 +15,7 @@ const icons = {
     dip: DipIcon,
     jcoup: JcoupIcon,
     euler: EulerIcon,
+    crystal: CrystalIcon
 };
 
 function MVIcon(props) {

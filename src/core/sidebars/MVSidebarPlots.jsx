@@ -24,11 +24,11 @@ import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSel
 import MVRange from '../../controls/MVRange';
 import MVSwitch from '../../controls/MVSwitch';
 import MVTooltip from '../../controls/MVTooltip';
-import { tooltip_lorentzian_broadening, tooltip_broadening_type, tooltip_plots_shifts, tooltip_plots_elements } from './tooltip_messages';
+import { tooltip_lorentzian_broadening, tooltip_broadening_type, tooltip_plots_shifts, tooltip_plots_elements, tooltip_plots_q2_shifts } from './tooltip_messages';
 import React, { useEffect, useRef} from 'react';
 
-import { usePlotsInterface, useMSInterface } from '../store';
-import { chainClasses } from '../../utils';
+import { usePlotsInterface, useMSInterface, useAppInterface } from '../store';
+import { chainClasses, QUAD_PERTURBATION_WARN_RATIO } from '../../utils';
 
 
 const otherOnOff = {
@@ -36,8 +36,21 @@ const otherOnOff = {
     line1d: 'none'
 };
 
+// Human-readable explanation for each non-'ok' value of
+// PlotsInterface.quadEligibility. Keyed so the switch's disabled state and the
+// note below it can never disagree.
+const QUAD_DISABLED_REASON = {
+    'no-element':      null,   // nothing chosen yet; no explanation needed
+    'no-efg':          'No EFG data in this file, so \u03B4_QIS cannot be computed.',
+    'not-quadrupolar': 'This nucleus is not quadrupolar (spin \u2264 \u00BD).',
+    'integer-spin':    'Integer-spin nucleus: no central transition, so \u03B4_QIS is undefined.',
+    'shielding-mode':  '\u03B4_QIS is a shift, not a shielding \u2014 switch to shift mode to use it.',
+    'no-field':        'Set a valid spectrometer field B\u2080 first.',
+};
+
 function MVSidebarPlots(props) {
 
+    const appint = useAppInterface();
     const pltint = usePlotsInterface();
     const msint = useMSInterface();
     // const formats = '.png,.jpg,.jpeg';
@@ -73,6 +86,12 @@ function MVSidebarPlots(props) {
     const options = elements.map((el, i) => {
         return (<MVCustomSelectOption key={i} value={el}>{el}</MVCustomSelectOption>);
     });
+
+    // Why the delta_QIS switch is unavailable, or null if it is available.
+    // Single predicate, owned by PlotsInterface — see quadEligibility there.
+    const quadDisabledReason = QUAD_DISABLED_REASON[pltint.quadEligibility] ?? null;
+    // What the plots listener actually did, rather than a second guess at it.
+    const quadInfo = pltint.quadInfo;
 
     return (<MagresViewSidebar show={props.show} title="Spectral plots">
         <div className={chainClasses('mv-sidebar-block', has_ms? '' : 'hidden')}>
@@ -118,7 +137,44 @@ function MVSidebarPlots(props) {
                 <span>Shift (use references)</span>
                 <MVTooltip tooltipText={tooltip_plots_shifts} />
             </div>
-            <MVButton onClick={() => { msint.showRefTable = true; }}>Set References</MVButton>
+            <div className='mv-plots-btn-row'>
+                <MVButton onClick={() => { msint.showRefTable = true; }}>Set References</MVButton>
+                <MVButton onClick={() => { appint.showLarmorModal = true; }}>Spectrometer field&hellip;</MVButton>
+            </div>
+            <span className='sep-1' />
+            <div className='mv-plots-agrid-switch'>
+                <span>&delta;<sub>iso</sub></span>
+                <MVSwitch
+                    on={pltint.canQuadShift && pltint.q2Shifts}
+                    onClick={() => { pltint.q2Shifts = !pltint.q2Shifts; }}
+                    disabled={!pltint.canQuadShift}
+                    title={quadDisabledReason}
+                    colorFalse='var(--bkg-color-1)' colorTrue='var(--efg-color-2)'
+                />
+                <span>&delta;<sub>obs</sub> = &delta;<sub>iso</sub> + &delta;<sub>QIS</sub></span>
+                <MVTooltip tooltipText={tooltip_plots_q2_shifts} />
+            </div>
+            {quadDisabledReason ? (
+                <div className='mv-plots-quad-note'>{quadDisabledReason}</div>
+            ) : null}
+            {quadInfo.applied ? (
+                <div className='mv-plots-quad-info'>
+                    {quadInfo.nShifted} peak{quadInfo.nShifted === 1 ? '' : 's'} shifted by
+                    &nbsp;&delta;<sub>QIS</sub> at B<sub>0</sub> = {pltint.B0} T
+                    (&asymp; {pltint.larmorH !== null ? pltint.larmorH.toFixed(1) : '—'} MHz &sup1;H)
+                </div>
+            ) : null}
+            {quadInfo.nUnreliable > 0 ? (
+                <div className='mv-plots-quad-warning'>
+                    &#9888; {quadInfo.nUnreliable} of {quadInfo.nShifted} shifted
+                    site{quadInfo.nShifted === 1 ? '' : 's'}
+                    &nbsp;exceed{quadInfo.nUnreliable === 1 ? 's' : ''}
+                    &nbsp;|P<sub>Q</sub>|/&nu;<sub>0</sub> = {QUAD_PERTURBATION_WARN_RATIO}
+                    &nbsp;(worst {quadInfo.maxRatio !== null ? quadInfo.maxRatio.toFixed(2) : '—'}).
+                    Second-order perturbation theory is not reliable there, so
+                    those peak positions should not be trusted.
+                </div>
+            ) : null}
             <span className='sep-1' />
             {/* <div className='mv-sidebar-block'>
                 Background spectrum image

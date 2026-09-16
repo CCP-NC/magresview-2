@@ -3,14 +3,14 @@ import _ from 'lodash';
 
 import React, { cloneElement } from 'react';
 
-import { useId } from '../utils';
+import { chainClasses, useId } from '../utils';
 
 function MVRadioButton(props) {
 
     const uid = useId('radiobutton');
 
-    return (<span className='mv-control mv-radio' title={props.title}>
-        <input id={uid} name={props.name} type="radio" checked={props.checked} onChange={props.onChange}/>
+    return (<span className={chainClasses('mv-control mv-radio', props.disabled? 'mv-radio-disabled' : '')} title={props.title}>
+        <input id={uid} name={props.name} type="radio" checked={props.checked} onChange={props.onChange} disabled={props.disabled}/>
         <label htmlFor={uid}></label>{props.children}
     </span>);
 }

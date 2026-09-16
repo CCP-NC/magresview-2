@@ -14,6 +14,7 @@
 
 import { Events } from '../listeners';
 import CScaleInterface, { makeCScaleSelector } from './CScaleInterface';
+import { larmorHMHz } from '../utils';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
 const initialEFGState = {
@@ -74,6 +75,26 @@ class EFGInterface extends CScaleInterface {
         this.dispatch(efgAction({ 'efg_precision': v }, [Events.EFG_LABELS]));
     }
 
+    // Read-only views onto the single, model-wide external field. B0 is owned
+    // by AppInterface (ADR 0009); change it via `appint.B0 = ...` or the
+    // spectrometer field dialog.
+    get B0() {
+        return this.state.app_B0;
+    }
+
+    // Equivalent 1H Larmor frequency in MHz for the current B0, or null if
+    // the current input is not a valid field
+    get larmorH() {
+        return larmorHMHz(this.state);
+    }
+
+    // True if at least one chemical shift reference is set in the MS tab;
+    // without any, d_obs cannot be computed for any site
+    get hasMSRefs() {
+        const refs = this.state.ms_references || {};
+        return Object.values(refs).some((v) => (v !== null && v !== undefined && v !== ''));
+    }
+
     get colorScaleAvailable() {
         let pre = this.colorScalePrefix;
         return (pre === 'none' || pre === 'efg');
@@ -100,7 +121,7 @@ class EFGInterface extends CScaleInterface {
 }
 
 function useEFGInterface() {
-    let state = useSelector(makeCScaleSelector('efg', ['app_viewer', 'ms_cscale_type']), shallowEqual);
+    let state = useSelector(makeCScaleSelector('efg', ['app_viewer', 'ms_cscale_type', 'ms_references', 'app_B0']), shallowEqual);
     let dispatcher = useDispatch();
 
     let intf = new EFGInterface(state, dispatcher);

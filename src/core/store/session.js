@@ -43,6 +43,7 @@ export const NON_SERIALIZABLE_KEYS = new Set([
 
     // ── Transient dispatch state ──────────────────────────────────────────────
     'app_model_queued',     // In-flight display request
+    'app_show_larmor_modal', // Modal open state
     'listen_update',        // Queued listener events
 
     // ── ModelView instances (atom selections) ─────────────────────────────────
@@ -80,8 +81,12 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     'eul_newatom_A',
     'eul_atom_B',
     'eul_newatom_B',
-    'eul_results',
+    'eul_orientation',          // live RelativeTensorOrientation
+    'eul_configs',              // derived; rebuilt by EUL_ANGLES on restore
+    'eul_orientation_class',    // derived
+    'eul_active_config',        // reset to default on restore (ADR-0004)
     'plots_data',
+    'plots_quad_info',      // Derived: what the last plot recalculation did
 
     // ── Background image (blob URLs don't survive serialisation) ─────────────
     'plots_bkg_img_url',
@@ -91,6 +96,10 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     // ── Per-model in-memory state cache ───────────────────────────────────────
     // Contains live atom/ModelView references; rebuilt as models are switched.
     'app_model_states',
+
+    // ── Transient prompts ─────────────────────────────────────────────────────
+    // References models by name; would resurrect a stale banner on restore.
+    'app_merge_prompt',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,6 +150,8 @@ export function buildSessionDocument(state, viewer) {
         atomRefs: {
             dip_central_atom: state.dip_central_atom?.crystLabel ?? null,
             jc_central_atom:  state.jc_central_atom?.crystLabel  ?? null,
+            eul_atom_A:       state.eul_atom_A?.crystLabel       ?? null,
+            eul_atom_B:       state.eul_atom_B?.crystLabel       ?? null,
         },
 
         selections: {

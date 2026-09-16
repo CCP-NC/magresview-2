@@ -23,6 +23,7 @@ import MVHotkeyHelp from './hotkeys/MVHotkeyHelp';
 import { chainClasses } from '../utils';
 import { useAppInterface, useSelInterface, useDipInterface, useEulerInterface, useJCoupInterface, useMSInterface } from './store';
 import { MVReferenceTable } from './sidebars/MVSidebarMS';
+import MVLarmorModal from './MVLarmorModal';
 
 import MagresViewHeader from './MagresViewHeader';
 import MagresViewScreenshot from './MagresViewScreenshot';
@@ -207,9 +208,31 @@ function MagresViewPage() {
                     }}>Dismiss</MVButton>
                 </div>
             )}
+            { appint.mergePrompt && (
+                <div className={'mv-merge-banner' + (appint.mergePrompt.error ? ' mv-merge-banner-failed' : '')}>
+                    { appint.mergePrompt.error ? (
+                        <span className='mv-merge-banner-text'>
+                            Could not merge <strong>{appint.mergePrompt.modelA}</strong> and <strong>{appint.mergePrompt.modelB}</strong>. {appint.mergePrompt.error} The files are still loaded separately.
+                        </span>
+                    ) : (
+                        <span className='mv-merge-banner-text'>
+                            Detected complementary shielding and EFG calculations for <strong>{appint.mergePrompt.mergedName}</strong> ({appint.mergePrompt.modelA} + {appint.mergePrompt.modelB}). Merge into a single model?
+                        </span>
+                    )}
+                    { !appint.mergePrompt.error && (
+                        <MVButton onClick={() => appint.mergeModels(appint.mergePrompt.modelA, appint.mergePrompt.modelB, appint.mergePrompt.mergedName)}>
+                            Merge into '{appint.mergePrompt.mergedName}'
+                        </MVButton>
+                    )}
+                    <MVButton onClick={() => appint.dismissMergePrompt()}>
+                        { appint.mergePrompt.error ? 'Dismiss' : 'Keep separate' }
+                    </MVButton>
+                </div>
+            )}
             { /* Modals */ }
                 <MVPlot1D />
                 <MVReferenceTable display={msint.showRefTable} close={() => { msint.showRefTable = false; }} />
+                <MVLarmorModal display={appint.showLarmorModal} close={() => { appint.showLarmorModal = false; }} />
             </div>);
 }
 

@@ -1,0 +1,3 @@
+# Present all sixteen PAS-frame configurations, not the classic four
+
+The equivalent-angle table and cycling walk all 16 PAS-frame configurations (4 source axis-flips × 4 target axis-flips) exposed by the crystvis-js `RelativeTensorOrientation`, rather than the four equivalent Euler angle sets traditionally quoted in NMR. Two configurations can share the same (α, β, γ) yet draw differently (a 180° axis flip), so cycling every configuration lets the user see each distinct geometry; the highlighted row always matches the current drawing. The trade-off is a longer table with apparent duplicate angle rows, accepted for geometric completeness.

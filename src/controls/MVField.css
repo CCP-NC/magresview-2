@@ -1,0 +1,29 @@
+.mv-field {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mv-field-column {
+  flex-direction: column;
+  gap: 0.25em;
+}
+
+.mv-field-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+}
+
+.mv-field-label {
+  font-size: 0.78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mid-color-2);
+}
+
+.mv-field-control {
+  width: 100%;
+}

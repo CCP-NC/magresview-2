@@ -201,3 +201,7 @@
     margin-top: 3rem;
     color: var(--err-color-2);
 }
+
+.mv-sidebar-merge-offer {
+    margin-bottom: 0.75em;
+}

@@ -48,3 +48,14 @@
 .mv-radio > :checked + label {
   background-color: var(--check-color);
 }
+
+.mv-radio.mv-radio-disabled {
+  opacity: 0.4;
+}
+
+/* Block interaction with the radio itself, but keep any inline extras
+   (e.g. info tooltips) clickable */
+.mv-radio.mv-radio-disabled > input,
+.mv-radio.mv-radio-disabled > label {
+  pointer-events: none;
+}
