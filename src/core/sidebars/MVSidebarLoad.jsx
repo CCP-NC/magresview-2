@@ -270,6 +270,13 @@ function MVSidebarLoad(props) {
             </div>
         </div>
         <h4>Files loaded:</h4>
+        {appint.mergePrompt && !appint.mergePrompt.error && (
+            <div className='mv-sidebar-merge-offer'>
+                <MVButton onClick={() => appint.mergeModels(appint.mergePrompt.modelA, appint.mergePrompt.modelB, appint.mergePrompt.mergedName)}>
+                    Merge {appint.mergePrompt.modelA} + {appint.mergePrompt.modelB}
+                </MVButton>
+            </div>
+        )}
         <MVListSelect selected={state.list_selected} onSelect={(v) => { setState({...state, list_selected: v}); appint.display(v);}}>
             {models.map(makeModelOption)}
         </MVListSelect>

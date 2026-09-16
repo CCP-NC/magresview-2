@@ -94,6 +94,10 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     // ── Per-model in-memory state cache ───────────────────────────────────────
     // Contains live atom/ModelView references; rebuilt as models are switched.
     'app_model_states',
+
+    // ── Transient prompts ─────────────────────────────────────────────────────
+    // References models by name; would resurrect a stale banner on restore.
+    'app_merge_prompt',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
