@@ -9,3 +9,21 @@
 .tooltip-container {
     z-index: 10000;
 }
+
+/* Info icon inline in a radio button row */
+.mv-radio .field-info {
+    display: flex;
+    align-items: center;
+    margin-left: 0.4em;
+    cursor: pointer;
+}
+
+/* Equations rendered inside tooltips (native MathML) */
+.mv-math-eq {
+    margin: 0.4em 0;
+    text-align: center;
+}
+
+.mv-math-eq math {
+    font-size: 1.15em;
+}

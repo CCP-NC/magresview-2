@@ -43,6 +43,7 @@ export const NON_SERIALIZABLE_KEYS = new Set([
 
     // ── Transient dispatch state ──────────────────────────────────────────────
     'app_model_queued',     // In-flight display request
+    'app_show_larmor_modal', // Modal open state
     'listen_update',        // Queued listener events
 
     // ── ModelView instances (atom selections) ─────────────────────────────────
@@ -85,6 +86,7 @@ export const NON_SERIALIZABLE_KEYS = new Set([
     'eul_orientation_class',    // derived
     'eul_active_config',        // reset to default on restore (ADR-0004)
     'plots_data',
+    'plots_quad_info',      // Derived: what the last plot recalculation did
 
     // ── Background image (blob URLs don't survive serialisation) ─────────────
     'plots_bkg_img_url',

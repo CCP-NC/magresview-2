@@ -45,7 +45,7 @@ function MVText(props) {
         {props.children? <label htmlFor={id} className='mv-textlabel'>{props.children}</label> : <></>}
         <input type='text' id={id} className={chainClasses('mv-control mv-textfield', waitSubmit? 'mv-submit-wait' : '')} 
             size={props.size} value={props.value}
-            onChange={onChange} onKeyDown={onKeyDown}
+            onChange={onChange} onKeyDown={onKeyDown} onBlur={props.onBlur}
             disabled={props.disabled}
         />
     </span>);

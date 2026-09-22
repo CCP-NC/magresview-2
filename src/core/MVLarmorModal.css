@@ -1,0 +1,81 @@
+.mv-larmor-modal {
+    min-width: 380px;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8em;
+}
+
+.mv-larmor-master {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8em;
+    padding: 0.6em;
+    background: var(--bkg-color-2);
+    border: 1px solid var(--mid-color-1);
+    border-radius: 4px;
+}
+
+.mv-larmor-field-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+}
+
+.mv-larmor-field-item label {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.mv-larmor-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
+
+.mv-larmor-note {
+    font-size: 0.85em;
+    font-style: italic;
+    opacity: 0.75;
+}
+
+.mv-larmor-table {
+    display: flex;
+    flex-direction: column;
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--mid-color-1);
+    border-radius: 4px;
+}
+
+.mv-larmor-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 2.5fr 3fr;
+    align-items: center;
+    padding: 0.4em 0.6em;
+    font-size: 0.9em;
+}
+
+.mv-larmor-header {
+    font-weight: bold;
+    background: var(--bkg-color-2);
+    border-bottom: 1px solid var(--mid-color-1);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.mv-larmor-row:not(.mv-larmor-header):nth-child(even) {
+    background: rgba(128, 128, 128, 0.06);
+}
+
+.mv-larmor-iso {
+    font-weight: bold;
+}
+
+.mv-larmor-empty {
+    padding: 1em;
+    text-align: center;
+    font-style: italic;
+    opacity: 0.75;
+}

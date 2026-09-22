@@ -1,5 +1,35 @@
 import _ from 'lodash';
-import { dipolarCoupling, jCoupling } from '../../utils';
+import { dipolarCoupling, jCoupling, quadrupolarData,
+         GAMMA_H, larmorFrequency } from '../../utils';
+
+// Datatypes combining MS and EFG data for quadrupolar sites. These return
+// null for non-quadrupolar sites (spin <= 1/2), which callers must tolerate.
+const quadDatatypes = ['PQ', 'qis', 'dobs'];
+
+// Parse a B0 state value (string) into a positive number in T, or null if
+// invalid
+function parseB0(v) {
+    const B0 = parseFloat(v);
+    return (isNaN(B0) || B0 <= 0) ? null : B0;
+}
+
+/**
+ * The external field, in T, as a number — or null if the current input is not
+ * a valid field. `app_B0` is the single, model-wide source of truth (ADR 0009);
+ * nothing else in the store holds a field value.
+ */
+function getB0(state) {
+    return parseB0(state.app_B0);
+}
+
+/**
+ * Equivalent 1H Larmor frequency in MHz for the store's current B0, or null
+ * if the current input is not a valid field.
+ */
+function larmorHMHz(state) {
+    const B0 = getB0(state);
+    return B0 === null ? null : larmorFrequency(GAMMA_H, B0)/1e6;
+}
 
 function makeSelector(prefix, extras=[]) {
     // Creates and returns a selector function for a given prefix
@@ -30,7 +60,30 @@ function getSel(app) {
     }
 }
 
-function getNMRData(view, datatype, tenstype='ms', reftable=null) {
+/**
+ * The atoms a 1D spectrum is computed over: the current selection, or
+ * everything displayed if nothing is selected, narrowed to the chosen element.
+ * Returns null when there is nothing to work on (no model loaded).
+ *
+ * Both the plots listener and PlotsInterface go through this, so the sidebar
+ * can never be describing a different set of atoms from the one the plot was
+ * actually built from.
+ *
+ * Note that ModelView.find already searches *within* the view it is called on,
+ * so no further intersection is needed to narrow by element.
+ */
+function elementView(state) {
+    const app = state.app_viewer;
+    if (!app?.model) return null;
+
+    const view = getSel(app);
+    if (!view) return null;
+
+    const element = state.plots_element;
+    return element ? view.find({ elements: [element] }) : view;
+}
+
+function getNMRData(view, datatype, tenstype='ms', reftable=null, options={}) {
 
     let units = '';
     let tens_units = {
@@ -93,6 +146,55 @@ function getNMRData(view, datatype, tenstype='ms', reftable=null) {
                 return T.efgAtomicToHz(iD.Q).haeberlen_eigenvalues[2] / 1e6;
             });
             units = 'MHz'; // if this changes, change formatNumber as well!
+            break;
+        case 'PQ':
+            // Quadrupolar product; null for non-quadrupolar sites
+            values = view.atoms.map((a) => {
+                const qd = quadrupolarData(a);
+                return qd ? qd.PQ/1e6 : null;
+            });
+            units = 'MHz'; // if this changes, change formatNumber as well!
+            break;
+        case 'qis':
+            // Second-order quadrupolar-induced shift of the central
+            // transition under MAS; needs options.B0 (in T)
+            values = view.atoms.map((a) => {
+                const qd = quadrupolarData(a, options.B0);
+                return qd ? qd.qis : null;
+            });
+            units = 'ppm';
+            break;
+        case 'dobs':
+            // Observed shift d_obs = d_iso + d_QIS; needs options.B0 and a
+            // chemical shift reference table (MS references). Null where
+            // either is missing or the site is not quadrupolar.
+            if (!reftable) {
+                values = view.atoms.map(() => null);
+                units = 'ppm';
+                break;
+            }
+            values = view.atoms.map((a) => {
+                const qd = quadrupolarData(a, options.B0);
+                if (!qd || qd.qis === null) {
+                    return null;
+                }
+                const ref = reftable[a.element];
+                if (ref === null || ref === undefined || ref === '') {
+                    return null;
+                }
+                let msT;
+                try {
+                    msT = a.getArrayValue('ms');
+                }
+                catch (e) {
+                    return null;
+                }
+                if (!msT) {
+                    return null;
+                }
+                return (ref - msT.isotropy) + qd.qis;
+            });
+            units = 'ppm';
             break;
         default:
             break;
@@ -209,7 +311,12 @@ export {
     makeSelector, 
     addPrefix,
     getSel,
+    elementView,
     getNMRData,
+    quadDatatypes,
+    parseB0,
+    getB0,
+    larmorHMHz,
     formatNumber,
     getLinkLabel,
     BaseInterface,
