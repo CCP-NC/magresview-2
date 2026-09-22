@@ -1,6 +1,6 @@
 {
-  "commit": "c8de67c63d10126aa2a9b5439233c6ff79626a4b",
-  "date": "2026-09-17 00:50:26",
+  "soprano_version": "0.12",
+  "date": "2026-09-22 11:00:36",
   "fixtures": {
     "test_01": {
       "description": "Isotropic shift +100 ppm @ 400 MHz (13C)",

@@ -1,24 +1,34 @@
 #!/usr/bin/env python3
 """
 Generate test fixtures for MagresView 2 spin system export validation.
-Uses Soprano as the convention oracle (pinned to commit c8de67c).
+Uses Soprano as the convention oracle (pinned to Soprano v0.12).
 
 Usage:
     python3 generate_fixtures.py
+    # Or to specify a custom soprano location:
+    SOPRANO_PATH=/path/to/soprano python3 generate_fixtures.py
 """
 
 import os
 import sys
 import json
-import subprocess
 from datetime import datetime
 import numpy as np
 from scipy.spatial.transform import Rotation
 import ase.io
 
-SOPRANO_PATH = "/Users/jks/coding/soprano"
-if SOPRANO_PATH not in sys.path:
-    sys.path.insert(0, SOPRANO_PATH)
+# Allow overriding soprano source path via environment variable
+soprano_path = os.environ.get("SOPRANO_PATH")
+if soprano_path and soprano_path not in sys.path:
+    sys.path.insert(0, soprano_path)
+
+try:
+    import soprano
+except ImportError:
+    raise ImportError(
+        "Soprano >= 0.12 is required to run fixture generation. "
+        "Install via `pip install soprano` or set SOPRANO_PATH environment variable."
+    )
 
 from soprano.nmr.spin_system import SpinSystem
 from soprano.nmr.site import Site
@@ -27,15 +37,7 @@ from soprano.nmr.coupling import DipolarCoupling, ISCoupling
 from soprano.data.nmr import EFG_TO_CHI, nmr_quadrupole
 
 OUTDIR = os.path.dirname(os.path.abspath(__file__))
-
-def get_soprano_commit():
-    try:
-        cmd = ["git", "-C", SOPRANO_PATH, "rev-parse", "HEAD"]
-        return subprocess.check_output(cmd, text=True).strip()
-    except Exception:
-        return "c8de67c63d10126aa2a9b5439233c6ff79626a4b"
-
-COMMIT = get_soprano_commit()
+SOPRANO_VERSION = "0.12"
 DATE = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def make_header(name, description, invocation):
@@ -43,7 +45,7 @@ def make_header(name, description, invocation):
         f"# ==============================================================================\n"
         f"# Test Case: {name}\n"
         f"# Description: {description}\n"
-        f"# Oracle: Soprano @ {COMMIT}\n"
+        f"# Oracle: Soprano v{SOPRANO_VERSION}\n"
         f"# Generated: {DATE}\n"
         f"# Invocation: {invocation}\n"
         f"# ==============================================================================\n"
@@ -311,7 +313,7 @@ def generate_synthetic_fixtures():
                 "header": {
                     "name": name,
                     "description": data["description"],
-                    "oracle": f"Soprano @ {COMMIT}",
+                    "oracle": f"Soprano v{SOPRANO_VERSION}",
                     "generated": DATE,
                 },
                 "data": data["mrsimulator"]
@@ -321,7 +323,7 @@ def generate_synthetic_fixtures():
     corpus_json_path = os.path.join(OUTDIR, "synthetic_corpus.json")
     with open(corpus_json_path, "w") as f:
         json.dump({
-            "commit": COMMIT,
+            "soprano_version": SOPRANO_VERSION,
             "date": DATE,
             "fixtures": fixtures
         }, f, indent=2)

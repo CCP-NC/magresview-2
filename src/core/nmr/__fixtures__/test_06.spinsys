@@ -1,8 +1,8 @@
 # ==============================================================================
 # Test Case: test_06
 # Description: J-coupling isotropic 100 Hz
-# Oracle: Soprano @ c8de67c63d10126aa2a9b5439233c6ff79626a4b
-# Generated: 2026-09-17 00:50:26
+# Oracle: Soprano v0.12
+# Generated: 2026-09-22 11:00:36
 # Invocation: ISCoupling(0, 1, '1H', '13C', diag([100, 100, 100]))
 # ==============================================================================
 spinsys {

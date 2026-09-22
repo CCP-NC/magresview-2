@@ -2,8 +2,8 @@
   "header": {
     "name": "test_02a",
     "description": "CSA zeta=+200 ppm, beta=0.0 deg",
-    "oracle": "Soprano @ c8de67c63d10126aa2a9b5439233c6ff79626a4b",
-    "generated": "2026-09-17 00:50:26"
+    "oracle": "Soprano v0.12",
+    "generated": "2026-09-22 11:00:36"
   },
   "data": {
     "sites": [

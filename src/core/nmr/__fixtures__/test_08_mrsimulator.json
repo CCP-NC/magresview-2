@@ -2,8 +2,8 @@
   "header": {
     "name": "test_08",
     "description": "Quadrupole-dipole cross-term (13C-14N)",
-    "oracle": "Soprano @ c8de67c63d10126aa2a9b5439233c6ff79626a4b",
-    "generated": "2026-09-17 00:50:26"
+    "oracle": "Soprano v0.12",
+    "generated": "2026-09-22 11:00:36"
   },
   "data": {
     "sites": [

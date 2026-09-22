@@ -1,8 +1,8 @@
 # ==============================================================================
 # Test Case: quartz_3si
 # Description: Quartz 3x 29Si sites with minimum-image dipolar couplings
-# Oracle: Soprano @ c8de67c63d10126aa2a9b5439233c6ff79626a4b
-# Generated: 2026-09-17 00:50:26
+# Oracle: Soprano v0.12
+# Generated: 2026-09-22 11:00:36
 # Invocation: get_spin_system(quartz[:3], references={'Si': 300, 'O': 200}, include_dipolar=True)
 # ==============================================================================
 spinsys {

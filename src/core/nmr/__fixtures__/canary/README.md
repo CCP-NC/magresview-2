@@ -26,7 +26,7 @@ Haeberlen shift eigenvalues:
 
 ## Results
 
-Run using SIMPSON binary at `/Users/jks/.local/bin/simpson`:
+Run using SIMPSON binary (`simpson`):
 - `candidate_A` (sim_A): peak at **-7,568.36 Hz (-75.23 ppm)** -> matches δ_yy (-75 ppm)
 - `candidate_B` (sim_B): peak at **-22,644.00 Hz (-225.09 ppm)** -> matches δ_xx (-225 ppm)
 
