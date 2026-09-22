@@ -101,6 +101,22 @@ function appDisplayModel(state, m) {
         // _camera is kept only in the snapshot object, not spread into Redux state.
         if (modelStates[m]) {
             const { _camera: _c, ...savedRedux } = modelStates[m];
+
+            // A snapshot is normally taken while its own model is active, so
+            // its atoms belong to that model. They stop belonging to it when
+            // the Model object is replaced under the same name, which is what
+            // changing the supercell does. Euler atoms have no other guard
+            // (viewsListener covers the selection and displayed views), so
+            // drop them here rather than render disks on a dead model.
+            const targetModel = app._models?.[m];
+            if (targetModel) {
+                for (const key of ['eul_atom_A', 'eul_atom_B']) {
+                    if (savedRedux[key] && savedRedux[key].model !== targetModel) {
+                        savedRedux[key] = null;
+                    }
+                }
+            }
+
             data = { ...data, ...savedRedux };
         }
     }
@@ -521,8 +537,11 @@ class AppInterface extends BaseInterface {
             dispatch({
                 type: 'call',
                 function: (state, bv) => {
+                    // ModelView.or() throws across models, and a selection
+                    // left over from a previous model can still be in the
+                    // store here. Start fresh in that case.
                     const cur = state.sel_selected_view;
-                    const newSel = cur ? cur.or(bv) : bv;
+                    const newSel = (cur && cur.model === bv.model) ? cur.or(bv) : bv;
                     return {
                         sel_selected_view: newSel,
                         listen_update: [Events.VIEWS]

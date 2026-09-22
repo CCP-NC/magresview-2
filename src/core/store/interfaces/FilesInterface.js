@@ -6,13 +6,14 @@
  */
 
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
-import { makeSelector, BaseInterface, getSel } from '../utils';
+import { makeSelector, BaseInterface } from '../utils';
 import {
     buildSpinSystem,
     generateReportTable,
     toSimpson,
     toSimpsonSplitZip,
     toMrsimulator,
+    MAX_SPINSYS_COUPLED_ATOMS,
 } from '../../nmr';
 
 const initialFilesState = {
@@ -337,32 +338,127 @@ class FilesInterface extends BaseInterface {
     }
 
     /**
-     * Build the in-memory SpinSystem representation of the current workspace.
+     * Whether the current settings actually ask for pairwise couplings.
+     * Everything else about a spin system is per-site and effectively free.
      */
-    get spinSystem() {
-        const app = this.state.app_viewer;
-        if (!app || !app.model) return null;
-        const view = getSel(app);
-        if (!view) return null;
+    get couplingsRequested() {
+        return this.includeD || this.includeJ;
+    }
 
+    /**
+     * Why we can or cannot build a spin system from the current selection.
+     *
+     * Spin system export works on an explicit selection only. There is no
+     * fall back to "everything displayed": that is how a whole supercell used
+     * to end up in an O(N^2) dipolar coupling loop on every render.
+     *
+     * Note that size only disqualifies a selection when couplings are wanted.
+     * Sites are cheap at any N, so a large selection is still fine for the
+     * split archive and for per-site tables.
+     *
+     * @return {string} 'valid' | 'no_model' | 'none' | 'model_mismatch'
+     *                  | 'couplings_too_large'
+     */
+    get selectionStatus() {
+        const app = this.state.app_viewer;
+        if (!app || !app.model) return 'no_model';
+
+        const sel = app.selected;
+        if (!sel || sel.length === 0) return 'none';
+
+        // A ModelView carries the model it was cut from. Switching models can
+        // leave one of these behind pointing at the model we just left.
+        if (sel.model !== app.model) return 'model_mismatch';
+
+        if (this.couplingsRequested && sel.length > MAX_SPINSYS_COUPLED_ATOMS) {
+            return 'couplings_too_large';
+        }
+
+        return 'valid';
+    }
+
+    get hasValidSelection() {
+        return this.selectionStatus === 'valid';
+    }
+
+    /**
+     * Whether we have a usable selection at all, couplings aside. True for the
+     * oversized case, because sites are still buildable there.
+     */
+    get hasUsableSelection() {
+        const status = this.selectionStatus;
+        return status === 'valid' || status === 'couplings_too_large';
+    }
+
+    get selectedCount() {
+        const app = this.state.app_viewer;
+        return app?.selected?.length || 0;
+    }
+
+    /**
+     * Largest selection we will compute couplings for, for UI copy.
+     */
+    get maxCoupledAtoms() {
+        return MAX_SPINSYS_COUPLED_ATOMS;
+    }
+
+    /**
+     * Build a SpinSystem from a view. Shared by spin system export, the split
+     * archive and the report tables, which differ only in which couplings they
+     * ask for.
+     */
+    _buildSystem(view, { includeD, includeJ }) {
+        const app = this.state.app_viewer;
         const mname = app.modelName || 'model';
         const sourceInfo = app._model_sources?.[mname];
-        const sourceFilename = sourceInfo?.fileName || (sourceInfo?.extension ? `${mname}.${sourceInfo.extension}` : `${mname}.magres`);
-        const mergedFrom = sourceInfo?.mergedFrom || null;
+        const sourceFilename = sourceInfo?.fileName
+            || (sourceInfo?.extension ? `${mname}.${sourceInfo.extension}` : `${mname}.magres`);
 
         return buildSpinSystem(view, {
             references: this.state.ms_references || {},
             gradients: this.gradients,
-            includeD: this.mode === 'spinsys' ? this.includeD : (this.fileType === 'dip'),
-            includeJ: this.mode === 'spinsys' ? this.includeJ : (this.fileType === 'isc'),
+            includeD,
+            includeJ,
             dipolarCutoff: this.dipolarCutoff,
             dipolarHomonuclear: this.dipolarHomonuclear,
             mergeByLabel: this.mergeByLabel,
             averageGroups: this.averageGroups,
             sourceFilename,
-            mergedFrom,
+            mergedFrom: sourceInfo?.mergedFrom || null,
             modelName: mname,
         });
+    }
+
+    /**
+     * The spin system behind the panel readout and the single-file export.
+     *
+     * Built for any usable selection, however large, because that is what
+     * feeds the isotope list and the shielding reference check. Couplings are
+     * included only when they are both wanted and affordable; past the cap the
+     * sites are still here, and it is fileValid that withholds the single-file
+     * export rather than this getter returning nothing.
+     *
+     * Report tables and the split archive do not come through here. They build
+     * their own systems on demand, so neither pays for couplings it will throw
+     * away.
+     *
+     * Cached per interface instance. useFilesInterface() constructs a fresh
+     * instance on every render, so this memoises within a render and no
+     * further: do not hold an instance across dispatches.
+     */
+    get spinSystem() {
+        if (this._spinSystem !== undefined) return this._spinSystem;
+
+        const withCouplings = this.selectionStatus === 'valid';
+
+        this._spinSystem = this.hasUsableSelection
+            ? this._buildSystem(this.state.app_viewer.selected, {
+                includeD: withCouplings && this.includeD,
+                includeJ: withCouplings && this.includeJ,
+            })
+            : null;
+
+        return this._spinSystem;
     }
 
     get missingReferences() {
@@ -411,7 +507,11 @@ class FilesInterface extends BaseInterface {
             }
         }
 
-        // spinsys mode
+        // A single spinsys file is one coupled system, so if couplings were
+        // asked for and we refused to compute them, the file would quietly be
+        // wrong. Withhold it rather than export something incomplete.
+        if (this.selectionStatus !== 'valid') return false;
+
         const sys = this.spinSystem;
         if (!sys) return false;
 
@@ -428,17 +528,45 @@ class FilesInterface extends BaseInterface {
         return hasContent;
     }
 
+    /**
+     * Whether the split archive can be written.
+     *
+     * The archive is one single-site file per site, and a lone site has
+     * nothing to couple to, so the coupling cap does not apply. Exporting a
+     * few thousand sites one-to-one is the whole point of this button and it
+     * should keep working on selections far too large to simulate together.
+     */
+    get splitZipValid() {
+        if (this.mode !== 'spinsys' || this.spinsysTarget !== 'simpson') return false;
+        if (!this.hasUsableSelection) return false;
+
+        const sys = this.spinSystem;
+        if (!sys || !sys.canExport) return false;
+
+        return (this.hasMSData && this.includeMS) || (this.hasEFGData && this.includeEFG);
+    }
+
     generateFile() {
         const app = this.state.app_viewer;
         if (!app || !app.model) return null;
 
-        const sys = this.spinSystem;
-        if (!sys) return null;
-
         if (this.mode === 'tables') {
-            const view = getSel(app);
+            // Tables keep the old behaviour: no selection means every displayed
+            // atom. That is affordable here because we only build on save, not
+            // on every render.
+            let view = app.selected;
+            if (!view || view.length === 0 || view.model !== app.model) {
+                view = app.displayed;
+            }
+            if (!view) return null;
+
+            const tableSys = this._buildSystem(view, {
+                includeD: this.fileType === 'dip',
+                includeJ: this.fileType === 'isc',
+            });
+
             const multiplicity = view?.unique_labels_multiplicity || {};
-            return generateReportTable(sys, this.fileType, {
+            return generateReportTable(tableSys, this.fileType, {
                 tabWidth: this.tabWidth,
                 precision: this.precision,
                 format: this.fileFormat,
@@ -448,6 +576,9 @@ class FilesInterface extends BaseInterface {
                 multiplicity,
             });
         }
+
+        const sys = this.spinSystem;
+        if (!sys) return null;
 
         // spinsys mode
         if (this.spinsysTarget === 'mrsimulator') {
@@ -480,8 +611,11 @@ class FilesInterface extends BaseInterface {
     generateSplitZip() {
         const app = this.state.app_viewer;
         if (!app || !app.model) return null;
-        const sys = this.spinSystem;
-        if (!sys) return null;
+        if (!this.hasUsableSelection) return null;
+
+        // Every file in the archive holds a single site, and toSimpsonSplitZip
+        // drops couplings anyway, so never pay for the pairwise loop here.
+        const sys = this._buildSystem(app.selected, { includeD: false, includeJ: false });
 
         const mname = app.modelName || 'model';
         return toSimpsonSplitZip(sys, mname, {
@@ -504,6 +638,11 @@ function useFilesInterface() {
             'app_default_displayed',
             'eul_convention',
             'ms_references',
+            // app_viewer is a stable mutable instance, so a selection change
+            // is invisible to shallowEqual unless we watch the view itself.
+            // Without this, selectionStatus never refreshes and the panel goes
+            // on claiming nothing is selected.
+            'sel_selected_view',
         ]),
         shallowEqual
     );
@@ -512,4 +651,4 @@ function useFilesInterface() {
 }
 
 export default useFilesInterface;
-export { initialFilesState };
+export { initialFilesState, FilesInterface };

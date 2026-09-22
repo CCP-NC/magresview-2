@@ -32,6 +32,13 @@ const mockFileint = {
     dimension: 4,
     spinHalfEquivalent: 2.0,
     feasibility: 'silent',
+    hasValidSelection: true,
+    hasUsableSelection: true,
+    selectionStatus: 'valid',
+    selectedCount: 2,
+    maxCoupledAtoms: 64,
+    couplingsRequested: false,
+    splitZipValid: true,
     missingReferences: [],
     availableIsotopes: ['13C', '1H'],
     fileValid: true,
@@ -77,11 +84,110 @@ describe('MVSidebarFiles', () => {
 
     it('shows blocked message when shielding reference is missing', () => {
         mockFileint.mode = 'spinsys';
+        mockFileint.hasValidSelection = true;
+        mockFileint.selectionStatus = 'valid';
         mockFileint.missingReferences = ['C'];
         mockFileint.fileValid = false;
         render(<MVSidebarFiles show={true} />);
 
         expect(screen.getByText(/Export blocked:/)).toBeInTheDocument();
         expect(screen.getByText(/Missing shielding reference for element\(s\):/)).toBeInTheDocument();
+    });
+
+    it('hides the dimension box and explains why when nothing is selected', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.hasValidSelection = false;
+        mockFileint.hasUsableSelection = false;
+        mockFileint.selectionStatus = 'none';
+        mockFileint.fileValid = false;
+        render(<MVSidebarFiles show={true} />);
+
+        expect(screen.getByText(/No atoms selected/)).toBeInTheDocument();
+        expect(screen.queryByText(/System dimension:/)).not.toBeInTheDocument();
+    });
+
+    it('shows notice when selection belongs to a different model', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.hasValidSelection = false;
+        mockFileint.hasUsableSelection = false;
+        mockFileint.selectionStatus = 'model_mismatch';
+        mockFileint.fileValid = false;
+        render(<MVSidebarFiles show={true} />);
+
+        expect(screen.getByText(/Selection does not belong to the active model/)).toBeInTheDocument();
+    });
+
+    it('still reports the system when couplings were refused for size', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.hasValidSelection = false;
+        mockFileint.hasUsableSelection = true;
+        mockFileint.selectionStatus = 'couplings_too_large';
+        mockFileint.selectedCount = 243;
+        mockFileint.maxCoupledAtoms = 64;
+        mockFileint.fileValid = false;
+        mockFileint.splitZipValid = true;
+        const { container } = render(<MVSidebarFiles show={true} />);
+
+        const text = container.textContent;
+        expect(text).toMatch(/System dimension:/);
+        expect(text).toMatch(/243 atoms selected/);
+        expect(text).toMatch(/64-atom limit/);
+        expect(text).toMatch(/split archive is unaffected/);
+    });
+
+    it('keeps the split archive enabled when the single file is blocked', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.spinsysTarget = 'simpson';
+        mockFileint.hasUsableSelection = true;
+        mockFileint.selectionStatus = 'couplings_too_large';
+        mockFileint.fileValid = false;
+        mockFileint.splitZipValid = true;
+        render(<MVSidebarFiles show={true} />);
+
+        expect(screen.getByText(/Save spin system/).closest('button')).toBeDisabled();
+        expect(screen.getByText('Save split archive (.zip)').closest('button')).toBeEnabled();
+    });
+
+    it('renders large Hilbert space dimensions readably', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.hasValidSelection = true;
+        mockFileint.hasUsableSelection = true;
+        mockFileint.selectionStatus = 'valid';
+        mockFileint.missingReferences = [];
+        mockFileint.dimension = 2 ** 40;
+        mockFileint.spinHalfEquivalent = 40;
+        mockFileint.feasibility = 'warning';
+        const { container } = render(<MVSidebarFiles show={true} />);
+
+        expect(container.textContent).toMatch(/1\.10e\+12/);
+        expect(container.textContent).not.toMatch(/1099511627776/);
+    });
+
+    it('does not print Infinity when the dimension overflows', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.hasUsableSelection = true;
+        mockFileint.selectionStatus = 'valid';
+        mockFileint.missingReferences = [];
+        mockFileint.dimension = Infinity;
+        mockFileint.spinHalfEquivalent = Infinity;
+        const { container } = render(<MVSidebarFiles show={true} />);
+
+        expect(container.textContent).not.toMatch(/Infinity/);
+        expect(container.textContent).toMatch(/\u221e/);
+    });
+
+    it('names the coupled group in the warning when targeting mrsimulator', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.hasValidSelection = true;
+        mockFileint.hasUsableSelection = true;
+        mockFileint.selectionStatus = 'valid';
+        mockFileint.missingReferences = [];
+        mockFileint.dimension = 8192;
+        mockFileint.spinHalfEquivalent = 13;
+        mockFileint.feasibility = 'warning';
+        mockFileint.spinsysTarget = 'mrsimulator';
+        const { container } = render(<MVSidebarFiles show={true} />);
+
+        expect(container.textContent).toMatch(/largest coupled group/);
     });
 });

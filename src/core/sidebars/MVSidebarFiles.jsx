@@ -22,6 +22,19 @@ import { tooltip_files_merge, tooltip_files_precision } from './tooltip_messages
 import { useFilesInterface } from '../store';
 import { saveContents } from '../../utils';
 
+// Hilbert space dimension grows as 2^N, so a few dozen spins overflow into
+// twenty-digit integers that nobody can read at a glance.
+function formatDimension(d) {
+    if (!Number.isFinite(d)) return '\u221e';
+    return d >= 1e6 ? d.toExponential(2) : d.toLocaleString();
+}
+
+// Past a few thousand spin-1/2 the dimension itself overflows to Infinity, so
+// fall back to counting the sites we would have multiplied.
+function formatSpinHalf(n, digits = 1) {
+    return Number.isFinite(n) ? n.toFixed(digits) : '\u221e';
+}
+
 function selectFileFormat(fileint) {
     return (
         <div className='mv-sidebar-grid'>
@@ -79,7 +92,11 @@ function MVSidebarFiles(props) {
         <MagresViewSidebar title='Export' show={props.show}>
             <div className='mv-sidebar-block'>
                 <p>
-                    Export report tables or spin-dynamics simulation files for the currently selected atoms (or all atoms if none are selected).
+                    Export report tables or spin-dynamics simulation files.
+                    Tables cover the selected atoms, or every displayed atom if
+                    nothing is selected. Spin systems are built from an explicit
+                    selection only, and couplings are computed for selections of
+                    up to {fileint.maxCoupledAtoms} atoms.
                 </p>
 
                 {/* Mode Switch */}
@@ -273,22 +290,53 @@ function MVSidebarFiles(props) {
                         )}
 
                         {/* Feasibility Indicator */}
-                        <div className='mv-spinsys-dim-box'>
-                            <div>
-                                <strong>System dimension: </strong>
-                                {fileint.dimension} ({fileint.spinHalfEquivalent.toFixed(1)} spins-½ equivalent)
+                        {fileint.hasUsableSelection ? (
+                            <div className='mv-spinsys-dim-box'>
+                                <div>
+                                    <strong>System dimension: </strong>
+                                    {formatDimension(fileint.dimension)} ({formatSpinHalf(fileint.spinHalfEquivalent)} spins-½ equivalent)
+                                </div>
+                                {fileint.selectionStatus === 'couplings_too_large' && (
+                                    <div className='mv-dim-warning'>
+                                        {fileint.selectedCount} atoms selected, past the
+                                        {' '}{fileint.maxCoupledAtoms}-atom limit for computing
+                                        couplings. Turn couplings off, or select fewer atoms, to
+                                        save a single file. The split archive is unaffected: it
+                                        writes one uncoupled file per site.
+                                    </div>
+                                )}
+                                {fileint.feasibility === 'slow' && (
+                                    <div className='mv-dim-notice'>
+                                        Notice: Simulation will be slow (~{formatSpinHalf(fileint.spinHalfEquivalent, 0)} spins-½).
+                                    </div>
+                                )}
+                                {fileint.feasibility === 'warning' && (
+                                    <div className='mv-dim-warning'>
+                                        Warning: simulation may be intractable
+                                        {fileint.spinsysTarget === 'mrsimulator'
+                                            ? '. The largest coupled group exceeds dimension 4096.'
+                                            : '. The spin system exceeds dimension 4096.'}
+                                    </div>
+                                )}
                             </div>
-                            {fileint.feasibility === 'slow' && (
-                                <div className='mv-dim-notice'>
-                                    Notice: Simulation will be slow (~{fileint.spinHalfEquivalent.toFixed(0)} spins-½).
-                                </div>
-                            )}
-                            {fileint.feasibility === 'warning' && (
-                                <div className='mv-dim-warning'>
-                                    Warning: System dimension &gt; 4096. Simulation may be intractable.
-                                </div>
-                            )}
-                        </div>
+                        ) : (
+                            <div className='mv-spinsys-dim-box'>
+                                {fileint.selectionStatus === 'none' && (
+                                    <div className='mv-dim-notice'>
+                                        No atoms selected. Select the atoms you want in the
+                                        spin system.
+                                    </div>
+                                )}
+                                {fileint.selectionStatus === 'model_mismatch' && (
+                                    <div className='mv-dim-notice'>
+                                        Selection does not belong to the active model. Select atoms in the current model.
+                                    </div>
+                                )}
+                                {fileint.selectionStatus === 'no_model' && (
+                                    <div>No model loaded.</div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Shielding Reference Hard Block (ADR-0010) */}
                         {fileint.missingReferences.length > 0 && (
@@ -322,7 +370,7 @@ function MVSidebarFiles(props) {
                                             saveContents(zipData, fileint.splitFileName, 'application/zip');
                                         }
                                     }}
-                                    disabled={!fileint.fileValid}
+                                    disabled={!fileint.splitZipValid}
                                     style={{ width: '100%', marginTop: '0.5em' }}
                                 >
                                     Save split archive (.zip)
