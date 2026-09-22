@@ -1,0 +1,12 @@
+# ==============================================================================
+# Test Case: test_02a
+# Description: CSA zeta=+200 ppm, beta=0.0 deg
+# Oracle: Soprano @ c8de67c63d10126aa2a9b5439233c6ff79626a4b
+# Generated: 2026-09-17 00:50:26
+# Invocation: make_shielding_tensor([100, 100, -200], beta_deg=0.0)
+# ==============================================================================
+spinsys {
+channels 13C
+nuclei 13C
+shift 1 0.0p 200.0p -0.0 0.0 0.0 0.0
+}

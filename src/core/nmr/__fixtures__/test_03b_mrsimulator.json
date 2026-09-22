@@ -1,0 +1,25 @@
+{
+  "header": {
+    "name": "test_03b",
+    "description": "CSA zeta=+300 ppm, eta=0.5, beta=90, gamma=90.0",
+    "oracle": "Soprano @ c8de67c63d10126aa2a9b5439233c6ff79626a4b",
+    "generated": "2026-09-17 00:50:26"
+  },
+  "data": {
+    "sites": [
+      {
+        "isotope": "13C",
+        "label": "C1",
+        "isotropic_chemical_shift": 0.0,
+        "shielding_symmetric": {
+          "zeta": -300.0,
+          "eta": 0.5,
+          "alpha": 3.141592653589793,
+          "beta": 1.5707963267948968,
+          "gamma": 1.5707963267948966
+        }
+      }
+    ],
+    "couplings": []
+  }
+}

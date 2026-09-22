@@ -1,0 +1,29 @@
+.mv-spinsys-dim-box {
+    margin: 0.8em 0;
+    padding: 0.6em;
+    background: var(--color-bg-2, #2a2a2a);
+    border: 1px solid var(--color-border, #444);
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.mv-dim-notice {
+    margin-top: 0.4em;
+    color: #f39c12;
+}
+
+.mv-dim-warning {
+    margin-top: 0.4em;
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.mv-reference-block-error {
+    margin: 0.8em 0;
+    padding: 0.6em;
+    background: rgba(231, 76, 60, 0.15);
+    border-left: 3px solid #e74c3c;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #e74c3c;
+}

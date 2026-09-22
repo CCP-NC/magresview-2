@@ -1,15 +1,7 @@
 /**
  * MagresView 2.0
  *
- * A web interface to visualize and interact with computed NMR data in the Magres
- * file format.
- *
- * Author: Simone Sturniolo
- *
- * Copyright 2022 Science and Technology Facilities Council
- * This software is distributed under the terms of the MIT License
- * Please refer to the file LICENSE for the text of the license
- * 
+ * Export sidebar panel (unified for Report Tables and Spin System export).
  */
 
 import './MVSidebarFiles.css';
@@ -20,166 +12,328 @@ import MagresViewSidebar, { MVAdvancedSection } from './MagresViewSidebar';
 import MVButton from '../../controls/MVButton';
 import MVCustomSelect, { MVCustomSelectOption } from '../../controls/MVCustomSelect';
 import MVIcon from '../../icons/MVIcon';
-import { GiSpinningTop } from 'react-icons/gi';
 import MVCheckBox from '../../controls/MVCheckBox';
 import MVRange from '../../controls/MVRange';
+import MVText from '../../controls/MVText';
+import MVRadioButton, { MVRadioGroup } from '../../controls/MVRadioButton';
 import MVTooltip from '../../controls/MVTooltip';
-import { tooltip_files_merge, tooltip_files_precision} from './tooltip_messages';
+import { tooltip_files_merge, tooltip_files_precision } from './tooltip_messages';
 
 import { useFilesInterface } from '../store';
 import { saveContents } from '../../utils';
 
-const saveFile = (c, fn) => { saveContents(c, fn); }
-
-const mergeOption = (fileint) => {
-    if (fileint.hasCIFLabels) {
-        return (<MVCheckBox checked={fileint.mergeByLabel} onCheck={(v) => { fileint.mergeByLabel = v; }}>
-            Merge by label &nbsp;
-            <MVTooltip tooltipText={tooltip_files_merge} />
-            </MVCheckBox>);
-    } else {
-        // State update moved to useEffect in main component
-        return (<></>);
-    }
-}
-const eulerOption = (fileint) => {
-    return (<MVCheckBox checked={fileint.includeEuler} onCheck={(v) => { fileint.includeEuler = v; }}>Include Euler angles</MVCheckBox>);
-}
-
 function selectFileFormat(fileint) {
-    return (<div className='.mv-sidebar-grid'>
-        <h3> File format:</h3>
-        <MVCustomSelect title={'File type'} zorder={3} selected={fileint.fileFormat} onSelect={(v) => { fileint.fileFormat = v; }}>
-            <MVCustomSelectOption value={'fixed'}>Fixed width</MVCustomSelectOption>
-            <MVCustomSelectOption value={'csv'}>CSV</MVCustomSelectOption>
-            <MVCustomSelectOption value={'tsv'}>Tab separated</MVCustomSelectOption>
-        </MVCustomSelect>
-    </div>);
+    return (
+        <div className='mv-sidebar-grid'>
+            <h4>File format:</h4>
+            <MVCustomSelect title='File type' zorder={3} selected={fileint.fileFormat} onSelect={(v) => { fileint.fileFormat = v; }}>
+                <MVCustomSelectOption value='csv'>CSV</MVCustomSelectOption>
+                <MVCustomSelectOption value='fixed'>Fixed width</MVCustomSelectOption>
+                <MVCustomSelectOption value='tsv'>Tab separated</MVCustomSelectOption>
+            </MVCustomSelect>
+        </div>
+    );
 }
 
-function selectquadorder(fileint) {
-    return (<div className='.mv-sidebar-grid'>
-        <h4>Quadrupole order:</h4>
-        <MVCustomSelect selected={fileint.spinSysQuadrupoleOrder} onSelect={(v) => { fileint.spinSysQuadrupoleOrder = v; }}>
-            <MVCustomSelectOption value={0}>0</MVCustomSelectOption>
-            <MVCustomSelectOption value={1}>1</MVCustomSelectOption>
-            <MVCustomSelectOption value={2}>2</MVCustomSelectOption>
-        </MVCustomSelect>
-    </div>);
-
+function selectQuadOrder(fileint) {
+    return (
+        <div className='mv-sidebar-grid' style={{ marginTop: '0.4em' }}>
+            <h4>Quadrupole order:</h4>
+            <MVCustomSelect selected={fileint.spinSysQuadrupoleOrder} onSelect={(v) => { fileint.spinSysQuadrupoleOrder = v; }}>
+                <MVCustomSelectOption value={0}>0 (off)</MVCustomSelectOption>
+                <MVCustomSelectOption value={1}>1 (first order)</MVCustomSelectOption>
+                <MVCustomSelectOption value={2}>2 (second order)</MVCustomSelectOption>
+            </MVCustomSelect>
+        </div>
+    );
 }
 
 function setPrecision(fileint) {
-    return (<MVRange 
-        min={0} 
-        max={8} 
-        step={1} 
-        value={fileint.precision} 
-        tooltip={tooltip_files_precision}
-        onChange={(p) => { fileint.precision = p; }}>
+    return (
+        <MVRange
+            min={0}
+            max={8}
+            step={1}
+            value={fileint.precision}
+            tooltip={tooltip_files_precision}
+            onChange={(p) => { fileint.precision = p; }}
+        >
             Precision
         </MVRange>
-        );
+    );
 }
-
-
-// eslint-disable-next-line
-function spinSysOptions(fileint) {
-    return (<div className='.mv-sidebar-grid'>
-        <h3>Options:</h3>
-        <MVCheckBox checked={fileint.includeMS} onCheck={(v) => { fileint.includeMS = v; }}>MS tensors</MVCheckBox>
-        <MVCheckBox checked={fileint.includeEFG} onCheck={(v) => { fileint.includeEFG = v; }}>EFG tensors</MVCheckBox>
-        {/* <MVCheckBox checked={fileint.includeJ} onCheck={(v) => { fileint.includeJ = v; }}>J couplings</MVCheckBox> */}
-        <MVCheckBox checked={fileint.includeD} onCheck={(v) => { fileint.includeD = v; }}>Dipolar couplings</MVCheckBox>
-        {/* if EFG is selected, show quadrupole selector */}
-        {fileint.spinSysIncludeEFG ? selectquadorder(fileint) : null}
-        {mergeOption(fileint)}
-
-    </div>);
-}
-
-
-function msTableOptions(fileint) {
-    return (<div className='.mv-sidebar-grid'>
-        <h3>Options:</h3>
-        {/* <MVCheckBox checked={fileint.includeMS} onCheck={(v) => { fileint.includeMS = v; }}>MS tensors</MVCheckBox> */}
-        {eulerOption(fileint)}
-        {mergeOption(fileint)}
-    </div>);
-        
-}
-
-function efgTableOptions(fileint) {
-    return (<div className='.mv-sidebar-grid'>
-        <h3>Options:</h3>
-        {/* <MVCheckBox checked={fileint.includeEFG} onCheck={(v) => { fileint.includeEFG = v; }}>EFG tensors</MVCheckBox> */}
-        {eulerOption(fileint)}
-        {/* <MVCheckBox checked={fileint.includeQuadrupole} onCheck={(v) => { fileint.includeQuadrupole = v; }}>Quadrupole moments</MVCheckBox> */}
-        {mergeOption(fileint)}
-    </div>);
-}
-
-// eslint-disable-next-line
-function dipTableOptions(fileint) {
-    return (<div className='.mv-sidebar-grid'>
-        <h3>Options:</h3>
-        {/* <MVCheckBox checked={fileint.includeD} onCheck={(v) => { fileint.includeD = v; }}>Dipolar couplings</MVCheckBox> */}
-        {eulerOption(fileint)}
-        {mergeOption(fileint)}
-    </div>);
-}
-// eslint-disable-next-line
-function iscTableOptions(fileint) {
-    return (<div className='.mv-sidebar-grid'>
-        <h3>Options:</h3>
-        {/* <MVCheckBox checked={fileint.includeJ} onCheck={(v) => { fileint.includeJ = v; }}>J couplings</MVCheckBox> */}
-        {eulerOption(fileint)}
-        {mergeOption(fileint)}
-    </div>);
-}
-
 
 function MVSidebarFiles(props) {
-
     const fileint = useFilesInterface();
 
-    // Handle mergeByLabel state when there are no CIF labels
+    // Reset mergeByLabel if structure carries no CIF labels
     useEffect(() => {
         if (!fileint.hasCIFLabels && fileint.mergeByLabel) {
             fileint.mergeByLabel = false;
         }
     }, [fileint.hasCIFLabels, fileint.mergeByLabel]);
 
-    return (<MagresViewSidebar title='Report files' show={props.show}>
-        <div className='mv-sidebar-block'>
-            <p>
-                Export the chosen data for the currently selected atoms. If no atoms are selected, the whole system will be exported.
-            </p>
-            <p>
-                The isotopes are set in the Select and display tab.
-            </p>
-            <h3>Output:</h3>
-            <MVCustomSelect selected={fileint.fileType} onSelect={(v) => { fileint.fileType = v; }}>
-                <MVCustomSelectOption value='ms' icon={<MVIcon icon='ms' color='var(--ms-color-3)' />}>MS</MVCustomSelectOption>
-                <MVCustomSelectOption value='efg' icon={<MVIcon icon='efg' color='var(--efg-color-3)' />}>EFG</MVCustomSelectOption>
-                <MVCustomSelectOption value='dip' icon={<MVIcon icon='dip' color='var(--dip-color-3)' />}>Dipolar coupling</MVCustomSelectOption>
-                <MVCustomSelectOption value='isc' icon={<MVIcon icon='jcoup' color='var(--jcoup-color-3)' />}>J coupling</MVCustomSelectOption>
-                {/* <MVCustomSelectOption value='spinsys' icon={<GiSpinningTop style={{color: 'var(--spinsys-color-3)'}}/>}>SpinSys</MVCustomSelectOption> */}
-            </MVCustomSelect>
-            {/* check-boxes for what to include in spinsys output. Only show if fileint.fileType === 'spinsys' */}
-            {fileint.fileType === 'ms'  ? msTableOptions(fileint)  : null}
-            {fileint.fileType === 'efg' ? efgTableOptions(fileint) : null}
-            {fileint.fileType === 'dip' ? dipTableOptions(fileint) : null}
-            {fileint.fileType === 'isc' ? iscTableOptions(fileint) : null}
-            {/* {fileint.fileType === 'spinsys' ? spinSysOptions(fileint) : null} */}
-            <MVAdvancedSection>
-                {setPrecision(fileint)}
-            </MVAdvancedSection>
-            {/* file type options */}
-            {selectFileFormat(fileint)}
-            <MVButton onClick={() => { saveFile(fileint.generateFile(), fileint.fileName); }} disabled={!fileint.fileValid}>Save file</MVButton>
-        </div>
-    </MagresViewSidebar>);
+    const isTables = fileint.mode === 'tables';
+
+    return (
+        <MagresViewSidebar title='Export' show={props.show}>
+            <div className='mv-sidebar-block'>
+                <p>
+                    Export report tables or spin-dynamics simulation files for the currently selected atoms (or all atoms if none are selected).
+                </p>
+
+                {/* Mode Switch */}
+                <div style={{ marginBottom: '1.2em' }}>
+                    <MVRadioGroup
+                        label='Export type:'
+                        selected={fileint.mode}
+                        onSelect={(v) => { fileint.mode = v; }}
+                    >
+                        <MVRadioButton value='tables'>Report tables</MVRadioButton>
+                        <MVRadioButton value='spinsys'>Spin system</MVRadioButton>
+                    </MVRadioGroup>
+                </div>
+
+                {isTables ? (
+                    /* ── Report Tables Mode ── */
+                    <>
+                        <h3>Table:</h3>
+                        <MVCustomSelect selected={fileint.fileType} onSelect={(v) => { fileint.fileType = v; }}>
+                            <MVCustomSelectOption value='ms' icon={<MVIcon icon='ms' color='var(--ms-color-3)' />}>
+                                Magnetic shielding (MS)
+                            </MVCustomSelectOption>
+                            <MVCustomSelectOption value='efg' icon={<MVIcon icon='efg' color='var(--efg-color-3)' />}>
+                                Electric field gradient (EFG)
+                            </MVCustomSelectOption>
+                            <MVCustomSelectOption value='dip' icon={<MVIcon icon='dip' color='var(--dip-color-3)' />}>
+                                Dipolar coupling
+                            </MVCustomSelectOption>
+                            <MVCustomSelectOption value='isc' icon={<MVIcon icon='jcoup' color='var(--jcoup-color-3)' />}>
+                                J coupling
+                            </MVCustomSelectOption>
+                        </MVCustomSelect>
+
+                        <div style={{ marginTop: '0.8em' }}>
+                            <MVCheckBox
+                                checked={fileint.includeEuler}
+                                onCheck={(v) => { fileint.includeEuler = v; }}
+                            >
+                                Include Euler angles
+                            </MVCheckBox>
+
+                            {fileint.hasCIFLabels && (
+                                <MVCheckBox
+                                    checked={fileint.mergeByLabel}
+                                    onCheck={(v) => { fileint.mergeByLabel = v; }}
+                                >
+                                    Remove symmetry-equivalent nuclei &nbsp;
+                                    <MVTooltip tooltipText={tooltip_files_merge} />
+                                </MVCheckBox>
+                            )}
+                        </div>
+
+                        <MVAdvancedSection>
+                            {setPrecision(fileint)}
+                        </MVAdvancedSection>
+
+                        {selectFileFormat(fileint)}
+
+                        <div style={{ marginTop: '1.2em' }}>
+                            <MVButton
+                                onClick={() => {
+                                    saveContents(fileint.generateFile(), fileint.fileName);
+                                }}
+                                disabled={!fileint.fileValid}
+                                style={{ width: '100%' }}
+                            >
+                                Save report table
+                            </MVButton>
+                        </div>
+                    </>
+                ) : (
+                    /* ── Spin System Mode ── */
+                    <>
+                        <h3>Simulator target:</h3>
+                        <MVRadioGroup
+                            selected={fileint.spinsysTarget}
+                            onSelect={(v) => { fileint.spinsysTarget = v; }}
+                        >
+                            <MVRadioButton value='simpson'>SIMPSON (.spinsys)</MVRadioButton>
+                            <MVRadioButton value='mrsimulator'>mrsimulator (JSON)</MVRadioButton>
+                        </MVRadioGroup>
+
+                        <h3 style={{ marginTop: '1em' }}>Interactions:</h3>
+                        <MVCheckBox
+                            checked={fileint.includeMS}
+                            onCheck={(v) => { fileint.includeMS = v; }}
+                            disabled={!fileint.hasMSData}
+                        >
+                            Magnetic shielding (MS)
+                        </MVCheckBox>
+
+                        <MVCheckBox
+                            checked={fileint.includeEFG}
+                            onCheck={(v) => { fileint.includeEFG = v; }}
+                            disabled={!fileint.hasEFGData}
+                        >
+                            Electric field gradient (EFG)
+                        </MVCheckBox>
+
+                        <MVCheckBox
+                            checked={fileint.includeD}
+                            onCheck={(v) => { fileint.includeD = v; }}
+                        >
+                            Dipolar couplings
+                        </MVCheckBox>
+
+                        <MVCheckBox
+                            checked={fileint.includeJ}
+                            onCheck={(v) => { fileint.includeJ = v; }}
+                            disabled={!fileint.hasISCData}
+                        >
+                            J couplings
+                        </MVCheckBox>
+
+                        {fileint.spinsysTarget === 'simpson' && (
+                            <>
+                                <MVCheckBox
+                                    checked={fileint.includeCrossTerms}
+                                    onCheck={(v) => { fileint.includeCrossTerms = v; }}
+                                >
+                                    Second-order cross-terms
+                                </MVCheckBox>
+                                {fileint.includeEFG && selectQuadOrder(fileint)}
+                            </>
+                        )}
+
+                        <h3 style={{ marginTop: '1em' }}>Tensor options:</h3>
+                        <MVCheckBox
+                            checked={fileint.includeAngles}
+                            onCheck={(v) => { fileint.includeAngles = v; }}
+                        >
+                            Include tensor orientations (Euler angles)
+                        </MVCheckBox>
+
+                        <MVCheckBox
+                            checked={fileint.msIsotropic}
+                            onCheck={(v) => { fileint.msIsotropic = v; }}
+                        >
+                            Treat magnetic shielding as isotropic
+                        </MVCheckBox>
+
+                        {fileint.hasCIFLabels && (
+                            <MVCheckBox
+                                checked={fileint.mergeByLabel}
+                                onCheck={(v) => { fileint.mergeByLabel = v; }}
+                            >
+                                Remove symmetry-equivalent nuclei &nbsp;
+                                <MVTooltip tooltipText={tooltip_files_merge} />
+                            </MVCheckBox>
+                        )}
+
+                        {fileint.includeD && (
+                            <div style={{ marginTop: '0.4em' }}>
+                                <MVCheckBox
+                                    checked={fileint.dipolarHomonuclear}
+                                    onCheck={(v) => { fileint.dipolarHomonuclear = v; }}
+                                >
+                                    Homonuclear dipolar only
+                                </MVCheckBox>
+                            </div>
+                        )}
+
+                        <div style={{ marginTop: '0.8em' }}>
+                            <label style={{ fontSize: '0.9em', display: 'block', marginBottom: '0.3em' }}>
+                                Average groups (e.g. CH3, NH2):
+                            </label>
+                            <MVText
+                                value={fileint.averageGroups}
+                                onChange={(v) => { fileint.averageGroups = v; }}
+                            />
+                            <span style={{ fontSize: '0.8em', color: 'var(--color-text-dim, #888)', display: 'block', marginTop: '0.2em' }}>
+                                Internal couplings within average groups are dropped.
+                            </span>
+                        </div>
+
+                        {fileint.availableIsotopes.length > 0 && (
+                            <div style={{ marginTop: '0.8em' }}>
+                                <label style={{ fontSize: '0.9em', display: 'block', marginBottom: '0.3em' }}>
+                                    Observed nucleus:
+                                </label>
+                                <MVCustomSelect
+                                    selected={fileint.observedNucleus}
+                                    onSelect={(v) => { fileint.observedNucleus = v; }}
+                                >
+                                    <MVCustomSelectOption value=''>Auto (default)</MVCustomSelectOption>
+                                    {fileint.availableIsotopes.map(iso => (
+                                        <MVCustomSelectOption key={iso} value={iso}>{iso}</MVCustomSelectOption>
+                                    ))}
+                                </MVCustomSelect>
+                            </div>
+                        )}
+
+                        {/* Feasibility Indicator */}
+                        <div className='mv-spinsys-dim-box'>
+                            <div>
+                                <strong>System dimension: </strong>
+                                {fileint.dimension} ({fileint.spinHalfEquivalent.toFixed(1)} spins-½ equivalent)
+                            </div>
+                            {fileint.feasibility === 'slow' && (
+                                <div className='mv-dim-notice'>
+                                    Notice: Simulation will be slow (~{fileint.spinHalfEquivalent.toFixed(0)} spins-½).
+                                </div>
+                            )}
+                            {fileint.feasibility === 'warning' && (
+                                <div className='mv-dim-warning'>
+                                    Warning: System dimension &gt; 4096. Simulation may be intractable.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Shielding Reference Hard Block (ADR-0010) */}
+                        {fileint.missingReferences.length > 0 && (
+                            <div className='mv-reference-block-error'>
+                                <strong>Export blocked:</strong> Missing shielding reference for element(s):{' '}
+                                <strong>{fileint.missingReferences.join(', ')}</strong>.<br />
+                                Set references in the MS tab before exporting.
+                            </div>
+                        )}
+
+                        <MVAdvancedSection>
+                            {setPrecision(fileint)}
+                        </MVAdvancedSection>
+
+                        <div style={{ marginTop: '1.2em' }}>
+                            <MVButton
+                                onClick={() => {
+                                    saveContents(fileint.generateFile(), fileint.fileName);
+                                }}
+                                disabled={!fileint.fileValid}
+                                style={{ width: '100%' }}
+                            >
+                                Save spin system ({fileint.fileName})
+                            </MVButton>
+
+                            {fileint.spinsysTarget === 'simpson' && (
+                                <MVButton
+                                    onClick={() => {
+                                        const zipData = fileint.generateSplitZip();
+                                        if (zipData) {
+                                            saveContents(zipData, fileint.splitFileName, 'application/zip');
+                                        }
+                                    }}
+                                    disabled={!fileint.fileValid}
+                                    style={{ width: '100%', marginTop: '0.5em' }}
+                                >
+                                    Save split archive (.zip)
+                                </MVButton>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+        </MagresViewSidebar>
+    );
 }
 
 export default MVSidebarFiles;

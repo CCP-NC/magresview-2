@@ -1,0 +1,27 @@
+source candidate_B.spinsys
+
+par {
+    proton_frequency 400e6
+    start_operator I1x
+    detect_operator I1p
+    np 8192
+    sw 500000
+    num_cores 1
+    crystal_file alpha0beta0
+    verbose 0
+}
+
+proc pulseq {} {
+    global par
+    delay [expr 1e6/$par(sw)]
+    store 1
+    acq $par(np) 1
+}
+
+proc main {} {
+    global par
+    set f [fsimpson]
+    fsave $f sim_B_fid.dat -xreim
+    fft $f
+    fsave $f sim_B_spe.dat -xreim
+}

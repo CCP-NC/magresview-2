@@ -36,7 +36,7 @@ export const HOTKEY_GROUPS = [
             { id: 'sidebar-jcoup',  key: 'j', display: 'J', description: 'Open J-Coupling sidebar' },
             { id: 'sidebar-euler',  key: 'e', display: 'E', description: 'Open Euler sidebar' },
             { id: 'sidebar-plots',  key: 'p', display: 'P', description: 'Open Plots sidebar' },
-            { id: 'sidebar-files',  key: 'o', display: 'O', description: 'Open Files sidebar' },
+            { id: 'sidebar-files',  key: 'o', display: 'O', description: 'Open Export sidebar' },
             { id: 'sidebar-hide',   key: 'Escape', display: 'Esc', description: 'Close sidebar' },
         ],
     },

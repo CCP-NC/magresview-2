@@ -1,0 +1,41 @@
+{
+  "header": {
+    "name": "test_08",
+    "description": "Quadrupole-dipole cross-term (13C-14N)",
+    "oracle": "Soprano @ c8de67c63d10126aa2a9b5439233c6ff79626a4b",
+    "generated": "2026-09-17 00:50:26"
+  },
+  "data": {
+    "sites": [
+      {
+        "isotope": "13C",
+        "label": "C1"
+      },
+      {
+        "isotope": "14N",
+        "label": "N1",
+        "quadrupolar": {
+          "Cq": 556902.4772770321,
+          "eta": 0.7188375778342959,
+          "alpha": 1.5707963267948966,
+          "beta": 0.23454953410543045,
+          "gamma": 0.0
+        }
+      }
+    ],
+    "couplings": [
+      {
+        "dipolar": {
+          "D": -660.2,
+          "alpha": 1.5707963267948966,
+          "beta": 0.0,
+          "gamma": 0.0
+        },
+        "site_index": [
+          0,
+          1
+        ]
+      }
+    ]
+  }
+}
