@@ -1,0 +1,25 @@
+{
+  "header": {
+    "name": "test_01",
+    "description": "Isotropic shift +100 ppm @ 400 MHz (13C)",
+    "oracle": "Soprano v0.12",
+    "generated": "2026-09-22 11:00:36"
+  },
+  "data": {
+    "sites": [
+      {
+        "isotope": "13C",
+        "label": "C1",
+        "isotropic_chemical_shift": 100.0,
+        "shielding_symmetric": {
+          "zeta": 0.0,
+          "eta": 0.0,
+          "alpha": 0.0,
+          "beta": 0.0,
+          "gamma": 0.0
+        }
+      }
+    ],
+    "couplings": []
+  }
+}

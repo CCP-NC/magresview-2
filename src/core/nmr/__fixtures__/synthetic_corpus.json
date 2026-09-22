@@ -1,0 +1,971 @@
+{
+  "soprano_version": "0.12",
+  "date": "2026-09-22 11:00:36",
+  "fixtures": {
+    "test_01": {
+      "description": "Isotropic shift +100 ppm @ 400 MHz (13C)",
+      "invocation": "SpinSystem(sites=[Site('13C', ms=diag([-100,-100,-100]))]).to_simpson('13C')",
+      "spinsys": "spinsys {\nchannels 13C\nnuclei 13C\nshift 1 100.0p 0.0p 0.0 0.0 0.0 0.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "13C",
+            "label": "C1",
+            "isotropic_chemical_shift": 100.0,
+            "shielding_symmetric": {
+              "zeta": 0.0,
+              "eta": 0.0,
+              "alpha": 0.0,
+              "beta": 0.0,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_ms",
+        "matrix": [
+          [
+            -100.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -100.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            -100.0
+          ]
+        ],
+        "pas": [
+          -100.0,
+          -100.0,
+          -100.0
+        ],
+        "beta": 0,
+        "gamma": 0,
+        "species": "13C",
+        "ref": 0.0
+      }
+    },
+    "test_02a": {
+      "description": "CSA zeta=+200 ppm, beta=0.0 deg",
+      "invocation": "make_shielding_tensor([100, 100, -200], beta_deg=0.0)",
+      "spinsys": "spinsys {\nchannels 13C\nnuclei 13C\nshift 1 0.0p 200.0p -0.0 0.0 0.0 0.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "13C",
+            "label": "C1",
+            "isotropic_chemical_shift": 0.0,
+            "shielding_symmetric": {
+              "zeta": -200.0,
+              "eta": -0.0,
+              "alpha": 0.0,
+              "beta": 0.0,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_ms",
+        "matrix": [
+          [
+            100.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            100.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            -200.0
+          ]
+        ],
+        "pas": [
+          100.0,
+          100.0,
+          -200.0
+        ],
+        "beta": 0.0,
+        "gamma": 0,
+        "species": "13C",
+        "ref": 0.0
+      }
+    },
+    "test_02b": {
+      "description": "CSA zeta=+200 ppm, beta=90.0 deg",
+      "invocation": "make_shielding_tensor([100, 100, -200], beta_deg=90.0)",
+      "spinsys": "spinsys {\nchannels 13C\nnuclei 13C\nshift 1 0.0p 200.0p -0.0 90.0 89.99999999999999 0.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "13C",
+            "label": "C1",
+            "isotropic_chemical_shift": 0.0,
+            "shielding_symmetric": {
+              "zeta": -200.0,
+              "eta": -0.0,
+              "alpha": 0.0,
+              "beta": 1.5707963267948963,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_ms",
+        "matrix": [
+          [
+            -200.0,
+            0.0,
+            -6.661338147750939e-14
+          ],
+          [
+            0.0,
+            100.0,
+            0.0
+          ],
+          [
+            -6.661338147750939e-14,
+            0.0,
+            100.0
+          ]
+        ],
+        "pas": [
+          100.0,
+          100.0,
+          -200.0
+        ],
+        "beta": 90.0,
+        "gamma": 0,
+        "species": "13C",
+        "ref": 0.0
+      }
+    },
+    "test_02c": {
+      "description": "CSA zeta=+200 ppm, beta=54.73561032 deg",
+      "invocation": "make_shielding_tensor([100, 100, -200], beta_deg=54.73561032)",
+      "spinsys": "spinsys {\nchannels 13C\nnuclei 13C\nshift 1 4.736951571734001e-15p 199.99999999999994p 7.105427357601004e-17 0.0 54.73561031999999 0.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "13C",
+            "label": "C1",
+            "isotropic_chemical_shift": 4.736951571734001e-15,
+            "shielding_symmetric": {
+              "zeta": -199.99999999999994,
+              "eta": 7.105427357601004e-17,
+              "alpha": 0.0,
+              "beta": 0.955316618172587,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_ms",
+        "matrix": [
+          [
+            -100.00000001359845,
+            0.0,
+            -141.4213562325017
+          ],
+          [
+            0.0,
+            99.99999999999997,
+            0.0
+          ],
+          [
+            -141.4213562325017,
+            0.0,
+            1.3598466352959804e-08
+          ]
+        ],
+        "pas": [
+          100.0,
+          100.0,
+          -200.0
+        ],
+        "beta": 54.73561032,
+        "gamma": 0,
+        "species": "13C",
+        "ref": 0.0
+      }
+    },
+    "test_03a": {
+      "description": "CSA zeta=+300 ppm, eta=0.5, beta=90, gamma=0.0",
+      "invocation": "make_shielding_tensor([225, 75, -300], beta_deg=90, gamma_deg=0.0)",
+      "spinsys": "spinsys {\nchannels 13C\nnuclei 13C\nshift 1 0.0p 300.0p 0.5 0.0 89.99999999999999 180.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "13C",
+            "label": "C1",
+            "isotropic_chemical_shift": 0.0,
+            "shielding_symmetric": {
+              "zeta": -300.0,
+              "eta": 0.5,
+              "alpha": 0.0,
+              "beta": 1.5707963267948963,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_ms",
+        "matrix": [
+          [
+            -300.0,
+            0.0,
+            -1.1657341758564144e-13
+          ],
+          [
+            0.0,
+            75.0,
+            0.0
+          ],
+          [
+            -1.1657341758564144e-13,
+            0.0,
+            225.0
+          ]
+        ],
+        "pas": [
+          225.0,
+          75.0,
+          -300.0
+        ],
+        "beta": 90.0,
+        "gamma": 0.0,
+        "species": "13C",
+        "ref": 0.0
+      }
+    },
+    "test_03b": {
+      "description": "CSA zeta=+300 ppm, eta=0.5, beta=90, gamma=90.0",
+      "invocation": "make_shielding_tensor([225, 75, -300], beta_deg=90, gamma_deg=90.0)",
+      "spinsys": "spinsys {\nchannels 13C\nnuclei 13C\nshift 1 0.0p 300.0p 0.5 90.0 90.00000000000001 0.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "13C",
+            "label": "C1",
+            "isotropic_chemical_shift": 0.0,
+            "shielding_symmetric": {
+              "zeta": -300.0,
+              "eta": 0.5,
+              "alpha": 3.141592653589793,
+              "beta": 1.5707963267948968,
+              "gamma": 1.5707963267948966
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_ms",
+        "matrix": [
+          [
+            -300.0,
+            -3.697785493223493e-30,
+            -8.326672684688674e-14
+          ],
+          [
+            -3.697785493223493e-30,
+            225.0,
+            -3.3306690738754696e-14
+          ],
+          [
+            -8.326672684688674e-14,
+            -3.3306690738754696e-14,
+            75.0
+          ]
+        ],
+        "pas": [
+          225.0,
+          75.0,
+          -300.0
+        ],
+        "beta": 90.0,
+        "gamma": 90.0,
+        "species": "13C",
+        "ref": 0.0
+      }
+    },
+    "test_04a": {
+      "description": "Quadrupole 2H Cq=100kHz, beta=0.0",
+      "invocation": "make_efg_tensor(pas, beta_deg=0.0)",
+      "spinsys": "spinsys {\nchannels 2H\nnuclei 2H\nquadrupole 1 1 100000.00000000001 0.0 90.0 0.0 0.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "2H",
+            "label": "H1",
+            "quadrupolar": {
+              "Cq": 100000.00000000001,
+              "eta": 0.0,
+              "alpha": 1.5707963267948966,
+              "beta": 0.0,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_efg",
+        "matrix": [
+          [
+            -0.07440484312685265,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -0.07440484312685265,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.1488096862537053
+          ]
+        ],
+        "pas": [
+          -0.07440484312685265,
+          -0.07440484312685265,
+          0.1488096862537053
+        ],
+        "beta": 0.0,
+        "gamma": 0,
+        "species": "2H",
+        "Q": 2.86,
+        "q_order": 1
+      }
+    },
+    "test_04b": {
+      "description": "Quadrupole 2H Cq=100kHz, beta=90.0",
+      "invocation": "make_efg_tensor(pas, beta_deg=90.0)",
+      "spinsys": "spinsys {\nchannels 2H\nnuclei 2H\nquadrupole 1 1 100000.00000000001 0.0 90.0 89.99999999999999 0.0\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "2H",
+            "label": "H1",
+            "quadrupolar": {
+              "Cq": 100000.00000000001,
+              "eta": 0.0,
+              "alpha": 0.0,
+              "beta": 1.5707963267948963,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": []
+      },
+      "input": {
+        "type": "synthetic_efg",
+        "matrix": [
+          [
+            0.1488096862537053,
+            0.0,
+            4.956358198983279e-17
+          ],
+          [
+            0.0,
+            -0.07440484312685265,
+            0.0
+          ],
+          [
+            4.956358198983279e-17,
+            0.0,
+            -0.07440484312685265
+          ]
+        ],
+        "pas": [
+          -0.07440484312685265,
+          -0.07440484312685265,
+          0.1488096862537053
+        ],
+        "beta": 90.0,
+        "gamma": 0,
+        "species": "2H",
+        "Q": 2.86,
+        "q_order": 1
+      }
+    },
+    "test_05a": {
+      "description": "Dipolar 1H-13C splitting 60.5kHz, beta=0.0",
+      "invocation": "DipolarCoupling(0, 1, '1H', '13C', tensor=NMRTensor(D))",
+      "spinsys": "spinsys {\nchannels 13C 1H\nnuclei 1H 13C\ndipole 1 2 -30210.667268 90.000000 0.000000 0.000000\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "1H",
+            "label": "H1"
+          },
+          {
+            "isotope": "13C",
+            "label": "C1"
+          }
+        ],
+        "couplings": [
+          {
+            "dipolar": {
+              "D": -30210.667268,
+              "alpha": 1.5707963267948966,
+              "beta": 0.0,
+              "gamma": 0.0
+            },
+            "site_index": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "input": {
+        "type": "synthetic_dipolar",
+        "d": -30210.667268,
+        "D_matrix": [
+          [
+            30210.667268,
+            -0.0,
+            -0.0
+          ],
+          [
+            -0.0,
+            30210.667268,
+            -0.0
+          ],
+          [
+            -0.0,
+            -0.0,
+            -60421.334536
+          ]
+        ],
+        "beta": 0.0
+      }
+    },
+    "test_05b": {
+      "description": "Dipolar 1H-13C splitting 60.5kHz, beta=90.0",
+      "invocation": "DipolarCoupling(0, 1, '1H', '13C', tensor=NMRTensor(D))",
+      "spinsys": "spinsys {\nchannels 13C 1H\nnuclei 1H 13C\ndipole 1 2 -30210.667268 90.000000 90.000000 0.000000\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "1H",
+            "label": "H1"
+          },
+          {
+            "isotope": "13C",
+            "label": "C1"
+          }
+        ],
+        "couplings": [
+          {
+            "dipolar": {
+              "D": -30210.667268,
+              "alpha": 3.141592653589793,
+              "beta": 1.5707963267948966,
+              "gamma": 0.0
+            },
+            "site_index": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "input": {
+        "type": "synthetic_dipolar",
+        "d": -30210.667268,
+        "D_matrix": [
+          [
+            -60421.334536,
+            -0.0,
+            -0.0
+          ],
+          [
+            -0.0,
+            30210.667268,
+            -0.0
+          ],
+          [
+            -0.0,
+            -0.0,
+            30210.667268
+          ]
+        ],
+        "beta": 90.0
+      }
+    },
+    "test_06": {
+      "description": "J-coupling isotropic 100 Hz",
+      "invocation": "ISCoupling(0, 1, '1H', '13C', diag([100, 100, 100]))",
+      "spinsys": "spinsys {\nchannels 13C 1H\nnuclei 1H 13C\njcoupling 1 2 100.000000 0.000000 0.000000 0.000000 0.000000 0.000000\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "1H",
+            "label": "H1"
+          },
+          {
+            "isotope": "13C",
+            "label": "C1"
+          }
+        ],
+        "couplings": [
+          {
+            "site_index": [
+              0,
+              1
+            ],
+            "isotropic_j": 100.00000000000001,
+            "j_symmetric": {
+              "zeta": 0.0,
+              "eta": 0.0,
+              "alpha": 0.0,
+              "beta": 0.0,
+              "gamma": 0.0
+            }
+          }
+        ]
+      },
+      "input": {
+        "type": "synthetic_j",
+        "J_matrix": [
+          [
+            100.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            100.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            100.0
+          ]
+        ]
+      }
+    },
+    "test_07a": {
+      "description": "J-coupling anisotropic zeta=200 Hz, beta=0.0",
+      "invocation": "ISCoupling(0, 1, '1H', '13C', tensor=NMRTensor(J))",
+      "spinsys": "spinsys {\nchannels 13C 1H\nnuclei 1H 13C\njcoupling 1 2 0.000000 100.000000 0.000000 90.000000 0.000000 0.000000\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "1H",
+            "label": "H1"
+          },
+          {
+            "isotope": "13C",
+            "label": "C1"
+          }
+        ],
+        "couplings": [
+          {
+            "site_index": [
+              0,
+              1
+            ],
+            "isotropic_j": 0.0,
+            "j_symmetric": {
+              "zeta": 200.00000000000003,
+              "eta": 0.0,
+              "alpha": 1.5707963267948966,
+              "beta": 0.0,
+              "gamma": 0.0
+            }
+          }
+        ]
+      },
+      "input": {
+        "type": "synthetic_j",
+        "J_matrix": [
+          [
+            -100.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -100.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            200.0
+          ]
+        ],
+        "beta": 0.0
+      }
+    },
+    "test_07b": {
+      "description": "J-coupling anisotropic zeta=200 Hz, beta=90.0",
+      "invocation": "ISCoupling(0, 1, '1H', '13C', tensor=NMRTensor(J))",
+      "spinsys": "spinsys {\nchannels 13C 1H\nnuclei 1H 13C\njcoupling 1 2 0.000000 100.000000 0.000000 90.000000 90.000000 0.000000\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "1H",
+            "label": "H1"
+          },
+          {
+            "isotope": "13C",
+            "label": "C1"
+          }
+        ],
+        "couplings": [
+          {
+            "site_index": [
+              0,
+              1
+            ],
+            "isotropic_j": 0.0,
+            "j_symmetric": {
+              "zeta": 200.00000000000003,
+              "eta": 0.0,
+              "alpha": 0.0,
+              "beta": 1.5707963267948963,
+              "gamma": 0.0
+            }
+          }
+        ]
+      },
+      "input": {
+        "type": "synthetic_j",
+        "J_matrix": [
+          [
+            200.0,
+            0.0,
+            6.661338147750939e-14
+          ],
+          [
+            0.0,
+            -100.0,
+            0.0
+          ],
+          [
+            6.661338147750939e-14,
+            0.0,
+            -100.0
+          ]
+        ],
+        "beta": 90.0
+      }
+    },
+    "test_08": {
+      "description": "Quadrupole-dipole cross-term (13C-14N)",
+      "invocation": "SpinSystem([C1, N1], [dip]) with quadrupole on N1",
+      "spinsys": "spinsys {\nchannels 13C 14N\nnuclei 13C 14N\nquadrupole 2 2 556902.4772770321 0.7188375778342959 0.0 13.438698391000925 90.0\ndipole 1 2 -660.200000 90.000000 0.000000 0.000000\nquadrupole_x_dipole 2 1\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "13C",
+            "label": "C1"
+          },
+          {
+            "isotope": "14N",
+            "label": "N1",
+            "quadrupolar": {
+              "Cq": 556902.4772770321,
+              "eta": 0.7188375778342959,
+              "alpha": 1.5707963267948966,
+              "beta": 0.23454953410543045,
+              "gamma": 0.0
+            }
+          }
+        ],
+        "couplings": [
+          {
+            "dipolar": {
+              "D": -660.2,
+              "alpha": 1.5707963267948966,
+              "beta": 0.0,
+              "gamma": 0.0
+            },
+            "site_index": [
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "input": {
+        "type": "synthetic_cross",
+        "efg_n": [
+          [
+            -0.01630132,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -0.08800965,
+            0.04873722
+          ],
+          [
+            0.0,
+            0.04873722,
+            0.10431097
+          ]
+        ],
+        "D_matrix": [
+          [
+            660.2,
+            -0.0,
+            -0.0
+          ],
+          [
+            -0.0,
+            660.2,
+            -0.0
+          ],
+          [
+            -0.0,
+            -0.0,
+            -1320.4
+          ]
+        ]
+      }
+    },
+    "quartz_3si": {
+      "description": "Quartz 3x 29Si sites with minimum-image dipolar couplings",
+      "invocation": "get_spin_system(quartz[:3], references={'Si': 300, 'O': 200}, include_dipolar=True)",
+      "spinsys": "spinsys {\nchannels 29Si\nnuclei 29Si 29Si 29Si\nshift 1 -123.33333333333333p 18.410447746667007p 0.13058208161164342 23.459463855498175 74.00348976486646 227.1912510218475\nshift 2 -123.33333333333333p 18.410447746667007p 0.13058208161164342 156.54053614450183 74.00348976486646 312.8087489781525\nshift 3 -123.60000000000007p -7.607394420646888p 0.8733599429284895 130.82832682009024 14.73881338985073 270.77005607026376\ndipole 1 2 -166.138565 156.828231 53.893399 0.000000\ndipole 1 3 -166.138617 157.452242 53.893407 0.000000\ndipole 2 3 -166.138617 169.900578 53.893407 0.000000\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "29Si",
+            "label": "Si",
+            "isotropic_chemical_shift": -123.33333333333333,
+            "shielding_symmetric": {
+              "zeta": -18.410447746667007,
+              "eta": 0.13058208161164342,
+              "alpha": 1.3129231057426232,
+              "beta": 0.4910863300239461,
+              "gamma": 0.9466949351679892
+            }
+          },
+          {
+            "isotope": "29Si",
+            "label": "Si",
+            "isotropic_chemical_shift": -123.33333333333333,
+            "shielding_symmetric": {
+              "zeta": -18.410447746667007,
+              "eta": 0.13058208161164342,
+              "alpha": 1.82866954784717,
+              "beta": 0.4910863300239461,
+              "gamma": 2.1948977184218035
+            }
+          },
+          {
+            "isotope": "29Si",
+            "label": "Si",
+            "isotropic_chemical_shift": -123.60000000000007,
+            "shielding_symmetric": {
+              "zeta": 7.607394420646907,
+              "eta": 0.8733599429284895,
+              "alpha": 4.698948966533617,
+              "beta": 0.25724082148992183,
+              "gamma": 0.8582075957040156
+            }
+          }
+        ],
+        "couplings": [
+          {
+            "dipolar": {
+              "D": -166.13856481871426,
+              "alpha": 4.084210857011453,
+              "beta": 0.9406172559568893,
+              "gamma": 0.0
+            },
+            "site_index": [
+              0,
+              1
+            ]
+          },
+          {
+            "dipolar": {
+              "D": -166.13861672825539,
+              "alpha": 1.9898157546303672,
+              "beta": 0.9406173987597946,
+              "gamma": 0.0
+            },
+            "site_index": [
+              0,
+              2
+            ]
+          },
+          {
+            "dipolar": {
+              "D": -166.13861672643466,
+              "alpha": 6.178605959402231,
+              "beta": 0.9406173987624595,
+              "gamma": 0.0
+            },
+            "site_index": [
+              1,
+              2
+            ]
+          }
+        ]
+      },
+      "input": {
+        "type": "structure_quartz",
+        "indices": [
+          0,
+          1,
+          2
+        ],
+        "references": {
+          "Si": 300.0,
+          "O": 200.0
+        }
+      }
+    },
+    "ethanol_3h": {
+      "description": "Ethanol 3x 1H sites with MS, Dipolar and J couplings",
+      "invocation": "get_spin_system(ethanol[:3], references={'C': 180, 'H': 30, 'O': 200}, include_dipolar=True, include_j=True)",
+      "spinsys": "spinsys {\nchannels 1H\nnuclei 1H 1H 1H\nshift 1 0.4073809409000049p -5.961009887515736p 0.14196800078113436 153.16339001174384 45.33901509145817 152.03764399252458\nshift 2 -0.2560510084333245p -5.45900548692498p 0.21082029526274973 86.7747982694457 77.3687949517553 267.33584348090034\nshift 3 -0.10275348413333536p -4.858397691391923p 0.06045150406398757 13.544414461736181 35.144979662728076 357.95631956940537\ndipole 1 2 -21680.806313 133.899793 46.871716 0.000000\ndipole 1 3 -21358.409400 176.965866 89.346785 0.000000\ndipole 2 3 -21554.100943 11.711629 47.866172 0.000000\njcoupling 1 2 -5.669597 -3.689247 0.243029 67.768919 43.352465 28.417002\njcoupling 1 3 -4.695365 -3.711798 0.252916 21.438171 88.627367 78.452060\njcoupling 2 3 -3.942383 -3.711889 0.193412 68.737952 42.842526 125.237876\n}\n",
+      "mrsimulator": {
+        "sites": [
+          {
+            "isotope": "1H",
+            "label": "H",
+            "isotropic_chemical_shift": 0.4073809409000049,
+            "shielding_symmetric": {
+              "zeta": 5.961009887515736,
+              "eta": 0.14196800078113436,
+              "alpha": 0.48803517894526216,
+              "beta": 0.7913150929573431,
+              "gamma": 0.46838720436866677
+            }
+          },
+          {
+            "isotope": "1H",
+            "label": "H",
+            "isotropic_chemical_shift": -0.2560510084333245,
+            "shielding_symmetric": {
+              "zeta": 5.45900548692498,
+              "eta": 0.21082029526274973,
+              "alpha": 4.758887283431449,
+              "beta": 1.3503402102084974,
+              "gamma": 1.6270867160340883
+            }
+          },
+          {
+            "isotope": "1H",
+            "label": "H",
+            "isotropic_chemical_shift": -0.10275348413333536,
+            "shielding_symmetric": {
+              "zeta": 4.858397691391923,
+              "eta": 0.06045150406398757,
+              "alpha": 3.1772616059622454,
+              "beta": 0.6133956106610512,
+              "gamma": 2.905198025977761
+            }
+          }
+        ],
+        "couplings": [
+          {
+            "dipolar": {
+              "D": -21680.806312876215,
+              "alpha": 5.665509465554392,
+              "beta": 0.8180657702868759,
+              "gamma": 0.0
+            },
+            "site_index": [
+              0,
+              1
+            ],
+            "isotropic_j": -5.669596850909779,
+            "j_symmetric": {
+              "zeta": -7.3784935554210165,
+              "eta": 0.24302905652337925,
+              "alpha": 2.645622399090312,
+              "beta": 0.7566432574831784,
+              "gamma": 1.9588018893350836
+            }
+          },
+          {
+            "dipolar": {
+              "D": -21358.4093997162,
+              "alpha": 0.21185518467520392,
+              "beta": 1.559395581371311,
+              "gamma": 0.0
+            },
+            "site_index": [
+              0,
+              2
+            ],
+            "isotropic_j": -4.6953651862477015,
+            "j_symmetric": {
+              "zeta": -7.423596490349323,
+              "eta": 0.25291607692613516,
+              "alpha": 1.7723459031890663,
+              "beta": 1.5468393602573107,
+              "gamma": 2.7674259772176537
+            }
+          },
+          {
+            "dipolar": {
+              "D": -21554.10094348599,
+              "alpha": 4.163764907807882,
+              "beta": 0.8354223009650886,
+              "gamma": 0.0
+            },
+            "site_index": [
+              1,
+              2
+            ],
+            "isotropic_j": -3.9423826685108594,
+            "j_symmetric": {
+              "zeta": -7.423777128127044,
+              "eta": 0.193411520130363,
+              "alpha": 0.9557793770751726,
+              "beta": 0.7477431430281603,
+              "gamma": 1.9418890767187036
+            }
+          }
+        ]
+      },
+      "input": {
+        "type": "structure_ethanol",
+        "indices": [
+          0,
+          1,
+          2
+        ],
+        "references": {
+          "C": 180.0,
+          "H": 30.0,
+          "O": 200.0
+        }
+      }
+    }
+  }
+}

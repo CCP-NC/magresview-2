@@ -1,0 +1,12 @@
+# ==============================================================================
+# Test Case: test_01
+# Description: Isotropic shift +100 ppm @ 400 MHz (13C)
+# Oracle: Soprano v0.12
+# Generated: 2026-09-22 11:00:36
+# Invocation: SpinSystem(sites=[Site('13C', ms=diag([-100,-100,-100]))]).to_simpson('13C')
+# ==============================================================================
+spinsys {
+channels 13C
+nuclei 13C
+shift 1 100.0p 0.0p 0.0 0.0 0.0 0.0
+}

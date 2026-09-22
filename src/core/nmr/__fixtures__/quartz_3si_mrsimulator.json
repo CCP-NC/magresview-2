@@ -1,0 +1,86 @@
+{
+  "header": {
+    "name": "quartz_3si",
+    "description": "Quartz 3x 29Si sites with minimum-image dipolar couplings",
+    "oracle": "Soprano v0.12",
+    "generated": "2026-09-22 11:00:36"
+  },
+  "data": {
+    "sites": [
+      {
+        "isotope": "29Si",
+        "label": "Si",
+        "isotropic_chemical_shift": -123.33333333333333,
+        "shielding_symmetric": {
+          "zeta": -18.410447746667007,
+          "eta": 0.13058208161164342,
+          "alpha": 1.3129231057426232,
+          "beta": 0.4910863300239461,
+          "gamma": 0.9466949351679892
+        }
+      },
+      {
+        "isotope": "29Si",
+        "label": "Si",
+        "isotropic_chemical_shift": -123.33333333333333,
+        "shielding_symmetric": {
+          "zeta": -18.410447746667007,
+          "eta": 0.13058208161164342,
+          "alpha": 1.82866954784717,
+          "beta": 0.4910863300239461,
+          "gamma": 2.1948977184218035
+        }
+      },
+      {
+        "isotope": "29Si",
+        "label": "Si",
+        "isotropic_chemical_shift": -123.60000000000007,
+        "shielding_symmetric": {
+          "zeta": 7.607394420646907,
+          "eta": 0.8733599429284895,
+          "alpha": 4.698948966533617,
+          "beta": 0.25724082148992183,
+          "gamma": 0.8582075957040156
+        }
+      }
+    ],
+    "couplings": [
+      {
+        "dipolar": {
+          "D": -166.13856481871426,
+          "alpha": 4.084210857011453,
+          "beta": 0.9406172559568893,
+          "gamma": 0.0
+        },
+        "site_index": [
+          0,
+          1
+        ]
+      },
+      {
+        "dipolar": {
+          "D": -166.13861672825539,
+          "alpha": 1.9898157546303672,
+          "beta": 0.9406173987597946,
+          "gamma": 0.0
+        },
+        "site_index": [
+          0,
+          2
+        ]
+      },
+      {
+        "dipolar": {
+          "D": -166.13861672643466,
+          "alpha": 6.178605959402231,
+          "beta": 0.9406173987624595,
+          "gamma": 0.0
+        },
+        "site_index": [
+          1,
+          2
+        ]
+      }
+    ]
+  }
+}

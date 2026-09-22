@@ -1,0 +1,24 @@
+{
+  "header": {
+    "name": "test_04b",
+    "description": "Quadrupole 2H Cq=100kHz, beta=90.0",
+    "oracle": "Soprano v0.12",
+    "generated": "2026-09-22 11:00:36"
+  },
+  "data": {
+    "sites": [
+      {
+        "isotope": "2H",
+        "label": "H1",
+        "quadrupolar": {
+          "Cq": 100000.00000000001,
+          "eta": 0.0,
+          "alpha": 0.0,
+          "beta": 1.5707963267948963,
+          "gamma": 0.0
+        }
+      }
+    ],
+    "couplings": []
+  }
+}

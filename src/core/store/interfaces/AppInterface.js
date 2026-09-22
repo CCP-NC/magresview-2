@@ -101,6 +101,22 @@ function appDisplayModel(state, m) {
         // _camera is kept only in the snapshot object, not spread into Redux state.
         if (modelStates[m]) {
             const { _camera: _c, ...savedRedux } = modelStates[m];
+
+            // A snapshot is normally taken while its own model is active, so
+            // its atoms belong to that model. They stop belonging to it when
+            // the Model object is replaced under the same name, which is what
+            // changing the supercell does. Euler atoms have no other guard
+            // (viewsListener covers the selection and displayed views), so
+            // drop them here rather than render disks on a dead model.
+            const targetModel = app._models?.[m];
+            if (targetModel) {
+                for (const key of ['eul_atom_A', 'eul_atom_B']) {
+                    if (savedRedux[key] && savedRedux[key].model !== targetModel) {
+                        savedRedux[key] = null;
+                    }
+                }
+            }
+
             data = { ...data, ...savedRedux };
         }
     }
@@ -279,6 +295,13 @@ function appMergeModels(state, nameA, nameB, targetName) {
     const loadedName = Object.entries(success ?? {}).find(([, s]) => s === 0)?.[0];
     if (!loadedName) {
         return fail('The merged file could not be read back in.');
+    }
+
+    if (app._model_sources?.[loadedName]) {
+        const fileA = sourceA?.fileName || `${nameA}.${sourceA?.extension || 'magres'}`;
+        const fileB = sourceB?.fileName || `${nameB}.${sourceB?.extension || 'magres'}`;
+        app._model_sources[loadedName].fileName = `${fileA} + ${fileB}`;
+        app._model_sources[loadedName].mergedFrom = [fileA, fileB];
     }
 
     // Display before deleting, so the outgoing model is snapshotted and the
@@ -514,8 +537,11 @@ class AppInterface extends BaseInterface {
             dispatch({
                 type: 'call',
                 function: (state, bv) => {
+                    // ModelView.or() throws across models, and a selection
+                    // left over from a previous model can still be in the
+                    // store here. Start fresh in that case.
                     const cur = state.sel_selected_view;
-                    const newSel = cur ? cur.or(bv) : bv;
+                    const newSel = (cur && cur.model === bv.model) ? cur.or(bv) : bv;
                     return {
                         sel_selected_view: newSel,
                         listen_update: [Events.VIEWS]
@@ -574,7 +600,7 @@ class AppInterface extends BaseInterface {
         };
 
         // Callback for each file after the FileReader is done
-        function onLoad(contents, name, extension) {
+        function onLoad(contents, name, extension, origFileName) {
             var success = app.loadModels(contents, extension, name, params);
 
             // Find a valid model name for display
@@ -582,6 +608,9 @@ class AppInterface extends BaseInterface {
             Object.entries(success).forEach(([n, v]) => {
                 if (v === 0) {
                     to_display = n;
+                    if (app._model_sources?.[n]) {
+                        app._model_sources[n].fileName = origFileName || `${n}.${extension}`;
+                    }
                 }
             });
 
@@ -600,7 +629,7 @@ class AppInterface extends BaseInterface {
             let name = f.name.replace(/\.[^/.]+$/, '');
             let extension = f.name.split('.').pop();
 
-            reader.onload = ((e) => { onLoad(e.target.result, name, extension) });
+            reader.onload = ((e) => { onLoad(e.target.result, name, extension, f.name) });
             reader.readAsText(f);
         }
 
@@ -778,6 +807,9 @@ class AppInterface extends BaseInterface {
             };
 
             const result = app.loadModels(text, extension, modelName, params);
+            if (result && app._model_sources?.[modelName]) {
+                app._model_sources[modelName].fileName = `${modelName}.${extension}`;
+            }
             merger.call(result);
         });
     }

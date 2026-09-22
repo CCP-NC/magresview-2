@@ -1,5 +1,5 @@
 import { chainClasses } from './utils-react';
-import { CallbackMerger, getColorScale, mergeOnly, Enum, averagePosition } from './utils-generic';
+import { CallbackMerger, getColorScale, mergeOnly, Enum, averagePosition, tableRow, csvRow, saveContents } from './utils-generic';
 import { dipolarCoupling, dipolarTensor } from './utils-nmr';
 import { rotationBetween, eulerFromRotation, rotationMatrixFromZYZ } from './utils-rotation';
 
@@ -250,4 +250,47 @@ test('averages properly a list of positions', () => {
     const avg = averagePosition(fakeMview);
 
     expect(avg).toEqual([2, 1.5, 3]);
+});
+
+test('tableRow formats fixed width, tsv and csv with RFC 4180 escaping', () => {
+    // Fixed width
+    const fixed = tableRow(['A', 1.234567, 10], { width: 10, precision: 3, format: 'fixed' });
+    expect(fixed).toBe('        A     1.235        10\n');
+
+    // TSV
+    const tsv = tableRow(['A', 1.234567, 10], { format: 'tsv', precision: 2 });
+    expect(tsv).toBe('A\t1.23\t10\n');
+
+    // CSV with plain values
+    const csv1 = tableRow(['A', 1.234567, 10], { format: 'csv', precision: 2 });
+    expect(csv1).toBe('A,1.23,10\n');
+
+    // CSV with values containing commas, quotes, and newlines (RFC 4180)
+    const csv2 = tableRow(['H1,H2,H3', 'val "with" quotes', 'line1\nline2'], { format: 'csv' });
+    expect(csv2).toBe('"H1,H2,H3","val ""with"" quotes","line1\nline2"\n');
+
+    // csvRow helper
+    const csv3 = csvRow(['C1,C2', 42.123456], 3);
+    expect(csv3).toBe('"C1,C2",42.123\n');
+});
+
+test('saveContents creates and clicks download link with blob URL', () => {
+    const origCreateObjectURL = URL.createObjectURL;
+    const origRevokeObjectURL = URL.revokeObjectURL;
+    const createSpy = vi.fn(() => 'blob:mock-url');
+    const revokeSpy = vi.fn();
+    URL.createObjectURL = createSpy;
+    URL.revokeObjectURL = revokeSpy;
+
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    try {
+        saveContents('hello world', 'test.txt');
+        expect(createSpy).toHaveBeenCalledTimes(1);
+        expect(clickSpy).toHaveBeenCalledTimes(1);
+    } finally {
+        clickSpy.mockRestore();
+        URL.createObjectURL = origCreateObjectURL;
+        URL.revokeObjectURL = origRevokeObjectURL;
+    }
 });
