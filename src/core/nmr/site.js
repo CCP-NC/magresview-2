@@ -21,6 +21,8 @@ export class Site {
         efg = null,
         reference = null,
         gradient = DEFAULT_GRADIENT,
+        isAverageGroup = false,
+        averageGroupPattern = null,
     } = {}) {
         this.index = index;
         this.isotope = isotope;
@@ -36,6 +38,8 @@ export class Site {
         this.efg = efg;
         this.reference = reference;
         this.gradient = gradient ?? DEFAULT_GRADIENT;
+        this.isAverageGroup = Boolean(isAverageGroup);
+        this.averageGroupPattern = averageGroupPattern;
     }
 
     /**

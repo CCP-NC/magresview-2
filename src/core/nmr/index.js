@@ -9,3 +9,4 @@ export * from './buildSpinSystem';
 export * from './simpson';
 export * from './mrsimulator';
 export * from './tables';
+export * from './metadata';

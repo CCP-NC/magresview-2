@@ -1,3 +1,5 @@
+import { formatMrsimulatorOutput } from './metadata';
+
 /**
  * MRSimulator export writer.
  * Converts a SpinSystem model to an MRSimulator JSON schema dictionary.
@@ -123,8 +125,5 @@ export function toMrsimulator(sys, options = {}) {
         entry => entry.dipolar !== undefined || entry.isotropic_j !== undefined
     );
 
-    return {
-        sites: mrSites,
-        couplings: mrCouplings,
-    };
+    return formatMrsimulatorOutput(sys, mrSites, mrCouplings);
 }

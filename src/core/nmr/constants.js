@@ -1,3 +1,5 @@
+import pkg from '../../../package.json';
+
 /**
  * NMR and Spin System Constants
  */
@@ -36,3 +38,12 @@ export const EFG_TO_HZ = 234964.77815245767;
  * Units match distances in Angstrom and gyromagnetic ratios in 1e7 rad s^-1 T^-1.
  */
 export const MU0_HBAR_E30 = 1.3252140307214143e-10;
+
+/**
+ * MagresView 2 application version loaded directly from package.json and git.
+ */
+export const MAGRESVIEW_VERSION = pkg.version;
+export const MAGRESVIEW_GIT_COMMIT = typeof __GIT_COMMIT__ !== 'undefined' ? __GIT_COMMIT__ : '';
+export const MAGRESVIEW_GIT_TAG = typeof __GIT_TAG__ !== 'undefined' ? __GIT_TAG__ : '';
+
+

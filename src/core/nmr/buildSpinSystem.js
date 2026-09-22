@@ -6,6 +6,7 @@ import { checkForMultipleImages, computeDipolarCoupling } from './dipolar';
 import { computeJCoupling } from './jCoupling';
 import { findAverageGroups, averageMatrix3x3, computeAveragedDipolarCoupling } from './averageGroups';
 import { DEFAULT_GRADIENT } from './constants';
+import { buildSpinSystemMetadata } from './metadata';
 
 /**
  * Build a SpinSystem from an atom selection/view and configuration options.
@@ -120,6 +121,8 @@ export function buildSpinSystem(view, options = {}) {
             efg,
             reference: ref,
             gradient: grad,
+            isAverageGroup: true,
+            averageGroupPattern: group.pattern || averageGroups || null,
         }));
     }
 
@@ -204,11 +207,22 @@ export function buildSpinSystem(view, options = {}) {
         }
     }
 
+    const metadata = buildSpinSystemMetadata({
+        model,
+        view,
+        atoms,
+        activeAtoms,
+        sites,
+        avgGroupMatches,
+        options,
+    });
+
     return new SpinSystem({
         sites,
         couplings,
         warnings,
         missingReferences,
         model,
+        metadata,
     });
 }

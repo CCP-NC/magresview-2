@@ -1,5 +1,6 @@
 import { createStoredZip } from '../../utils';
 import { Site } from './site';
+import { formatSimpsonHeader } from './metadata';
 
 /**
  * Format a float for SIMPSON output.
@@ -116,7 +117,7 @@ export function toSimpson(sys, options = {}) {
 
     const lines = [];
     if (include_header) {
-        lines.push(generateHeader(filename));
+        lines.push(formatSimpsonHeader(filename, sys));
     }
 
     lines.push('spinsys {');
@@ -268,6 +269,26 @@ export function toSimpsonSplitZip(sys, modelName = 'model', options = {}) {
             warnings: [],
             missingReferences: [],
             canExport: true,
+            metadata: {
+                ...sys.metadata,
+                exportedIndices: origSite.atomIndices || [],
+                sites: [
+                    {
+                        siteIndex: 0,
+                        label: origSite.label,
+                        isotope: origSite.isotope,
+                        element: origSite.element,
+                        atomIndices: origSite.atomIndices || [],
+                        position: origSite.position,
+                        isAverageGroup: Boolean(origSite.isAverageGroup),
+                        averageGroupPattern: origSite.averageGroupPattern || null,
+                        reference: origSite.reference,
+                        gradient: origSite.gradient,
+                    }
+                ],
+            },
+            dimension: 2 * (isolatedSite.spin ?? 0.5) + 1,
+            spinHalfEquivalent: Math.log2(2 * (isolatedSite.spin ?? 0.5) + 1),
         };
 
         const safeLabel = origSite.label.replace(/[^a-zA-Z0-9_-]/g, '_');

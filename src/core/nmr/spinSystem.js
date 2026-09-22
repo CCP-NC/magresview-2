@@ -69,12 +69,14 @@ export class SpinSystem {
         warnings = [],
         missingReferences = [],
         model = null,
+        metadata = {},
     } = {}) {
         this.sites = sites;
         this.couplings = couplings;
         this.warnings = warnings;
         this.missingReferences = missingReferences;
         this.model = model;
+        this.metadata = metadata || {};
     }
 
     /**

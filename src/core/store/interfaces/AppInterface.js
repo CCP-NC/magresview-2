@@ -281,6 +281,13 @@ function appMergeModels(state, nameA, nameB, targetName) {
         return fail('The merged file could not be read back in.');
     }
 
+    if (app._model_sources?.[loadedName]) {
+        const fileA = sourceA?.fileName || `${nameA}.${sourceA?.extension || 'magres'}`;
+        const fileB = sourceB?.fileName || `${nameB}.${sourceB?.extension || 'magres'}`;
+        app._model_sources[loadedName].fileName = `${fileA} + ${fileB}`;
+        app._model_sources[loadedName].mergedFrom = [fileA, fileB];
+    }
+
     // Display before deleting, so the outgoing model is snapshotted and the
     // incoming one starts from a clean state rather than stale atom references.
     const displayData = appDisplayModel(state, loadedName);
@@ -574,7 +581,7 @@ class AppInterface extends BaseInterface {
         };
 
         // Callback for each file after the FileReader is done
-        function onLoad(contents, name, extension) {
+        function onLoad(contents, name, extension, origFileName) {
             var success = app.loadModels(contents, extension, name, params);
 
             // Find a valid model name for display
@@ -582,6 +589,9 @@ class AppInterface extends BaseInterface {
             Object.entries(success).forEach(([n, v]) => {
                 if (v === 0) {
                     to_display = n;
+                    if (app._model_sources?.[n]) {
+                        app._model_sources[n].fileName = origFileName || `${n}.${extension}`;
+                    }
                 }
             });
 
@@ -600,7 +610,7 @@ class AppInterface extends BaseInterface {
             let name = f.name.replace(/\.[^/.]+$/, '');
             let extension = f.name.split('.').pop();
 
-            reader.onload = ((e) => { onLoad(e.target.result, name, extension) });
+            reader.onload = ((e) => { onLoad(e.target.result, name, extension, f.name) });
             reader.readAsText(f);
         }
 
@@ -778,6 +788,9 @@ class AppInterface extends BaseInterface {
             };
 
             const result = app.loadModels(text, extension, modelName, params);
+            if (result && app._model_sources?.[modelName]) {
+                app._model_sources[modelName].fileName = `${modelName}.${extension}`;
+            }
             merger.call(result);
         });
     }

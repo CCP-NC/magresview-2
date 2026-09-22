@@ -345,6 +345,11 @@ class FilesInterface extends BaseInterface {
         const view = getSel(app);
         if (!view) return null;
 
+        const mname = app.modelName || 'model';
+        const sourceInfo = app._model_sources?.[mname];
+        const sourceFilename = sourceInfo?.fileName || (sourceInfo?.extension ? `${mname}.${sourceInfo.extension}` : `${mname}.magres`);
+        const mergedFrom = sourceInfo?.mergedFrom || null;
+
         return buildSpinSystem(view, {
             references: this.state.ms_references || {},
             gradients: this.gradients,
@@ -354,6 +359,9 @@ class FilesInterface extends BaseInterface {
             dipolarHomonuclear: this.dipolarHomonuclear,
             mergeByLabel: this.mergeByLabel,
             averageGroups: this.averageGroups,
+            sourceFilename,
+            mergedFrom,
+            modelName: mname,
         });
     }
 

@@ -138,4 +138,37 @@ describe('SpinSystem feasibility guard', () => {
         expect(sysWithRef.canExport).toBe(true);
         expect(sysWithRef.missingReferences).toEqual([]);
     });
+
+    it('verifies MAGRESVIEW_VERSION matches package.json', async () => {
+        const { MAGRESVIEW_VERSION } = await import('./constants');
+        const fs = await import('fs');
+        const path = await import('path');
+        const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../../../package.json'), 'utf-8'));
+        expect(MAGRESVIEW_VERSION).toBe(pkg.version);
+    });
+
+    it('formats calculation metadata summary cleanly', async () => {
+        const { formatCalculationSummary } = await import('./metadata');
+        const calcMeta = {
+            calc_code: ['QE-GIPAW'],
+            calc_code_version: ['7.1'],
+            calc_code_platform: ['x86_64'],
+            calc_xcfunctional: ['PBE'],
+            calc_cutoffenergy: ['60.0 Ry'],
+            calc_kpoint_mp_grid: ['4 4 4'],
+            calc_kpoint_mp_offset: ['0.5 0.5 0.5'],
+            calc_pspot: ['Si.pbe-tm-gipaw.UPF', 'O.pbe-rrkjus-gipaw-dc.UPF'],
+            calc_prefix: ['quartz'],
+            calc_custom_setting: ['val1', 'val2'],
+        };
+
+        const lines = formatCalculationSummary(calcMeta);
+        expect(lines).toContain('Code: QE-GIPAW 7.1 (x86_64)');
+        expect(lines).toContain('Functional: PBE');
+        expect(lines).toContain('Cutoff energy: 60.0 Ry');
+        expect(lines).toContain('K-point grid: 4 4 4 (offset: 0.5 0.5 0.5)');
+        expect(lines).toContain('Pseudopotentials: Si.pbe-tm-gipaw.UPF; O.pbe-rrkjus-gipaw-dc.UPF');
+        expect(lines).toContain('Job name: quartz');
+        expect(lines).toContain('custom_setting: val1 val2');
+    });
 });

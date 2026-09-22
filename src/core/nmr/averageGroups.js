@@ -38,6 +38,7 @@ export function findAverageGroups(atoms, patterns) {
                     // Avoid duplicate groups
                     const indices = groupInSet.map(a => a.index).sort().join(',');
                     if (!groups.some(g => g.map(a => a.index).sort().join(',') === indices)) {
+                        groupInSet.pattern = pat;
                         groups.push(groupInSet);
                     }
                 }
