@@ -15,7 +15,7 @@
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
 import { makeSelector, BaseInterface } from '../utils';
-import { CallbackMerger, ClickHandler, centerDisplayed } from '../../../utils';
+import { CallbackMerger, ClickHandler, centerDisplayed, findMergeablePair, getMergedModelName, mergeMagresText } from '../../../utils';
 
 import { initialSelState } from './SelInterface';
 import { initialCScaleState } from './CScaleInterface';
@@ -45,6 +45,7 @@ const initialAppState = {
     app_advanced_mode: false,
     app_autosave_warning: false, // set to true when localStorage quota is exceeded
     app_autosave_enabled: true, // enable/disable autosave; configurable by user
+    app_merge_prompt: null, // Prompt user to merge complementary models (e.g. NMR + EFG)
     // In-memory cache of per-model visualization state.  Keyed by model name;
     // saved when switching away, restored when switching back.  Not persisted
     // to disk (contains live atom/ModelView references).
@@ -213,19 +214,88 @@ function appDeleteModel(state, m) {
     app.deleteModel(m);
     const { [m]: _dropped, ...modelStates } = state.app_model_states ?? {};
 
+    // Clear merge prompt if it references the deleted model
+    let mergePrompt = state.app_merge_prompt;
+    if (mergePrompt && (mergePrompt.modelA === m || mergePrompt.modelB === m)) {
+        mergePrompt = null;
+    }
+
     const remainingModels = app.modelList;
     if (!wasDisplayed || deletedIdx < 0 || remainingModels.length === 0) {
-        return { app_model_states: modelStates };
+        return { app_model_states: modelStates, app_merge_prompt: mergePrompt };
     }
 
     // Display the adjacent model (next, or previous if deleted was last).
     const nextIdx = Math.min(deletedIdx, remainingModels.length - 1);
     const nextModel = remainingModels[nextIdx];
-    const stateForDisplay = { ...state, app_model_states: modelStates };
+    const stateForDisplay = { ...state, app_model_states: modelStates, app_merge_prompt: mergePrompt };
 
     return {
         app_model_states: modelStates,
+        app_merge_prompt: mergePrompt,
         ...appDisplayModel(stateForDisplay, nextModel),
+    };
+}
+
+function appMergeModels(state, nameA, nameB, targetName) {
+    const app = state.app_viewer;
+
+    // On failure keep the banner up but swap the offer for a reason.
+    const fail = (error) => ({
+        app_merge_prompt: { ...state.app_merge_prompt, modelA: nameA, modelB: nameB, error }
+    });
+
+    const modelA = app._models?.[nameA];
+    const modelB = app._models?.[nameB];
+    if (!modelA || !modelB) {
+        return fail('One of the models is no longer loaded.');
+    }
+
+    const sourceA = app._model_sources?.[nameA];
+    const sourceB = app._model_sources?.[nameB];
+    if (sourceA?.extension?.toLowerCase() !== 'magres' || sourceB?.extension?.toLowerCase() !== 'magres') {
+        return fail('Merging is only supported for .magres files.');
+    }
+
+    const mergedName = targetName || getMergedModelName(nameA, nameB, modelA, modelB);
+
+    let mergedText;
+    try {
+        mergedText = mergeMagresText(sourceA.text, sourceB.text);
+    } catch (err) {
+        return fail(`Could not combine the two files: ${err.message}`);
+    }
+
+    const params = app._model_parameters?.[nameA] ?? {
+        supercell: [3, 3, 3],
+        molecularCrystal: state.app_load_as_mol,
+        useNMRActiveIsotopes: state.app_use_nmr_isos,
+        vdwScaling: state.app_vdw_scaling
+    };
+
+    // Load first: CrystVis disambiguates the name if it collides, and a failure
+    // here must leave the two source models untouched.
+    const success = app.loadModels(mergedText, 'magres', mergedName, params);
+    const loadedName = Object.entries(success ?? {}).find(([, s]) => s === 0)?.[0];
+    if (!loadedName) {
+        return fail('The merged file could not be read back in.');
+    }
+
+    // Display before deleting, so the outgoing model is snapshotted and the
+    // incoming one starts from a clean state rather than stale atom references.
+    const displayData = appDisplayModel(state, loadedName);
+
+    const modelStates = { ...(displayData.app_model_states ?? {}) };
+    for (const n of [nameA, nameB]) {
+        if (n === loadedName) continue;
+        app.deleteModel(n);
+        delete modelStates[n];
+    }
+
+    return {
+        ...displayData,
+        app_model_states: modelStates,
+        app_merge_prompt: null
     };
 }
 
@@ -400,6 +470,27 @@ class AppInterface extends BaseInterface {
         });
     }
 
+    get mergePrompt() {
+        return this.state.app_merge_prompt;
+    }
+
+    dismissMergePrompt() {
+        this.dispatch({
+            type: 'set',
+            key: 'app_merge_prompt',
+            value: null
+        });
+    }
+
+    mergeModels(nameA, nameB, targetName = null) {
+        if (!this.initialised) return;
+        this.dispatch({
+            type: 'call',
+            function: appMergeModels,
+            arguments: [nameA, nameB, targetName]
+        });
+    }
+
 
     initialise(elem) {
         console.log('Initialising CrystVis app on element ' + elem);
@@ -454,9 +545,27 @@ class AppInterface extends BaseInterface {
             return;
         }
 
-        let cbm = new CallbackMerger(files.length, cback);
         let app = this.viewer;
         let intf = this;
+
+        // Re-evaluated on every load so a prompt (or a failed-merge notice) left
+        // over from an earlier load does not outlive the models it referred to.
+        let cbm = new CallbackMerger(files.length, (aggSuccess) => {
+            const pair = findMergeablePair(app);
+            intf.dispatch({
+                type: 'set',
+                key: 'app_merge_prompt',
+                value: pair ? {
+                    modelA: pair[0],
+                    modelB: pair[1],
+                    mergedName: getMergedModelName(pair[0], pair[1], app._models?.[pair[0]], app._models?.[pair[1]])
+                } : null
+            });
+            if (cback) {
+                cback(aggSuccess);
+            }
+        });
+
         let params = {
             supercell: [3, 3, 3],
             molecularCrystal: this.loadAsMol,
@@ -480,9 +589,7 @@ class AppInterface extends BaseInterface {
                 intf.display(to_display);
             }
 
-            if (cback) {
-                cbm.call(success);
-            }
+            cbm.call(success);
         }
 
         // Function that loads each individual file
@@ -490,7 +597,7 @@ class AppInterface extends BaseInterface {
             
             let reader = new FileReader();
             // Extension and file name
-            let name = f.name.split('.')[0];
+            let name = f.name.replace(/\.[^/.]+$/, '');
             let extension = f.name.split('.').pop();
 
             reader.onload = ((e) => { onLoad(e.target.result, name, extension) });
@@ -621,6 +728,8 @@ class AppInterface extends BaseInterface {
                     // Atom references restored from crystLabel strings
                     dip_central_atom: resolveAtom(atomRefs.dip_central_atom),
                     jc_central_atom:  resolveAtom(atomRefs.jc_central_atom),
+                    eul_atom_A:       resolveAtom(atomRefs.eul_atom_A),
+                    eul_atom_B:       resolveAtom(atomRefs.eul_atom_B),
 
                     // Atom selection restored from crystLabel strings
                     sel_selected_view: selView,
@@ -686,4 +795,4 @@ function useAppInterface() {
 }
 
 export default useAppInterface;
-export { initialAppState };
+export { initialAppState, AppInterface };

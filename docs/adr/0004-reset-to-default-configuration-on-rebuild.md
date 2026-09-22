@@ -1,0 +1,3 @@
+# Reset to the default configuration on rebuild
+
+When the `RelativeTensorOrientation` is rebuilt — on any input change (PAS ordering, active/passive, re-picked tensor) or on session restore — the active configuration snaps back to the default (`configurations[0]`) rather than being carried over. The crystvis-js docs recommend nearest-frame matching to preserve the user's current view, but configuration IDs are instance-local and changing ordering or rotation sense changes what the angles mean, so a persisted index could silently point at a different flip. Reset-to-default is simpler and defensible; nearest-frame matching is deferred until there is a concrete need.

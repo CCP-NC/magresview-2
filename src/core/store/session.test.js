@@ -82,6 +82,8 @@ describe('buildSessionDocument', () => {
         expect(doc.atomRefs).toEqual({
             dip_central_atom: 'H1',
             jc_central_atom: 'C2',
+            eul_atom_A: null,
+            eul_atom_B: null,
         });
     });
 

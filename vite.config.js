@@ -13,7 +13,11 @@ export default defineConfig({
   resolve: {
     // crystcif-parse v0.3.0 uses mathjs v15 (same as top-level); dedupe collapses
     // the two physical copies into one.
-    dedupe: ['mathjs'],
+    dedupe: ['mathjs', 'three', 'lodash'],
+    // When @ccp-nc/crystvis-js is a local `file:` link (dev), preserveSymlinks
+    // makes its nested imports (e.g. load-bmfont's buffer shim) resolve from
+    // MagresView's node_modules. Harmless for a normal published dependency.
+    preserveSymlinks: true,
   },
   build: {
     outDir: './dist',

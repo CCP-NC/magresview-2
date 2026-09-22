@@ -167,3 +167,17 @@ Each migration receives the document at version `n` and must return it at versio
 |---------|--------|
 | 1 | Initial format |
 | 2 | Added `atomRefs` (dip/jc central atom labels) and `selections` (sel_selected crystLabels) top-level fields |
+
+#### Working against a locally-linked crystvis-js
+
+The Euler feature is co-developed with `@ccp-nc/crystvis-js`. During that work the dependency is a local link (`"@ccp-nc/crystvis-js": "file:../crystvis-js"` in `package.json`), and `vite.config.js` sets `resolve.preserveSymlinks: true` and dedupes `three` and `lodash` so the linked source and the app share single copies.
+
+Vite pre-bundles dependencies (including the linked crystvis and its many CommonJS deps such as `mendeleev`, `load-bmfont`, `layout-bmfont-text`) into `node_modules/.vite`. That cache does **not** refresh automatically when the linked source changes, so edits to crystvis appear to have no effect until the cache is rebuilt. Do **not** try to fix this by adding crystvis to `optimizeDeps.exclude`: that stops its CommonJS deps being converted to ESM and the browser then throws `does not provide an export named 'default'`.
+
+The correct workflow after editing crystvis is to force a fresh pre-bundle on restart:
+
+```
+rm -rf node_modules/.vite && npm start -- --force
+```
+
+Everyday MagresView-only development needs neither the flag nor the cache clear. When crystvis is published and pinned to a normal version range, this section no longer applies.
