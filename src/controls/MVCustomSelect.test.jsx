@@ -48,3 +48,29 @@ test('render MVCustomSelect', async () => {
 
     cleanup();
 });
+
+test('disabled option cannot be clicked', async () => {
+    const user = userEvent.setup();
+    let selectedVal = 'initial';
+
+    render(
+        <MVCustomSelect title='cselect-disabled-opt' selected='opt1' onSelect={(v) => { selectedVal = v; }}>
+            <MVCustomSelectOption value='opt1'>Option 1</MVCustomSelectOption>
+            <MVCustomSelectOption value='opt2' disabled={true}>Option 2 (Disabled)</MVCustomSelectOption>
+        </MVCustomSelect>
+    );
+
+    const cselElement = screen.getByTitle('cselect-disabled-opt');
+    const mainElement = cselElement.querySelector('.mv-cselect-main');
+
+    await user.click(mainElement);
+    const ddownElement = document.querySelector('.mv-cselect-ddown-portal');
+    const disabledOpt = ddownElement.querySelectorAll('.mv-cselect-opt')[1];
+
+    expect(disabledOpt).toHaveClass('mv-cselect-opt-disabled');
+
+    fireEvent.click(disabledOpt);
+    expect(selectedVal).toBe('initial');
+
+    cleanup();
+});

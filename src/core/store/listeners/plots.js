@@ -27,6 +27,7 @@ function plotsListener(state) {
     const app = state.app_viewer;
     let view = getSel(app);
     const ref_table = state.ms_references;
+    const grad_table = state.ms_gradients;
     const use_refs = state.plots_use_refs;
     const nmr_mode = use_refs? 'cs' : 'iso';
 
@@ -51,7 +52,7 @@ function plotsListener(state) {
 
     const w = parseFloat(state.plots_peak_width);
     const n = parseInt(state.plots_x_steps);
-    const peaks = getNMRData(view, nmr_mode, 'ms', ref_table)[1];
+    const peaks = getNMRData(view, nmr_mode, 'ms', ref_table, grad_table)[1];
     const NWIDTHS = 5;
 
     // make sure no null values in peaks

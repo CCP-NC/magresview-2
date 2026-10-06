@@ -27,6 +27,7 @@ export function toMrsimulator(sys, options = {}) {
         include_dipolar_angles = null,
         include_jcoupling_angles = null,
         ms_isotropic = false,
+        settings = null,
     } = options;
 
     const useMsAngles = include_ms_angles !== null ? include_ms_angles : include_angles;
@@ -125,5 +126,14 @@ export function toMrsimulator(sys, options = {}) {
         entry => entry.dipolar !== undefined || entry.isotropic_j !== undefined
     );
 
-    return formatMrsimulatorOutput(sys, mrSites, mrCouplings);
+    return formatMrsimulatorOutput(sys, mrSites, mrCouplings, {
+        ...(settings || {}),
+        target: 'mrsimulator',
+        includeMS: include_ms,
+        includeEFG: include_efg,
+        includeD: include_dip,
+        includeJ: include_j,
+        includeAngles: include_angles,
+        msIsotropic: ms_isotropic,
+    });
 }

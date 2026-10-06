@@ -171,4 +171,43 @@ describe('SpinSystem feasibility guard', () => {
         expect(lines).toContain('Job name: quartz');
         expect(lines).toContain('custom_setting: val1 val2');
     });
+
+    it('strictly parses average group patterns and rejects nonsense suffixes', async () => {
+        const { parseAverageGroupPattern, findAverageGroups } = await import('./averageGroups');
+
+        expect(parseAverageGroupPattern('CH3')).toEqual({ target: 'C', count: 3 });
+        expect(parseAverageGroupPattern('NH2')).toEqual({ target: 'N', count: 2 });
+        expect(parseAverageGroupPattern('SiH3')).toEqual({ target: 'Si', count: 3 });
+        expect(parseAverageGroupPattern('C1H3')).toEqual({ target: 'C1', count: 3 });
+
+        // Trailing garbage must return null
+        expect(parseAverageGroupPattern('CH3dffdfsdfs')).toBeNull();
+        expect(parseAverageGroupPattern('nonsense')).toBeNull();
+        expect(parseAverageGroupPattern('CH')).toBeNull();
+        expect(parseAverageGroupPattern('')).toBeNull();
+        expect(parseAverageGroupPattern(null)).toBeNull();
+
+        // findAverageGroups ignores invalid patterns
+        const mockH = [
+            { index: 1, element: 'H', xyz: [0, 1, 0] },
+            { index: 2, element: 'H', xyz: [1, 0, 0] },
+            { index: 3, element: 'H', xyz: [0, 0, 1] },
+        ];
+        const mockC = {
+            index: 0,
+            element: 'C',
+            xyz: [0, 0, 0],
+            bondedAtoms: mockH,
+        };
+        const atoms = [mockC, ...mockH];
+
+        // Valid pattern matches
+        const validGroups = findAverageGroups(atoms, 'CH3');
+        expect(validGroups.length).toBe(1);
+        expect(validGroups[0].pattern).toBe('CH3');
+
+        // Invalid pattern matching nonsense does not match
+        const invalidGroups = findAverageGroups(atoms, 'CH3dffdfsdfs');
+        expect(invalidGroups.length).toBe(0);
+    });
 });

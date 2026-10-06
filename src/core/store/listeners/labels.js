@@ -10,6 +10,7 @@ function makeLabelListener(name, shiftfunc) {
     
     const pre_view = addPrefix(name, 'view');
     const pre_references = addPrefix(name, 'references');
+    const pre_gradients = addPrefix(name, 'gradients');
     const pre_type = addPrefix(name, 'labels_type');
 
     function listener(state) {
@@ -17,6 +18,7 @@ function makeLabelListener(name, shiftfunc) {
         let app = state.app_viewer;
         let current_view = state[pre_view];
         let ref_table = state[pre_references];
+        let grad_table = state[pre_gradients];
 
         
         // color from theme
@@ -40,7 +42,7 @@ function makeLabelListener(name, shiftfunc) {
 
             if (name !== 'sel_sites') {
                 // Get the data
-                let [units, values] = getNMRData(next_view, mode, name, ref_table);
+                let [units, values] = getNMRData(next_view, mode, name, ref_table, grad_table);
                 // get precision depending on name
                 let precision = state[addPrefix(name, 'precision')];
                 

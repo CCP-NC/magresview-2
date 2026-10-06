@@ -72,9 +72,10 @@ export function buildSpinSystem(view, options = {}) {
     for (const group of avgGroupMatches) {
         group.forEach(a => groupedAtomIndices.add(a.index !== undefined ? a.index : a));
 
+        // The consequences of averaging a group are a settings-level judgement,
+        // reported by getSimplificationWarnings rather than recorded here.
         const labels = group.map(a => a.crystLabel || a.label || `${a.element}${a.index + 1}`);
         const groupLabel = labels.join(',');
-        warnings.push(`Intra-group couplings within ${groupLabel} were dropped.`);
 
         // Centroid position
         const sumPos = [0, 0, 0];

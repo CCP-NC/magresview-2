@@ -3,6 +3,27 @@ import { computeMinimumImageDisplacement, dipolarTensorFromDisplacement } from '
 import { Coupling } from './coupling';
 
 /**
+ * Parse and validate a functional group pattern string like 'CH3' or 'NH2'.
+ *
+ * Valid pattern: element symbol (with optional site digits, e.g. 'C1') followed
+ * strictly by 'H' and an integer count of hydrogens (>= 1).
+ * Strings with trailing nonsense (e.g. 'CH3dffdfsdfs') return null.
+ *
+ * @param  {string} pattern Pattern to parse
+ * @return {{target: string, count: number}|null} Parsed target element/label and H count, or null
+ */
+export function parseAverageGroupPattern(pattern) {
+    if (!pattern || typeof pattern !== 'string') return null;
+    const trimmed = pattern.trim();
+    const match = trimmed.match(/^([A-Z][a-z]?\d*)H([1-9]\d*)$/);
+    if (!match) return null;
+    return {
+        target: match[1],
+        count: parseInt(match[2], 10),
+    };
+}
+
+/**
  * Find functional group patterns like 'CH3' or 'NH2' in a model or list of atoms.
  *
  * @param  {Array<AtomImage>} atoms List of atoms to search
@@ -18,15 +39,17 @@ export function findAverageGroups(atoms, patterns) {
     const groups = [];
 
     for (const pat of patternList) {
-        if (!pat.includes('H')) continue;
-        const parts = pat.split('H');
-        const X = parts[0];
-        const n = parseInt(parts[1], 10);
-        if (!X || isNaN(n)) continue;
+        const parsed = parseAverageGroupPattern(pat);
+        if (!parsed) continue;
 
-        // Find candidate central atoms with element X
-        // We look at all atoms in the structure / selection that have bondedAtoms
-        const centralAtoms = atoms.filter(a => a.element === X);
+        const { target, count: n } = parsed;
+
+        // Find candidate central atoms with element or crystallographic label matching target
+        const centralAtoms = atoms.filter(a => {
+            if (a.element === target) return true;
+            const lbl = a.crystLabel || a.label;
+            return Boolean(lbl && lbl === target);
+        });
 
         for (const center of centralAtoms) {
             const bonded = center.bondedAtoms || [];
@@ -38,7 +61,7 @@ export function findAverageGroups(atoms, patterns) {
                     // Avoid duplicate groups
                     const indices = groupInSet.map(a => a.index).sort().join(',');
                     if (!groups.some(g => g.map(a => a.index).sort().join(',') === indices)) {
-                        groupInSet.pattern = pat;
+                        groupInSet.pattern = pat.trim();
                         groups.push(groupInSet);
                     }
                 }

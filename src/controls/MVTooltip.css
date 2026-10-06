@@ -6,6 +6,58 @@
   width: 100%;
 }
 
+/*
+ * The trigger sits inside whatever label it annotates, so it has to be inline
+ * or it drops the icon onto a line of its own.
+ */
+.field-info {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
 .tooltip-container {
     z-index: 10000;
+    max-width: 28em;
+}
+
+/*
+ * react-popper-tooltip renders in place rather than through a portal, so the
+ * tooltip inherits from its trigger's ancestors. Section labels are uppercase
+ * and letter-spaced, which turned every tooltip into a wall of capitals.
+ */
+.tooltip-container,
+.tooltip-container * {
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: normal;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    text-align: left;
+}
+
+/*
+ * The sidebar sets `p { display: flex; flex-direction: column }`, which the
+ * tooltip inherits by sitting inside it. That turns every inline child into a
+ * flex item on its own row, so "CH<sub>3</sub>" came out as three lines.
+ */
+.tooltip-container p {
+    display: block;
+    margin: 0 0 0.6em;
+}
+
+.tooltip-container p:last-of-type {
+    margin-bottom: 0;
+}
+
+.tooltip-container b,
+.tooltip-container strong {
+    font-weight: 600;
+}
+
+/* The blanket font-size above would otherwise flatten these to body size. */
+.tooltip-container sub,
+.tooltip-container sup {
+    font-size: 0.75em;
 }

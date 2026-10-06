@@ -1,5 +1,23 @@
 import _ from 'lodash';
 import { dipolarCoupling, jCoupling } from '../../utils';
+import { DEFAULT_GRADIENT } from '../nmr/constants';
+
+/**
+ * Referencing gradient for an element: the slope of shift against shielding in
+ * delta = reference + gradient * sigma, so d(delta)/d(sigma).
+ *
+ * Conventionally -1, which is what you get when no gradient is set. The table
+ * holds raw text from the input field, so half-typed values like "-" fall back
+ * to the default rather than poisoning the arithmetic with NaN.
+ */
+function referencingGradient(gradtable, element) {
+    const raw = gradtable?.[element];
+    // Number('') and Number(null) are both 0, which would silently flatten
+    // every shift to its reference. Unset has to be caught before coercion.
+    if (raw === undefined || raw === null || raw === '') return DEFAULT_GRADIENT;
+    const g = Number(raw);
+    return Number.isFinite(g) ? g : DEFAULT_GRADIENT;
+}
 
 function makeSelector(prefix, extras=[]) {
     // Creates and returns a selector function for a given prefix
@@ -30,7 +48,7 @@ function getSel(app) {
     }
 }
 
-function getNMRData(view, datatype, tenstype='ms', reftable=null) {
+function getNMRData(view, datatype, tenstype='ms', reftable=null, gradtable=null) {
 
     let units = '';
     let tens_units = {
@@ -72,7 +90,7 @@ function getNMRData(view, datatype, tenstype='ms', reftable=null) {
                 let cs = null;
                 // only return a value if the reference is defined correctly
                 if (ref !== null && ref !== undefined && ref !== '') {
-                    cs = ref - T.isotropy;
+                    cs = Number(ref) + referencingGradient(gradtable, el) * T.isotropy;
                 }
                 return cs;
             });
@@ -210,6 +228,7 @@ export {
     addPrefix,
     getSel,
     getNMRData,
+    referencingGradient,
     formatNumber,
     getLinkLabel,
     BaseInterface,

@@ -1,5 +1,12 @@
-import { MAGRESVIEW_VERSION, MAGRESVIEW_GIT_COMMIT, MAGRESVIEW_GIT_TAG } from './constants';
+import { MAGRESVIEW_VERSION, MAGRESVIEW_GIT_COMMIT, MAGRESVIEW_GIT_TAG, DEFAULT_GRADIENT } from './constants';
 import { getCalculationMetadata, getCalculationRaw } from '../../utils/utils-magres';
+import { formatExportSettings, getSimplificationWarnings } from './warnings';
+
+/**
+ * Largest number of spins we will spell out in a summed operator before
+ * giving up and telling the user to write it themselves.
+ */
+const MAX_TEMPLATE_OPERATOR_TERMS = 16;
 
 function getVersionLabel(meta) {
     const v = meta?.appVersion || MAGRESVIEW_VERSION;
@@ -181,13 +188,141 @@ export function buildSpinSystemMetadata({
 }
 
 /**
+ * Build the start/detect operator strings for the template.
+ *
+ * SIMPSON's `I<n>x` addresses spin n only, so a hardcoded `I1x` detects
+ * whichever nucleus happened to come first in the selection — not the one the
+ * user chose to observe. Sum over every spin carrying the observed isotope
+ * instead.
+ *
+ * @param  {Array}  sites           Spin system sites, in `nuclei` order
+ * @param  {string} observedNucleus Isotope string, e.g. '13C'
+ * @return {{start: string, detect: string, isotope: string, note: string|null}}
+ */
+export function buildTemplateOperators(sites = [], observedNucleus = '') {
+    if (sites.length === 0) {
+        return { start: 'I1x', detect: 'I1p', isotope: '', note: null };
+    }
+
+    const isotope = observedNucleus && sites.some(s => s.isotope === observedNucleus)
+        ? observedNucleus
+        : sites[0].isotope;
+
+    const indices = sites
+        .map((s, i) => (s.isotope === isotope ? i + 1 : null))
+        .filter(i => i !== null);
+
+    if (indices.length > MAX_TEMPLATE_OPERATOR_TERMS) {
+        return {
+            start: `I${indices[0]}x`,
+            detect: `I${indices[0]}p`,
+            isotope,
+            note: `${indices.length} spins carry ${isotope}; the operators above address only the `
+                + 'first. Sum over all of them, or observe a smaller system.',
+        };
+    }
+
+    // A half-integer quadrupolar nucleus is normally observed on its central
+    // transition, which is a different operator, not a different scaling.
+    const observedSites = indices.map(i => sites[i - 1]);
+    const halfIntegerQuad = observedSites.some(
+        s => s.spin > 0.5 && Math.abs((s.spin * 2) % 2) === 1
+    );
+
+    return {
+        start: indices.map(i => `I${i}x`).join('+'),
+        detect: indices.map(i => `I${i}p`).join('+'),
+        isotope,
+        note: halfIntegerQuad
+            ? `${isotope} is a half-integer quadrupolar nucleus. To observe the central transition `
+                + `only, use ${indices.map(i => `I${i}c`).join('+')} in place of the operators above.`
+            : null,
+    };
+}
+
+/**
+ * Format the commented, runnable SIMPSON driver template.
+ *
+ * Every value here is a starting point rather than a recommendation: MagresView
+ * has no concept of an experiment, so field, MAS rate, spectral width and pulse
+ * sequence are all the user's to choose.
+ *
+ * @param  {string}     filename Output filename being created
+ * @param  {SpinSystem} sys      SpinSystem model
+ * @param  {object}     settings Export settings
+ * @return {string[]}            Comment lines
+ */
+export function formatSimpsonTemplate(filename = 'system.spinsys', sys = null, settings = {}) {
+    const sites = sys?.sites || [];
+    const ops = buildTemplateOperators(sites, settings.observedNucleus);
+
+    // Annotations go on their own line. SIMPSON's `par` block is not parsed as
+    // plain Tcl and chokes on a trailing `;#` comment after a value.
+    const lines = [
+        '# ------------------------------------------------------------------------------',
+        '# Minimal SIMPSON driver. This is a starting point, not a validated experiment:',
+        '# the field, MAS rate, spectral width, powder set and pulse sequence below are',
+        '# placeholders and must be chosen for your system.',
+        '#',
+        `#   source ${filename}`,
+        '#',
+        '#   par {',
+        '#       proton_frequency 400e6',
+        '#       # static; set the MAS rate in Hz to spin the sample',
+        '#       spin_rate        0',
+        '#       rotor_angle      54.7356',
+        ...(ops.isotope ? [`#       # observing ${ops.isotope}`] : []),
+        `#       start_operator   ${ops.start}`,
+        `#       detect_operator  ${ops.detect}`,
+        '#       np               8192',
+        '#       sw               500000',
+        '#       # powder average; use alpha0beta0 to check tensor orientations',
+        '#       crystal_file     rep100',
+        '#       verbose          0',
+        '#   }',
+        '#   proc pulseq {} {',
+        '#       global par',
+        '#       delay [expr 1e6/$par(sw)]',
+        '#       store 1',
+        '#       acq $par(np) 1',
+        '#   }',
+        '#   proc main {} {',
+        '#       global par',
+        '#       set f [fsimpson]',
+        '#       fft $f',
+        '#       fsave $f spectrum.dat -xreim',
+        '#   }',
+    ];
+
+    if (ops.note) {
+        lines.push('#');
+        for (const line of wrapComment(`Note: ${ops.note}`)) {
+            lines.push(`# ${line}`);
+        }
+    }
+
+    lines.push(
+        '#',
+        '# Guidance on setting up SIMPSON simulations:',
+        '#   Bak, Rasmussen & Nielsen, J. Magn. Reson. 147, 296 (2000). doi:10.1006/jmre.2000.2179',
+        '#   Tosner et al., J. Magn. Reson. 246, 79 (2014). doi:10.1016/j.jmr.2014.07.002',
+        '#   Juhl, Tosner & Vosegaard, Annu. Rep. NMR Spectrosc. 100, 1 (2020).',
+        '# Tensor, Euler angle and referencing conventions used to write this file are',
+        "# documented in Soprano's docs/simpson-conventions.md."
+    );
+
+    return lines;
+}
+
+/**
  * Format a human-readable header block for SIMPSON spinsys files.
  *
  * @param  {string}     filename Output filename being created
  * @param  {SpinSystem} sys      SpinSystem model
+ * @param  {object}     settings Export settings, recorded verbatim in the header
  * @return {string}              Comment header text block
  */
-export function formatSimpsonHeader(filename = 'system.spinsys', sys = null) {
+export function formatSimpsonHeader(filename = 'system.spinsys', sys = null, settings = {}) {
     const meta = sys?.metadata || {};
     const lines = [
         '# ==============================================================================',
@@ -251,9 +386,13 @@ export function formatSimpsonHeader(filename = 'system.spinsys', sys = null) {
         ([, val]) => val !== null && val !== undefined && val !== ''
     );
     if (refEntries.length > 0) {
-        lines.push('#', '# Shielding references:');
+        lines.push(
+            '#',
+            '# Shielding references, applied as delta = reference + gradient * sigma',
+            '# (gradient is d(shift)/d(shielding), conventionally -1):'
+        );
         for (const [el, refVal] of refEntries) {
-            const grad = meta.gradients?.[el] !== undefined ? meta.gradients[el] : -1.0;
+            const grad = meta.gradients?.[el] !== undefined ? meta.gradients[el] : DEFAULT_GRADIENT;
             lines.push(`#   ${el}: reference = ${refVal} ppm, gradient = ${grad}`);
         }
     }
@@ -266,38 +405,51 @@ export function formatSimpsonHeader(filename = 'system.spinsys', sys = null) {
         );
     }
 
-    lines.push(
-        '#',
-        '# Minimal runnable SIMPSON .in template to source and simulate this system:',
-        '#',
-        `#   source ${filename}`,
-        '#',
-        '#   par {',
-        '#       proton_frequency 400e6',
-        '#       start_operator   I1x',
-        '#       detect_operator  I1p',
-        '#       np               8192',
-        '#       sw               500000',
-        '#       crystal_file     rep64',
-        '#       verbose          0',
-        '#   }',
-        '#   proc pulseq {} {',
-        '#       global par',
-        '#       delay [expr 1e6/$par(sw)]',
-        '#       store 1',
-        '#       acq $par(np) 1',
-        '#   }',
-        '#   proc main {} {',
-        '#       global par',
-        '#       set f [fsimpson]',
-        '#       fft $f',
-        '#       fsave $f spectrum.dat -xreim',
-        '#   }',
-        '# ==============================================================================',
-        ''
-    );
+    // Record what was asked for, so a file with interactions silently omitted is
+    // distinguishable from one that genuinely has none.
+    lines.push('#', '# Export settings:');
+    for (const s of formatExportSettings(settings)) {
+        lines.push(`#   ${s}`);
+    }
+
+    const allWarnings = [
+        ...getSimplificationWarnings(sys, settings),
+        ...(sys?.warnings || []).map(text => ({ level: 'notice', text })),
+    ];
+    if (allWarnings.length > 0) {
+        lines.push('#', '# WARNINGS:');
+        for (const w of allWarnings) {
+            const prefix = w.level === 'warning' ? 'WARNING' : 'Note';
+            for (const line of wrapComment(`${prefix}: ${w.text}`)) {
+                lines.push(`#   ${line}`);
+            }
+        }
+    }
+
+    lines.push('#');
+    lines.push(...formatSimpsonTemplate(filename, sys, settings));
+    lines.push('# ==============================================================================', '');
 
     return lines.join('\n');
+}
+
+/**
+ * Soft-wrap a long warning so the comment block stays readable in a terminal.
+ */
+function wrapComment(text, width = 74) {
+    const words = text.split(' ');
+    const out = [];
+    let line = '';
+    for (const w of words) {
+        if (line && (line + ' ' + w).length > width) {
+            out.push(line);
+            line = '      ' + w;
+        } else {
+            line = line ? `${line} ${w}` : w;
+        }
+    }
+    if (line) out.push(line);
+    return out;
 }
 
 /**
@@ -349,9 +501,10 @@ export function formatTableComments(sys, title, opts = {}) {
  * @param  {SpinSystem} sys         SpinSystem model
  * @param  {Array}      mrSites     List of mrsimulator site objects
  * @param  {Array}      mrCouplings List of mrsimulator coupling objects
+ * @param  {object}     settings    Export settings, recorded alongside the data
  * @return {object}                 mrsimulator dictionary
  */
-export function formatMrsimulatorOutput(sys, mrSites, mrCouplings) {
+export function formatMrsimulatorOutput(sys, mrSites, mrCouplings, settings = {}) {
     const meta = sys?.metadata || {};
     const hasMeta = meta && Object.keys(meta).length > 0;
 
@@ -381,7 +534,14 @@ export function formatMrsimulatorOutput(sys, mrSites, mrCouplings) {
         }
         result.description = descParts.join('. ') + '.';
 
+        const warnings = [
+            ...getSimplificationWarnings(sys, settings),
+            ...(sys?.warnings || []).map(text => ({ level: 'notice', text })),
+        ];
+
         result.metadata = {
+            export_settings: formatExportSettings(settings),
+            warnings: warnings.map(w => `${w.level === 'warning' ? 'WARNING' : 'Note'}: ${w.text}`),
             app: meta.appName || 'MagresView 2',
             version: meta.appVersion || MAGRESVIEW_VERSION,
             git_commit: meta.gitCommit || MAGRESVIEW_GIT_COMMIT || null,

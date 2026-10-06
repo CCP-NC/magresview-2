@@ -91,3 +91,9 @@
 .mv-cselect-disabled .mv-cselect-main-caret {
   color: var(--mid-color-1);
 }
+
+.mv-cselect-opt-disabled {
+  opacity: 0.35;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}

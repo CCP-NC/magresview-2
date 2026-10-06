@@ -14,6 +14,7 @@ import { mergeMagresText } from '../../utils';
 
 const FIXTURES_DIR = path.join(__dirname, '__fixtures__');
 const corpus = JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, 'synthetic_corpus.json'), 'utf-8'));
+const fixtures = corpus.fixtures;
 
 /**
  * Parse a SIMPSON .spinsys string into structured data.
@@ -177,7 +178,6 @@ function assertClose(actual, expected, relTol = 1e-6, absTol = 1e-5, msg = '') {
 }
 
 describe('Soprano SIMPSON validation corpus', () => {
-    const fixtures = corpus.fixtures;
 
     it('validates Test 01: Isotropic chemical shift', () => {
         const ref = parseSpinsys(fixtures.test_01.spinsys);
@@ -351,6 +351,136 @@ describe('Soprano SIMPSON validation corpus', () => {
         expect(actual.cross_qd).toEqual([[2, 1]]);
         expect(actual.cross_qd).toEqual(ref.cross_qd);
     });
+});
+
+describe('SIMPSON cross-term gating', () => {
+
+    // A 13C-14N pair: the nitrogen is quadrupolar, so this is a system that
+    // would emit cross-terms if asked.
+    function crossTermSystem() {
+        const { efg_n, D_matrix } = fixtures.test_08.input;
+        const s1 = new Site({
+            index: 0,
+            isotope: '13C',
+            element: 'C',
+            spin: 0.5,
+            ms: new TensorData([[10, 0, 0], [0, 20, 0], [0, 0, 30]]),
+            reference: 180,
+        });
+        const s2 = new Site({
+            index: 1,
+            isotope: '14N',
+            element: 'N',
+            spin: 1.0,
+            Q: 0.02044,
+            efg: new TensorData(efg_n),
+            ms: new TensorData([[5, 0, 0], [0, 15, 0], [0, 0, 25]]),
+            reference: 100,
+        });
+        const dip = new Coupling({
+            type: 'D',
+            site_i: 0,
+            site_j: 1,
+            tensor: new TensorData(D_matrix),
+            coupling_constant: -660.2,
+            anisotropy: 3 * -660.2,
+        });
+        return new SpinSystem({ sites: [s1, s2], couplings: [dip] });
+    }
+
+    it('emits no cross-term that outlives its quadrupole line', () => {
+        // Regression: an independent cross-terms checkbox let the user untick
+        // EFG and keep cross-terms, producing a file SIMPSON refuses to load
+        // with "mixing - nucleus 1 has no defined quadrupole".
+        const out = toSimpson(crossTermSystem(), {
+            include_efg: false,
+            include_header: false,
+        });
+
+        expect(out).not.toContain('quadrupole_x_dipole');
+        expect(out).not.toContain('quadrupole_x_shift');
+    });
+
+    it('withholds cross-terms from a first-order quadrupole', () => {
+        // They are second-order objects. SIMPSON 6.0.1 applies them anyway and
+        // returns a different, inconsistently truncated answer.
+        const out = toSimpson(crossTermSystem(), { q_order: 1, include_header: false });
+
+        expect(out).toContain('quadrupole 2 1');
+        expect(out).not.toContain('quadrupole_x_');
+    });
+
+    it('emits cross-terms at second order', () => {
+        const out = toSimpson(crossTermSystem(), { q_order: 2, include_header: false });
+
+        expect(out).toContain('quadrupole_x_dipole 2 1');
+        expect(out).toContain('quadrupole_x_shift 2');
+    });
+
+    it('never names a nucleus in a cross-term that has no quadrupole line', () => {
+        for (const q_order of [0, 1, 2]) {
+            for (const include_efg of [true, false]) {
+                const out = toSimpson(crossTermSystem(), { q_order, include_efg, include_header: false });
+                const quadrupoles = new Set(
+                    [...out.matchAll(/^quadrupole (\d+) /gm)].map(m => m[1])
+                );
+                for (const m of out.matchAll(/^quadrupole_x_(?:shift|dipole) (\d+)/gm)) {
+                    expect(quadrupoles.has(m[1])).toBe(true);
+                }
+            }
+        }
+    });
+});
+
+describe('SIMPSON driver template', () => {
+
+    function headerFor(sites, observedNucleus) {
+        return toSimpson(new SpinSystem({ sites }), {
+            observed_nucleus: observedNucleus,
+            filename: 'test.spinsys',
+            settings: { observedNucleus },
+        });
+    }
+
+    const H = i => new Site({ index: i, isotope: '1H', element: 'H' });
+    const C = i => new Site({ index: i, isotope: '13C', element: 'C' });
+
+    it('names a powder set that exists in SIMPSON 6.x', () => {
+        // 'rep64' is not a SIMPSON crystal file. The template used to ship it,
+        // so the "minimal runnable" example aborted immediately.
+        const out = headerFor([H(0)], '1H');
+
+        expect(out).toContain('crystal_file     rep100');
+        expect(out).not.toContain('rep64');
+    });
+
+    it('detects the observed nucleus rather than spin 1', () => {
+        const out = headerFor([H(0), H(1), H(2), C(3)], '13C');
+
+        expect(out).toContain('start_operator   I4x');
+        expect(out).toContain('detect_operator  I4p');
+    });
+
+    it('keeps annotations off the parameter lines', () => {
+        // SIMPSON's par block is not plain Tcl: a trailing `;#` comment after a
+        // value is a parse error, so annotations must be on their own lines.
+        const out = headerFor([H(0), C(1)], '13C');
+        const par = out.slice(out.indexOf('#   par {'), out.indexOf('#   proc pulseq'));
+
+        expect(par).not.toMatch(/;#/);
+        expect(par).toContain('#       # observing 13C');
+    });
+
+    it('points at guidance rather than implying the parameters are suitable', () => {
+        const out = headerFor([H(0)], '1H');
+
+        expect(out).toContain('not a validated experiment');
+        expect(out).toContain('Guidance on setting up SIMPSON simulations');
+        expect(out).toContain('doi:10.1006/jmre.2000.2179');
+    });
+});
+
+describe('Soprano SIMPSON validation corpus (structures)', () => {
 
     it('validates Quartz: periodic structure, 17O, minimum-image dipolar couplings', () => {
         const ref = parseSpinsys(fixtures.quartz_3si.spinsys);
@@ -482,14 +612,23 @@ describe('Soprano SIMPSON validation corpus', () => {
         expect(output).toContain('# Merging and averaging:');
         expect(output).toContain('Combined average group \'CH3\'');
         expect(output).toContain('Intra-group couplings were dropped.');
-        // Referencing
-        expect(output).toContain('# Shielding references:');
+        // Referencing, with the direction of the gradient spelled out
+        expect(output).toContain('# Shielding references, applied as delta = reference + gradient * sigma');
+        expect(output).toContain('gradient is d(shift)/d(shielding)');
         expect(output).toContain('H: reference = 30 ppm, gradient = -1');
         // Spin system dimension
         expect(output).toContain('# Spin system dimension:');
+        // Settings record
+        expect(output).toContain('# Export settings:');
+        expect(output).toContain('Dipolar couplings: yes');
+        // Warnings about the averaged methyl
+        expect(output).toContain('# WARNINGS:');
+        expect(output).toContain('averaged to 1 spin');
         // Template
-        expect(output).toContain('# Minimal runnable SIMPSON .in template');
+        expect(output).toContain('# Minimal SIMPSON driver');
         expect(output).toContain('source ethanol.spinsys');
+        expect(output).toContain('crystal_file     rep100');
+        expect(output).not.toContain('rep64');
         // Actual spinsys block
         expect(output).toContain('spinsys {');
     });
