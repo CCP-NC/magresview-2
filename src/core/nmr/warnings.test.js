@@ -223,3 +223,39 @@ describe('buildTemplateOperators', () => {
         expect(ops.note).toMatch(/20 spins carry 1H/);
     });
 });
+
+describe('mrsimulator weak-coupling warning', () => {
+    const carbon = index => new Site({ index, isotope: '13C', element: 'C', label: `C${index + 1}` });
+    const coupling = (type, i, j) => new Coupling({ type, site_i: i, site_j: j, coupling_constant: -1000 });
+
+    it('warns when couplings between like nuclei go to mrsimulator', () => {
+        const sys = new SpinSystem({ sites: [proton(0), proton(1)], couplings: [coupling('D', 0, 1)] });
+        const w = getSimplificationWarnings(sys, { target: 'mrsimulator', includeD: true });
+
+        expect(w.some(x => x.level === 'warning' && /weak-coupling limit/.test(x.text))).toBe(true);
+        expect(textOf(w)).toMatch(/1H/);
+    });
+
+    it('is quiet for heteronuclear couplings, which are fine in the weak-coupling limit', () => {
+        const sys = new SpinSystem({ sites: [carbon(0), proton(1)], couplings: [coupling('D', 0, 1)] });
+
+        expect(textOf(getSimplificationWarnings(sys, { target: 'mrsimulator', includeD: true })))
+            .not.toMatch(/weak-coupling/);
+    });
+
+    it('is quiet for the SIMPSON target, which does the full spin dynamics', () => {
+        const sys = new SpinSystem({ sites: [proton(0), proton(1)], couplings: [coupling('D', 0, 1)] });
+
+        expect(textOf(getSimplificationWarnings(sys, { target: 'simpson', includeD: true })))
+            .not.toMatch(/weak-coupling/);
+    });
+
+    it('only counts coupling types that are actually written', () => {
+        const sys = new SpinSystem({ sites: [proton(0), proton(1)], couplings: [coupling('J', 0, 1)] });
+
+        expect(textOf(getSimplificationWarnings(sys, { target: 'mrsimulator', includeD: true, includeJ: false })))
+            .not.toMatch(/weak-coupling/);
+        expect(textOf(getSimplificationWarnings(sys, { target: 'mrsimulator', includeD: false, includeJ: true })))
+            .toMatch(/weak-coupling/);
+    });
+});

@@ -155,6 +155,22 @@ export function getSimplificationWarnings(sys, settings = {}) {
         );
     }
 
+    if (s.target === 'mrsimulator' && coupled) {
+        const likeNuclei = (sys?.couplings || []).filter(c =>
+            ((c.type === 'D' && s.includeD) || (c.type === 'J' && s.includeJ))
+            && sites[c.site_i]?.isotope === sites[c.site_j]?.isotope
+        );
+        if (likeNuclei.length > 0) {
+            const isotopes = [...new Set(likeNuclei.map(c => sites[c.site_i].isotope))].join(', ');
+            warn(
+                `${likeNuclei.length} coupling(s) between like nuclei (${isotopes}) written for mrsimulator, `
+                + 'which treats couplings in the weak-coupling limit. Spins with similar shifts are '
+                + 'strongly coupled and will get wrong line positions and intensities. Use the SIMPSON '
+                + 'target for these.'
+            );
+        }
+    }
+
     if (coupled && s.includeD && s.dipolarHomonuclear) {
         note(
             'Only homonuclear dipolar couplings were written. Heteronuclear couplings present in '
