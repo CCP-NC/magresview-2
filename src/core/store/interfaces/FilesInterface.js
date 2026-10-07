@@ -8,7 +8,7 @@
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import { makeSelector, BaseInterface, referencingGradient } from '../utils';
 import {
-    Site,
+    isolatedSiteSystem,
     buildSpinSystem,
     generateReportTable,
     toSimpson,
@@ -487,7 +487,8 @@ class FilesInterface extends BaseInterface {
     /**
      * Build a SpinSystem from a view. Shared by spin system export, the split
      * archive and the report tables, which differ only in which couplings they
-     * ask for.
+     * ask for. Tables and the split archive pass 'collapse': they carry no
+     * couplings, so one row or file per group is exact.
      */
     _buildSystem(view, { includeD, includeJ, averageGroupMode = this.averageGroupMode }) {
         const app = this.state.app_viewer;
@@ -687,6 +688,7 @@ class FilesInterface extends BaseInterface {
             const tableSys = this._buildSystem(view, {
                 includeD: this.fileType === 'dip',
                 includeJ: this.fileType === 'isc',
+                averageGroupMode: 'collapse',
             });
 
             const multiplicity = view?.unique_labels_multiplicity || {};
@@ -744,7 +746,7 @@ class FilesInterface extends BaseInterface {
 
         // Every file in the archive holds a single site, and toSimpsonSplitZip
         // drops couplings anyway, so never pay for the pairwise loop here.
-        const sys = this._buildSystem(app.selected, { includeD: false, includeJ: false });
+        const sys = this._buildSystem(app.selected, { includeD: false, includeJ: false, averageGroupMode: 'collapse' });
 
         const mname = app.modelName || 'model';
         return toSimpsonSplitZip(sys, mname, {
@@ -782,6 +784,7 @@ class FilesInterface extends BaseInterface {
             const tableSys = this._buildSystem(view, {
                 includeD: this.fileType === 'dip',
                 includeJ: this.fileType === 'isc',
+                averageGroupMode: 'collapse',
             });
 
             return generateReportTable(tableSys, this.fileType, {
@@ -790,6 +793,7 @@ class FilesInterface extends BaseInterface {
                 format: this.fileFormat,
                 includeEuler: this.includeEuler,
                 mergeByLabel: this.mergeByLabel,
+                multiplicity: view?.unique_labels_multiplicity || {},
             });
         }
 
@@ -820,7 +824,7 @@ class FilesInterface extends BaseInterface {
 
         // Per-site SIMPSON preview: generate the .spinsys text for each site
         if (this.isZipExport) {
-            const sys = this._buildSystem(app.selected, { includeD: false, includeJ: false });
+            const sys = this._buildSystem(app.selected, { includeD: false, includeJ: false, averageGroupMode: 'collapse' });
             if (!sys || !sys.canExport) return '# Cannot generate spin system.';
 
             const mname = app.modelName || 'model';
@@ -841,32 +845,7 @@ class FilesInterface extends BaseInterface {
             const files = [];
             for (let i = 0; i < sites.length; i++) {
                 const origSite = sites[i];
-                const isolatedSite = new Site({ ...origSite, index: 0 });
-                const singleSys = {
-                    sites: [isolatedSite],
-                    couplings: [],
-                    warnings: [],
-                    missingReferences: [],
-                    canExport: true,
-                    metadata: {
-                        ...sys.metadata,
-                        exportedIndices: origSite.atomIndices || [],
-                        sites: [{
-                            siteIndex: 0,
-                            label: origSite.label,
-                            isotope: origSite.isotope,
-                            element: origSite.element,
-                            atomIndices: origSite.atomIndices || [],
-                            position: origSite.position,
-                            isAverageGroup: Boolean(origSite.isAverageGroup),
-                            averageGroupPattern: origSite.averageGroupPattern || null,
-                            reference: origSite.reference,
-                            gradient: origSite.gradient,
-                        }],
-                    },
-                    dimension: 2 * (isolatedSite.spin ?? 0.5) + 1,
-                    spinHalfEquivalent: Math.log2(2 * (isolatedSite.spin ?? 0.5) + 1),
-                };
+                const singleSys = isolatedSiteSystem(sys, origSite);
 
                 const safeLabel = origSite.label.replace(/[^a-zA-Z0-9_-]/g, '_');
                 const filename = `${mname}_${safeLabel}.spinsys`;

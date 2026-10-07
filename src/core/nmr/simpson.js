@@ -221,6 +221,51 @@ export function toSimpson(sys, options = {}) {
 }
 
 /**
+ * Wrap one site as a stand-alone one-site spin system, for the per-site split export.
+ * An average group arrives already collapsed to one site, so it gets one file whose
+ * metadata states its multiplicity.
+ *
+ * @param  {SpinSystem} sys      The parent SpinSystem (supplies the shared metadata)
+ * @param  {Site}       origSite The site to isolate
+ * @return {object}              SpinSystem-like object with a single site
+ */
+export function isolatedSiteSystem(sys, origSite) {
+    const isolatedSite = new Site({
+        ...origSite,
+        index: 0,
+    });
+
+    return {
+        sites: [isolatedSite],
+        couplings: [],
+        warnings: [],
+        missingReferences: [],
+        canExport: true,
+        metadata: {
+            ...sys.metadata,
+            exportedIndices: origSite.atomIndices || [],
+            sites: [
+                {
+                    siteIndex: 0,
+                    label: origSite.label,
+                    isotope: origSite.isotope,
+                    element: origSite.element,
+                    atomIndices: origSite.atomIndices || [],
+                    position: origSite.position,
+                    isAverageGroup: Boolean(origSite.isAverageGroup),
+                    averageGroupPattern: origSite.averageGroupPattern || null,
+                    averageGroupSize: origSite.averageGroupSize ?? 1,
+                    reference: origSite.reference,
+                    gradient: origSite.gradient,
+                }
+            ],
+        },
+        dimension: 2 * (isolatedSite.spin ?? 0.5) + 1,
+        spinHalfEquivalent: Math.log2(2 * (isolatedSite.spin ?? 0.5) + 1),
+    };
+}
+
+/**
  * Split export: generate a ZIP file containing one .spinsys file per site.
  *
  * @param  {SpinSystem} sys      The SpinSystem model
@@ -236,41 +281,8 @@ export function toSimpsonSplitZip(sys, modelName = 'model', options = {}) {
 
     const zipFiles = {};
 
-    for (let i = 0; i < sys.sites.length; i++) {
-        const origSite = sys.sites[i];
-        // Create isolated 1-site spin system
-        const isolatedSite = new Site({
-            ...origSite,
-            index: 0,
-        });
-
-        const singleSys = {
-            sites: [isolatedSite],
-            couplings: [],
-            warnings: [],
-            missingReferences: [],
-            canExport: true,
-            metadata: {
-                ...sys.metadata,
-                exportedIndices: origSite.atomIndices || [],
-                sites: [
-                    {
-                        siteIndex: 0,
-                        label: origSite.label,
-                        isotope: origSite.isotope,
-                        element: origSite.element,
-                        atomIndices: origSite.atomIndices || [],
-                        position: origSite.position,
-                        isAverageGroup: Boolean(origSite.isAverageGroup),
-                        averageGroupPattern: origSite.averageGroupPattern || null,
-                        reference: origSite.reference,
-                        gradient: origSite.gradient,
-                    }
-                ],
-            },
-            dimension: 2 * (isolatedSite.spin ?? 0.5) + 1,
-            spinHalfEquivalent: Math.log2(2 * (isolatedSite.spin ?? 0.5) + 1),
-        };
+    for (const origSite of sys.sites) {
+        const singleSys = isolatedSiteSystem(sys, origSite);
 
         const safeLabel = origSite.label.replace(/[^a-zA-Z0-9_-]/g, '_');
         const filename = `${modelName}_${safeLabel}.spinsys`;

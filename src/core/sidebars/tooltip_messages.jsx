@@ -148,15 +148,18 @@ export const tooltip_files_scope = <div>
 
 export const tooltip_files_average_groups = <div>
     <p>
-        Collapses a rotating group such as a methyl into one site whose tensors are
-        averaged over its members. This is the fast-rotation limit, and it scales the
-        C–H dipolar coupling by the expected −1/3.
+        Treats a fast-rotating group such as a methyl as the time average of its
+        Hamiltonian. For SIMPSON every member stays a spin, each with motion-averaged
+        tensors, so the group keeps its own homonuclear coupling (the residual for
+        CH<sub>3</sub> is −½ of the rigid value) and an observed carbon still sees three
+        protons. This is valid only when the hop rate is much larger than the couplings,
+        and it multiplies the simulation cost by 2<sup>n</sup>.
     </p>
     <p>
-        What comes out is not a CH<sub>3</sub> spin system. It has one proton rather
-        than three, so it gives you neither the right multiplicity nor the right
-        homonuclear linewidth. Use it only when you are looking at the group through a
-        coupled heteronucleus.
+        mrsimulator cannot represent coupled equivalent spins, so there, in report
+        tables and in per-site files, the group collapses to one site with averaged
+        tensors. In a coupled file that loses the coupling inside the group and makes
+        every other spin see one neighbour instead of n.
     </p>
 </div>
 

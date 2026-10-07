@@ -124,6 +124,30 @@ describe('Report tables generation', () => {
         expect(row).toContain('100,0,0,0');
     });
 
+    it('shows a multiplicity column whenever a group is present, and not otherwise', () => {
+        const group = new Site({
+            index: 0,
+            isotope: '1H',
+            element: 'H',
+            label: 'H1,H2,H3',
+            ms: ms1,
+            reference: 30,
+            isAverageGroup: true,
+            averageGroupSize: 3,
+            averageGroupPattern: 'CH3',
+        });
+        const plain = new Site({ index: 1, isotope: '13C', element: 'C', label: 'C1', ms: ms1, reference: 180 });
+
+        const withGroup = generateReportTable(new SpinSystem({ sites: [group, plain] }), 'ms', { format: 'csv' });
+        const lines = withGroup.trim().split('\n');
+        expect(lines[1]).toContain('Label,Isotope,No. in label,Multiplicity,');
+        expect(lines[2]).toContain('"H1,H2,H3",1H,1,3,');
+        expect(lines[3]).toContain('C1,13C,2,1,');
+
+        const without = generateReportTable(new SpinSystem({ sites: [plain] }), 'ms', { format: 'csv' });
+        expect(without).not.toContain('Multiplicity');
+    });
+
     it('escapes fields with commas using RFC 4180 in CSV', () => {
         const groupedSite = new Site({
             index: 0,

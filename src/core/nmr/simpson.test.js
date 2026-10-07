@@ -613,6 +613,30 @@ describe('Soprano SIMPSON validation corpus (structures)', () => {
         expect(mrData.sites.length).toBe(3);
     });
 
+    it('writes one split file per average group, with the multiplicity in its metadata', async () => {
+        const magresText = fs.readFileSync(path.join(FIXTURES_DIR, 'ethanol.magres'), 'utf-8');
+        const loader = new Loader();
+        const s = loader.load(magresText, 'magres', 'ethanol');
+        const model = new Model(s['ethanol'], { useNMRActiveIsotopes: true });
+
+        const sys = buildSpinSystem(model.atoms, {
+            references: { H: 30.0, C: 180.0, O: 200.0 },
+            averageGroups: 'CH3',
+            averageGroupMode: 'collapse',
+        });
+        const group = sys.sites.find(site => site.isAverageGroup);
+        expect(sys.sites.length).toBe(7);
+
+        const { toSimpsonSplitZip } = await import('./simpson');
+        const zip = new TextDecoder('utf-8').decode(toSimpsonSplitZip(sys, 'ethanol'));
+        const safe = group.label.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        expect(zip.split(`ethanol_${safe}.spinsys`).length - 1).toBeGreaterThanOrEqual(1);
+        expect(zip.match(/\[averaged group, multiplicity 3\]/g).length).toBe(1);
+        expect(zip.replace(/\n#\s+/g, ' ')).toContain('written as one site (multiplicity 3)');
+        expect(zip.match(/^channels /gm).length).toBe(7);
+    });
+
     it('populates metadata in split ZIP archive spinsys files', async () => {
         const magresText = fs.readFileSync(path.join(FIXTURES_DIR, 'ethanol.magres'), 'utf-8');
         const loader = new Loader();

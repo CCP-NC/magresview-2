@@ -573,4 +573,16 @@ describe('FilesInterface average groups', () => {
         const warning = intf.simplificationWarnings.find(w => /cannot represent coupled equivalent spins/.test(w.text));
         expect(warning.level).toBe('warning');
     });
+
+    it('collapses the group for per-site and table exports, which carry no couplings', () => {
+        const perSite = makeInterface(ethanolApp(), { ...base, files_spinsys_target: 'simpson', files_spinsys_scope: 'site' });
+        expect(perSite.averageGroupMode).toBe('collapse');
+        expect(perSite.spinSystem.sites.length).toBe(7);
+        expect(perSite.generatePreviewText().match(/Archive file \d+ of 7/g).length).toBe(7);
+
+        const tables = makeInterface(ethanolApp(), { ...base, files_mode: 'tables', files_seltype: 'ms' });
+        const csv = tables.generateFile();
+        expect(csv).toContain('Multiplicity');
+        expect(csv.trim().split('\n').filter(l => !l.startsWith('#')).length).toBe(1 + 7);
+    });
 });

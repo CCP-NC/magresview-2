@@ -20,17 +20,24 @@ export function generateReportTable(sys, type, options = {}) {
         multiplicity = {},
     } = options;
 
+    // Report tables carry no couplings, so a group is one row; the multiplicity
+    // column says how many atoms that row stands for.
+    const showMultiplicity = mergeByLabel || sys.sites.some(site => site.isAverageGroup);
+    const multiplicityOf = (site, label) => (
+        site.isAverageGroup ? site.averageGroupSize : (multiplicity[label] ?? 1)
+    );
+
     const rowOptions = { width: tabWidth, precision, format };
 
     switch (type) {
         case 'ms':
-            return generateMSTable(sys, rowOptions, { includeEuler, eulerConvention, mergeByLabel, multiplicity });
+            return generateMSTable(sys, rowOptions, { includeEuler, eulerConvention, showMultiplicity, multiplicityOf });
         case 'efg':
-            return generateEFGTable(sys, rowOptions, { includeEuler, eulerConvention, mergeByLabel, multiplicity });
+            return generateEFGTable(sys, rowOptions, { includeEuler, eulerConvention, showMultiplicity, multiplicityOf });
         case 'dip':
-            return generateDipolarTable(sys, rowOptions, { includeEuler, eulerConvention, mergeByLabel, multiplicity });
+            return generateDipolarTable(sys, rowOptions, { includeEuler, eulerConvention, showMultiplicity, multiplicityOf });
         case 'isc':
-            return generateJTable(sys, rowOptions, { includeEuler, eulerConvention, mergeByLabel, multiplicity });
+            return generateJTable(sys, rowOptions, { includeEuler, eulerConvention, showMultiplicity, multiplicityOf });
         default:
             throw new Error(`Unknown table type: ${type}`);
     }
@@ -40,7 +47,7 @@ function generateMSTable(sys, rowOptions, opts) {
     let table = formatTableComments(sys, 'MS Table', opts);
 
     const header = ['Label', 'Isotope', 'No. in label'];
-    if (opts.mergeByLabel) {
+    if (opts.showMultiplicity) {
         header.push('Multiplicity');
     }
     header.push('s_iso/ppm', 'd_iso/ppm', 'Anisotropy/ppm', 'Red. aniso/ppm', 'Asymmetry', 'Span/ppm', 'Skew');
@@ -59,8 +66,8 @@ function generateMSTable(sys, rowOptions, opts) {
             site.index + 1,
         ];
 
-        if (opts.mergeByLabel) {
-            row.push(opts.multiplicity[site.label] ?? 1);
+        if (opts.showMultiplicity) {
+            row.push(opts.multiplicityOf(site, site.label));
         }
 
         row.push(
@@ -88,7 +95,7 @@ function generateEFGTable(sys, rowOptions, opts) {
     let table = formatTableComments(sys, 'EFG Table', opts);
 
     const header = ['Label', 'Isotope', 'No. in label'];
-    if (opts.mergeByLabel) {
+    if (opts.showMultiplicity) {
         header.push('Multiplicity');
     }
     header.push('V_zz/au', 'Anisotropy/au', 'Asymmetry', 'C_q/MHz');
@@ -107,8 +114,8 @@ function generateEFGTable(sys, rowOptions, opts) {
             site.index + 1,
         ];
 
-        if (opts.mergeByLabel) {
-            row.push(opts.multiplicity[site.label] ?? 1);
+        if (opts.showMultiplicity) {
+            row.push(opts.multiplicityOf(site, site.label));
         }
 
         const Vzz = site.efg.haeberlen_eigenvalues[2];
@@ -139,7 +146,7 @@ function generateDipolarTable(sys, rowOptions, opts) {
         'Label 1', 'Isotope 1', 'Index 1',
         'Label 2', 'Isotope 2', 'Index 2',
     ];
-    if (opts.mergeByLabel) {
+    if (opts.showMultiplicity) {
         header.push('Multiplicity 1', 'Multiplicity 2');
     }
     header.push(
@@ -168,8 +175,8 @@ function generateDipolarTable(sys, rowOptions, opts) {
             c.site_j + 1,
         ];
 
-        if (opts.mergeByLabel) {
-            row.push(opts.multiplicity[c.site_i_label] ?? 1, opts.multiplicity[c.site_j_label] ?? 1);
+        if (opts.showMultiplicity) {
+            row.push(opts.multiplicityOf(s1, c.site_i_label), opts.multiplicityOf(s2, c.site_j_label));
         }
 
         row.push(
@@ -201,7 +208,7 @@ function generateJTable(sys, rowOptions, opts) {
         'Label 1', 'Isotope 1', 'Index 1',
         'Label 2', 'Isotope 2', 'Index 2',
     ];
-    if (opts.mergeByLabel) {
+    if (opts.showMultiplicity) {
         header.push('Multiplicity 1', 'Multiplicity 2');
     }
     header.push('J_iso/Hz', 'Anisotropy/Hz', 'Red. aniso/Hz', 'Asymmetry');
@@ -226,8 +233,8 @@ function generateJTable(sys, rowOptions, opts) {
             c.site_j + 1,
         ];
 
-        if (opts.mergeByLabel) {
-            row.push(opts.multiplicity[c.site_i_label] ?? 1, opts.multiplicity[c.site_j_label] ?? 1);
+        if (opts.showMultiplicity) {
+            row.push(opts.multiplicityOf(s1, c.site_i_label), opts.multiplicityOf(s2, c.site_j_label));
         }
 
         row.push(
