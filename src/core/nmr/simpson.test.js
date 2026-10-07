@@ -273,7 +273,7 @@ describe('Soprano SIMPSON validation corpus', () => {
             isotope: '14N',
             element: 'N',
             spin: 1.0,
-            Q: 0.02044, // barn for 14N
+            Q: 20.44, // millibarn for 14N
             efg: new TensorData(efg_n),
         });
         const dip = new Coupling({
@@ -313,7 +313,7 @@ describe('SIMPSON cross-term gating', () => {
             isotope: '14N',
             element: 'N',
             spin: 1.0,
-            Q: 0.02044,
+            Q: 20.44,
             efg: new TensorData(efg_n),
             ms: new TensorData([[5, 0, 0], [0, 15, 0], [0, 0, 25]]),
             reference: 100,

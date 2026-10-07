@@ -28,8 +28,8 @@ function deuteron(index) {
         element: 'H',
         label: `D${index + 1}`,
         spin: 1.0,
-        Q: 0.00286,
-        efg: new TensorData([[-0.25, 0, 0], [0, -0.25, 0], [0, 0, 0.5]]),
+        Q: 2.86, // millibarn
+        efg: new TensorData([[-0.00025, 0, 0], [0, -0.00025, 0], [0, 0, 0.0005]]),
     });
 }
 
@@ -208,7 +208,7 @@ describe('buildTemplateOperators', () => {
     });
 
     it('points at the central transition for half-integer quadrupolar nuclei', () => {
-        const o17 = new Site({ index: 0, isotope: '17O', element: 'O', spin: 2.5, Q: -0.0256 });
+        const o17 = new Site({ index: 0, isotope: '17O', element: 'O', spin: 2.5, Q: -25.6 });
         const ops = buildTemplateOperators([o17], '17O');
 
         expect(ops.note).toMatch(/central transition/);

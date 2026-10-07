@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TensorData } from '@ccp-nc/crystvis-js';
+import nmrdata from '@ccp-nc/crystvis-js/lib/nmrdata.js';
+import corpus from './__fixtures__/synthetic_corpus.json';
 import {
     Site,
     Coupling,
@@ -40,11 +42,11 @@ describe('Site model', () => {
     });
 
     it('computes quadrupolar Cq for quadrupole-active nuclei', () => {
-        // EFG tensor in atomic units with Vzz = 0.5
+        // EFG tensor in atomic units with Vzz = 0.0005
         const V = [
-            [-0.25, 0, 0],
-            [0, -0.25, 0],
-            [0, 0, 0.5]
+            [-0.00025, 0, 0],
+            [0, -0.00025, 0],
+            [0, 0, 0.0005]
         ];
         const efg = new TensorData(V);
         const site = new Site({
@@ -52,13 +54,35 @@ describe('Site model', () => {
             isotope: '2H',
             element: 'H',
             spin: 1.0, // I = 1 > 0.5
-            Q: 0.00286, // barn
+            Q: 2.86, // millibarn
             efg,
         });
 
         expect(site.isQuadrupoleActive).toBe(true);
-        const expectedCq = EFG_TO_HZ * 0.00286 * 0.5;
+        const expectedCq = EFG_TO_HZ * 2.86 * 0.0005;
         expect(site.Cq).toBeCloseTo(expectedCq, 2);
+    });
+
+    it('reproduces the corpus 14N Cq from crystvis isotope data (Q in millibarn)', () => {
+        // Q comes straight from the isotope table (20.44 mb for 14N) with no unit conversion.
+        const iso = nmrdata.N.isotopes['14'];
+        expect(iso.Q).toBe(20.44);
+
+        const efg = new TensorData(corpus.fixtures.test_08.input.efg_n);
+        const site = new Site({ index: 0, isotope: '14N', element: 'N', spin: iso.spin, Q: iso.Q, efg });
+
+        const Vzz = efg.haeberlen_eigenvalues[2];
+        expect(site.Cq).toBeCloseTo(234964.78 * 20.44 * Vzz, -1);
+        expect(site.Cq).toBeCloseTo(556902.477, 2);
+        expect(site.efg_asymmetry).toBeCloseTo(0.7188, 4);
+    });
+
+    it('computes a deuteron Cq in the right range from crystvis isotope data', () => {
+        const iso = nmrdata.H.isotopes['2'];
+        expect(iso.Q).toBe(2.86);
+        const efg = new TensorData([[-0.07440484, 0, 0], [0, -0.07440484, 0], [0, 0, 0.14880969]]);
+        const site = new Site({ index: 0, isotope: '2H', element: 'H', spin: iso.spin, Q: iso.Q, efg });
+        expect(site.Cq).toBeCloseTo(100000, -1);
     });
 
     it('returns Cq = 0 for spin-1/2 nuclei', () => {

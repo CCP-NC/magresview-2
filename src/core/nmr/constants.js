@@ -28,7 +28,8 @@ export const FEASIBILITY_LIMITS = {
 export const DEFAULT_GRADIENT = -1.0;
 
 /**
- * Conversion factor from atomic units of EFG to Hz when multiplied by Q (in barn).
+ * Conversion factor from atomic units of EFG to Hz when multiplied by Q in millibarn (the
+ * unit of the crystvis-js isotope data): Cq/Hz = EFG_TO_HZ * Q/mb * V_zz/au.
  * Matches crystvis-js efg2hz constant.
  */
 export const EFG_TO_HZ = 234964.77815245767;

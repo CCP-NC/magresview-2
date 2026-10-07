@@ -16,7 +16,7 @@ export class Site {
         position = [0, 0, 0],
         spin = 0.5,
         gamma = 0,
-        Q = 0,
+        Q = 0, // nuclear quadrupole moment in millibarn
         ms = null,
         efg = null,
         reference = null,
