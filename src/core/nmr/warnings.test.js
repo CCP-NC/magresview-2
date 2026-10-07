@@ -8,7 +8,7 @@ import {
     formatExportSettings,
     getSimplificationWarnings,
 } from './warnings';
-import { buildTemplateOperators } from './metadata';
+import { buildTemplateOperators, formatSimpsonTemplate } from './metadata';
 
 function proton(index, label = `H${index + 1}`) {
     return new Site({
@@ -257,5 +257,28 @@ describe('mrsimulator weak-coupling warning', () => {
             .not.toMatch(/weak-coupling/);
         expect(textOf(getSimplificationWarnings(sys, { target: 'mrsimulator', includeD: false, includeJ: true })))
             .toMatch(/weak-coupling/);
+    });
+});
+
+describe('SIMPSON template dipole_check override', () => {
+    const site = (index, isotope, gamma) => new Site({ index, isotope, element: isotope.replace(/\d/g, ''), gamma });
+    const template = (sites, d) => formatSimpsonTemplate('x.spinsys', new SpinSystem({
+        sites,
+        couplings: [new Coupling({ type: 'D', site_i: 0, site_j: 1, coupling_constant: d })],
+    }), {}).join('\n');
+
+    const H = 267.522e6, C = 67.2828e6, N15 = -27.126e6;
+
+    it('is not offered for a correctly signed coupling between like-signed gammas', () => {
+        expect(template([site(0, '1H', H), site(1, '13C', C)], -23000)).not.toContain('dipole_check');
+    });
+
+    it('is not offered for a legitimately positive coupling between opposite-signed gammas', () => {
+        expect(template([site(0, '1H', H), site(1, '15N', N15)], 11000)).not.toContain('dipole_check');
+    });
+
+    it('is offered when the sign contradicts the nuclei, as after averaging a methyl against its carbon', () => {
+        expect(template([site(0, '1H', H), site(1, '13C', C)], +7258)).toContain('dipole_check     false');
+        expect(template([site(0, '1H', H), site(1, '15N', N15)], -4000)).toContain('dipole_check     false');
     });
 });

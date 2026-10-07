@@ -255,6 +255,19 @@ export function buildTemplateOperators(sites = [], observedNucleus = '') {
 export function formatSimpsonTemplate(filename = 'system.spinsys', sys = null, settings = {}) {
     const sites = sys?.sites || [];
     const ops = buildTemplateOperators(sites, settings.observedNucleus);
+    // SIMPSON refuses a `dipole` whose sign disagrees with its nuclei: it must be
+    // negative when gamma_i * gamma_j > 0 and positive otherwise. Unaveraged
+    // couplings always satisfy this. Averaging can break it, e.g. an averaged
+    // CH3 proton against its geminal carbon scales the coupling by
+    // P2(109.5 deg) = -1/3, and the residual between two like protons of the same
+    // group has the opposite sign to the rigid one, so only offer the override
+    // when a coupling needs it.
+    const needsDipoleOverride = (sys?.couplings || []).some(c => {
+        if (c.type !== 'D') return false;
+        const gi = sites[c.site_i]?.gamma;
+        const gj = sites[c.site_j]?.gamma;
+        return c.coupling_constant * -(gi * gj) < 0;
+    });
 
     // Annotations go on their own line. SIMPSON's `par` block is not parsed as
     // plain Tcl and chokes on a trailing `;#` comment after a value.
@@ -279,6 +292,10 @@ export function formatSimpsonTemplate(filename = 'system.spinsys', sys = null, s
         '#       # powder average; use alpha0beta0 to check tensor orientations',
         '#       crystal_file     rep100',
         '#       verbose          0',
+        ...(needsDipoleOverride ? [
+            '#       # a motionally averaged dipolar coupling has the opposite sign to the SIMPSON convention check',
+            '#       dipole_check     false',
+        ] : []),
         '#   }',
         '#   proc pulseq {} {',
         '#       global par',
