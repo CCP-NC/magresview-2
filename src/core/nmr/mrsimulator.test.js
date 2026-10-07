@@ -81,6 +81,21 @@ describe('mrsimulator writer: Euler angle sense', () => {
         const expected = r.map((ri, i) => r.map((rj, j) => dip.coupling_constant * (3 * ri * rj - (i === j ? 1 : 0))));
         expectMatrixClose(labTensor([-D, -D, 2 * D], alpha, beta, gamma), expected, 1e-9, Math.abs(D));
     });
+
+    it('writes J-coupling angles that rebuild the original J tensor', () => {
+        const J = labTensor(haeberlen(20, 3000, 0.4), 20 * D2R, 110 * D2R, 55 * D2R);
+        const tensor = new TensorData(J);
+        const c = new Site({ index: 0, isotope: '13C', element: 'C' });
+        const h = new Site({ index: 1, isotope: '1H', element: 'H' });
+        const cp = new Coupling({
+            type: 'J', site_i: 0, site_j: 1, tensor,
+            coupling_constant: tensor.isotropy, asymmetry: tensor.asymmetry,
+        });
+        const out = toMrsimulator(new SpinSystem({ sites: [c, h], couplings: [cp] }));
+        const { zeta, eta, alpha, beta, gamma } = out.couplings[0].j_symmetric;
+
+        expectMatrixClose(labTensor(haeberlen(out.couplings[0].isotropic_j, zeta, eta), alpha, beta, gamma), J, 1e-9, 3000);
+    });
 });
 
 describe('mrsimulator writer: referencing gradient', () => {

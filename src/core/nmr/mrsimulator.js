@@ -113,7 +113,7 @@ export function toMrsimulator(sys, options = {}) {
         } else if (c.type === 'J' && include_j) {
             entry.isotropic_j = c.coupling_constant;
             const j_symmetric = {
-                zeta: c.anisotropy,
+                zeta: c.reduced_anisotropy,
                 eta: c.asymmetry,
             };
             if (useJAngles) {

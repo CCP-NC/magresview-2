@@ -250,7 +250,8 @@ describe('Soprano SIMPSON validation corpus', () => {
                 site_j: 1,
                 tensor,
                 coupling_constant: tensor.isotropy,
-                anisotropy: tensor.reduced_anisotropy,
+                anisotropy: tensor.anisotropy,
+                reduced_anisotropy: tensor.reduced_anisotropy,
                 asymmetry: tensor.asymmetry,
             });
 

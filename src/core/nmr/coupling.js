@@ -1,5 +1,9 @@
 /**
  * Coupling represents a pairwise interaction between two sites (dipolar or J coupling).
+ *
+ * `anisotropy` (Δ = σzz − (σxx+σyy)/2) and `reduced_anisotropy` (ζ = σzz − σiso) carry one
+ * definition for both types. Unless given explicitly they are read from the tensor, so a pure
+ * dipolar pair has Δ = 3d and ζ = 2d. Writers use ζ.
  */
 export class Coupling {
     constructor({
@@ -12,7 +16,8 @@ export class Coupling {
         displacement = [0, 0, 0],
         tensor = null,
         coupling_constant = 0,
-        anisotropy = 0,
+        anisotropy = undefined,
+        reduced_anisotropy = undefined,
         asymmetry = 0,
     } = {}) {
         this.type = type;
@@ -24,7 +29,8 @@ export class Coupling {
         this.displacement = displacement;
         this.tensor = tensor;
         this.coupling_constant = coupling_constant;
-        this.anisotropy = anisotropy;
+        this.anisotropy = anisotropy ?? tensor?.anisotropy ?? 0;
+        this.reduced_anisotropy = reduced_anisotropy ?? tensor?.reduced_anisotropy ?? 0;
         this.asymmetry = asymmetry;
     }
 

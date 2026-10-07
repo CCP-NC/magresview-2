@@ -144,7 +144,8 @@ export function computeAveragedDipolarCoupling(site1, site2, model) {
         displacement: disp,
         tensor,
         coupling_constant: d,
-        anisotropy: 3 * d,
+        anisotropy: tensor.anisotropy,
+        reduced_anisotropy: tensor.reduced_anisotropy,
         asymmetry: tensor.asymmetry,
     });
 }

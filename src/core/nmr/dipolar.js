@@ -107,7 +107,8 @@ export function computeDipolarCoupling(site1, site2, model) {
         displacement: r,
         tensor,
         coupling_constant: res.d,
-        anisotropy: 3 * res.d,
+        anisotropy: tensor.anisotropy,
+        reduced_anisotropy: tensor.reduced_anisotropy,
         asymmetry: 0,
     });
 }

@@ -171,7 +171,7 @@ export function toSimpson(sys, options = {}) {
             const idx2 = c.site_j + 1;
             const jIso = c.coupling_constant;
             // SIMPSON expects zeta / 2
-            const jAniso = c.anisotropy / 2.0;
+            const jAniso = c.reduced_anisotropy / 2.0;
             const jAsymm = c.asymmetry;
 
             let angles = [0.0, 0.0, 0.0];

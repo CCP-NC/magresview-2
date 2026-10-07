@@ -46,7 +46,8 @@ export function computeJCoupling(site1, site2) {
         displacement,
         tensor: tensorHz,
         coupling_constant: tensorHz.isotropy,
-        anisotropy: tensorHz.reduced_anisotropy,
+        anisotropy: tensorHz.anisotropy,
+        reduced_anisotropy: tensorHz.reduced_anisotropy,
         asymmetry: tensorHz.asymmetry,
     });
 }

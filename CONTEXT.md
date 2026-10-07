@@ -32,6 +32,12 @@
 - **Average group** — A set of atoms that fast molecular motion exchanges, and which is therefore exported as a single site with averaged tensors. Identified by a pattern over bonded neighbours, such as CH3 or NH2.
   _Avoid_: functional group (too broad), methyl, rotor.
 
+- **Anisotropy (Δ)** — The anisotropy of a tensor in the Haeberlen convention, Δ = σzz − (σxx + σyy)/2, always 3/2 of the reduced anisotropy. Defined once for every tensor, a Coupling's included, so the same name never means two things. For a pure dipolar pair Δ = 3d.
+  _Avoid_: anisotropy without a symbol where ζ could be meant.
+
+- **Reduced anisotropy (ζ)** — ζ = σzz − σiso in the Haeberlen convention. It is what the simulator files take: SIMPSON's `jcoupling` line wants ζ/2, mrsimulator's J `zeta` wants ζ. For a pure dipolar pair ζ = 2d.
+  _Avoid_: CSA, span.
+
 - **Report table** — A tabulated export of per-site or per-coupling quantities, intended to be read by a person or a spreadsheet. Distinct from a simulator file, which is intended to be read by a program.
   _Avoid_: data file, CSV, output.
 

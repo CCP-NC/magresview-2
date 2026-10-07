@@ -13,6 +13,7 @@ import {
     getConnectedComponents,
     FEASIBILITY_LIMITS,
     EFG_TO_HZ,
+    computeDipolarCoupling,
 } from './index';
 
 describe('Site model', () => {
@@ -233,5 +234,28 @@ describe('SpinSystem feasibility guard', () => {
         // Invalid pattern matching nonsense does not match
         const invalidGroups = findAverageGroups(atoms, 'CH3dffdfsdfs');
         expect(invalidGroups.length).toBe(0);
+    });
+});
+
+describe('Coupling anisotropy definitions', () => {
+    it('gives a dipolar pair Δ = 3d and ζ = 2d', () => {
+        const c = new Site({ index: 0, isotope: '13C', element: 'C', gamma: 6.728e7, position: [0, 0, 0] });
+        const h = new Site({ index: 1, isotope: '1H', element: 'H', gamma: 2.675e8, position: [0.6, 0.5, 0.7] });
+        const dip = computeDipolarCoupling(c, h, null);
+        const d = dip.coupling_constant;
+
+        expect(Math.abs(d)).toBeGreaterThan(1000);
+        expect(dip.anisotropy).toBeCloseTo(3 * d, 6);
+        expect(dip.reduced_anisotropy).toBeCloseTo(2 * d, 6);
+    });
+
+    it('reads both from the tensor for any type, with one definition', () => {
+        // Eigenvalues 100, 130, 40 -> iso 90; Haeberlen zz is the eigenvalue furthest from iso (40) -> ζ = -50, Δ = -75
+        const tensor = new TensorData([[100, 0, 0], [0, 130, 0], [0, 0, 40]]);
+        const cp = new Coupling({ type: 'J', site_i: 0, site_j: 1, tensor });
+
+        expect(cp.reduced_anisotropy).toBeCloseTo(tensor.reduced_anisotropy, 10);
+        expect(cp.anisotropy).toBeCloseTo(tensor.anisotropy, 10);
+        expect(cp.anisotropy).toBeCloseTo(1.5 * cp.reduced_anisotropy, 10);
     });
 });

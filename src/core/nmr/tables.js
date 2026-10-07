@@ -145,7 +145,7 @@ function generateDipolarTable(sys, rowOptions, opts) {
     header.push(
         'Distance/Ang',
         'r_x/Ang', 'r_y/Ang', 'r_z/Ang',
-        'D/kHz', 'Anisotropy/kHz', 'Asymmetry'
+        'D/kHz', 'Anisotropy/kHz', 'Red. aniso/kHz', 'Asymmetry'
     );
     if (opts.includeEuler) {
         header.push('alpha/deg', 'beta/deg', 'gamma/deg');
@@ -179,6 +179,7 @@ function generateDipolarTable(sys, rowOptions, opts) {
             c.displacement[2],
             c.coupling_constant / 1000.0,
             c.anisotropy / 1000.0,
+            c.reduced_anisotropy / 1000.0,
             c.asymmetry
         );
 
@@ -203,7 +204,7 @@ function generateJTable(sys, rowOptions, opts) {
     if (opts.mergeByLabel) {
         header.push('Multiplicity 1', 'Multiplicity 2');
     }
-    header.push('J_iso/Hz', 'Anisotropy/Hz', 'Asymmetry');
+    header.push('J_iso/Hz', 'Anisotropy/Hz', 'Red. aniso/Hz', 'Asymmetry');
     if (opts.includeEuler) {
         header.push('alpha/deg', 'beta/deg', 'gamma/deg');
     }
@@ -232,6 +233,7 @@ function generateJTable(sys, rowOptions, opts) {
         row.push(
             c.coupling_constant,
             c.anisotropy,
+            c.reduced_anisotropy,
             c.asymmetry
         );
 
