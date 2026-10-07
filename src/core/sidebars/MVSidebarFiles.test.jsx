@@ -332,6 +332,26 @@ describe('MVSidebarFiles', () => {
         expect(container.textContent).toMatch(/largest coupled group/);
     });
 
+    it('quotes the measured cost growth in the feasibility notices', () => {
+        mockFileint.mode = 'spinsys';
+        mockFileint.hasValidSelection = true;
+        mockFileint.hasUsableSelection = true;
+        mockFileint.selectionStatus = 'valid';
+        mockFileint.missingReferences = [];
+        mockFileint.dimension = 512;
+        mockFileint.spinHalfEquivalent = 9;
+
+        for (const feasibility of ['slow', 'warning']) {
+            mockFileint.feasibility = feasibility;
+            const { container, unmount } = render(<MVSidebarFiles show={true} />);
+
+            expect(container.textContent).toMatch(/multiplies the cost roughly ×6/);
+            expect(container.textContent).toMatch(/128 s at 1024/);
+            if (feasibility === 'warning') expect(container.textContent).toMatch(/exceeds dimension 1024/);
+            unmount();
+        }
+    });
+
     it('opens and closes preview modal in spin system mode', () => {
         mockFileint.mode = 'spinsys';
         mockFileint.hasUsableSelection = true;

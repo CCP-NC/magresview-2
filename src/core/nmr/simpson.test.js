@@ -457,6 +457,16 @@ describe('SIMPSON driver template', () => {
         expect(par).toContain('#       # observing 13C');
     });
 
+    it('suggests method direct dsyev only for systems above dimension 128', () => {
+        const spins = n => Array.from({ length: n }, (_, i) => new Site({ index: i, isotope: '1H', element: 'H' }));
+
+        // 2^7 = 128 is not above the limit; 2^8 = 256 is.
+        expect(headerFor(spins(7), '1H')).not.toContain('method direct dsyev');
+        const big = headerFor(spins(8), '1H');
+        expect(big).toContain('# if SIMPSON crashes (bus error) on a large system, try: method direct dsyev');
+        expect(big).toMatch(/^#\s+# if SIMPSON crashes/m);
+    });
+
     it('points at guidance rather than implying the parameters are suitable', () => {
         const out = headerFor([H(0)], '1H');
 

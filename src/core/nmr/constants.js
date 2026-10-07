@@ -10,14 +10,22 @@ import pkg from '../../../package.json';
  * NMR users have intuition for spin-1/2 equivalents: log2(dimension).
  *
  * - SILENT:    ≤ 256  (≤ 8 spins-1/2)  - silent
- * - SLOW:      ≤ 4096 (≤ 12 spins-1/2) - inline notice ("Simulation will be slow")
- * - INTRACTABLE: > 4096 (> 12 spins-1/2) - prominent warning ("Simulation may be intractable")
+ * - SLOW:      ≤ 1024 (≤ 10 spins-1/2) - inline notice ("Simulation will be slow")
+ * - INTRACTABLE: > 1024 (> 10 spins-1/2) - prominent warning ("Simulation may be intractable")
+ *
+ * Measured SIMPSON cost (static, 100 orientations, 4 cores, fully coupled spin-1/2,
+ * `method direct dsyev`): dimension 64: 0.2 s, 128: 0.7 s, 256: 3.5 s, 512: 18.9 s,
+ * 1024: 128 s. Cost grows 5-7x per doubling (about dimension^2.5), so each extra
+ * spin-1/2 multiplies it by roughly 6, and a converged powder needs about 40x more
+ * orientations than that. On one macOS arm64 build SIMPSON's default propagator crashed
+ * (bus error) from dimension 243 upward while `method direct dsyev` worked, which is why
+ * the driver template suggests it for large systems.
  *
  * Note: Warn, never block (contrast with missing shielding reference, which blocks).
  */
 export const FEASIBILITY_LIMITS = {
     SILENT_DIMENSION: 256,
-    SLOW_DIMENSION: 4096,
+    SLOW_DIMENSION: 1024,
 };
 
 /**

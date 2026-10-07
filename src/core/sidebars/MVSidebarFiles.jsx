@@ -27,6 +27,13 @@ import {
 
 import { useFilesInterface } from '../store';
 import { saveContents, copyContents } from '../../utils';
+import { FEASIBILITY_LIMITS } from '../nmr';
+
+// Measured with SIMPSON: static, 100 orientations, 4 cores, fully coupled spin-1/2.
+const COST_NOTE =
+    'Each extra spin-½ multiplies the cost roughly ×6 (measured: 0.7 s at dimension 128, '
+    + '3.5 s at 256, 19 s at 512, 128 s at 1024), and a converged powder average needs about '
+    + '40× more orientations. Export is still allowed.';
 
 // Hilbert space dimension grows as 2^N, so a few dozen spins overflow into
 // twenty-digit integers that nobody can read at a glance.
@@ -406,14 +413,16 @@ function MVSidebarFiles(props) {
                                 {!perSite && fileint.feasibility === 'slow' && (
                                     <div className='mv-dim-notice'>
                                         Notice: Simulation will be slow (~{formatSpinHalf(fileint.spinHalfEquivalent, 0)} spins-½).
+                                        {' '}{COST_NOTE}
                                     </div>
                                 )}
                                 {!perSite && fileint.feasibility === 'warning' && (
                                     <div className='mv-dim-warning'>
                                         Warning: simulation may be intractable
                                         {fileint.spinsysTarget === 'mrsimulator'
-                                            ? '. The largest coupled group exceeds dimension 4096.'
-                                            : '. The spin system exceeds dimension 4096.'}
+                                            ? `. The largest coupled group exceeds dimension ${FEASIBILITY_LIMITS.SLOW_DIMENSION}.`
+                                            : `. The spin system exceeds dimension ${FEASIBILITY_LIMITS.SLOW_DIMENSION}.`}
+                                        {' '}{COST_NOTE}
                                     </div>
                                 )}
                             </div>

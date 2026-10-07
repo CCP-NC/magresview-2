@@ -301,6 +301,9 @@ export function formatSimpsonTemplate(filename = 'system.spinsys', sys = null, s
         '#       # powder average; use alpha0beta0 to check tensor orientations',
         '#       crystal_file     rep100',
         '#       verbose          0',
+        ...((sys?.dimension || 1) > 128 ? [
+            '#       # if SIMPSON crashes (bus error) on a large system, try: method direct dsyev',
+        ] : []),
         ...(needsDipoleOverride ? [
             '#       # a motionally averaged dipolar coupling has the opposite sign to the SIMPSON convention check',
             '#       dipole_check     false',

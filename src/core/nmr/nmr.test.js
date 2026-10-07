@@ -114,13 +114,18 @@ describe('SpinSystem feasibility guard', () => {
         expect(calculateSpinHalfEquivalent(4)).toBe(2);
         expect(getFeasibility(4)).toBe('silent');
 
-        // Nine spin-1/2 nuclei: dim = 512 (> 256, <= 4096) -> slow
+        // Nine spin-1/2 nuclei: dim = 512 (> 256, <= 1024) -> slow
         const nineSpins = Array.from({ length: 9 }, (_, i) => new Site({ index: i, spin: 0.5 }));
         const dim9 = calculateDimension(nineSpins);
         expect(dim9).toBe(512);
         expect(getFeasibility(dim9)).toBe('slow');
 
-        // Thirteen spin-1/2 nuclei: dim = 8192 (> 4096) -> warning
+        // Ten spin-1/2 nuclei sit exactly on the SLOW limit, eleven are past it
+        expect(getFeasibility(1024)).toBe('slow');
+        expect(getFeasibility(2048)).toBe('warning');
+        expect(FEASIBILITY_LIMITS.SLOW_DIMENSION).toBe(1024);
+
+        // Thirteen spin-1/2 nuclei: dim = 8192 (> 1024) -> warning
         const thirteenSpins = Array.from({ length: 13 }, (_, i) => new Site({ index: i, spin: 0.5 }));
         const dim13 = calculateDimension(thirteenSpins);
         expect(dim13).toBe(8192);
