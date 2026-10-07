@@ -37,7 +37,7 @@ export const DEFAULT_EXPORT_SETTINGS = {
  * Whether second-order cross-terms apply, given the quadrupole treatment.
  *
  * `quadrupole_x_dipole` and `quadrupole_x_shift` are second-order terms.
- * SIMPSON 6.0.1 does not refuse them alongside a first-order quadrupole: it
+ * SIMPSON 6.x does not refuse them alongside a first-order quadrupole: it
  * applies them, producing an inconsistently truncated Hamiltonian and a
  * silently different answer. It *does* hard-error when they appear with no
  * `quadrupole` line at all. So cross-terms are derived here, never offered as

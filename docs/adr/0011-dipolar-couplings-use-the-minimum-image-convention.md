@@ -31,3 +31,9 @@ Soprano resolves pairs to the closest periodic copy.
 - Dipolar couplings are off by default and support restricting which sites may pair, following
   Soprano, and additionally support a cutoff that Soprano lacks. All-pairs enumeration is quadratic,
   and a spin system large enough for that to matter is already too large to simulate.
+- The search is exact only in a reduced basis. Rounding a displacement to the nearest cell and
+  trying the +-1 neighbours is correct for near-orthogonal cells but picked a longer-than-minimum
+  image in about 20% of random pairs on strongly sheared cells (overshoots up to 2.8 A, and
+  d scales as r^-3). The three lattice vectors are therefore LLL-reduced once per model (cached
+  against the model object) and the rounding and +-1 search run in that basis, with the same
+  per-pair cost. Checked against a brute-force +-6 search to 1e-9 A.

@@ -23,7 +23,7 @@ Reproducing that would bake the inconsistency into the interface and make the ex
 control meaningless for spin systems.
 
 Soprano's `tests/simpson_validation/` contains eight synthetic cases whose answers are analytically
-known and were verified against the SIMPSON v6.0.2 binary. Validating against those tests the
+known and were verified against a SIMPSON 6.x binary. Validating against those tests the
 physics against SIMPSON itself, which is strictly stronger than agreeing with Soprano.
 
 ## Consequences
@@ -60,3 +60,21 @@ from lab-frame tensors (CSA + dipolar, CSA + J, CSA + EFG, with misaligned tenso
 - `zeta` is scaled by the referencing gradient, as the isotropic shift already was.
 - mrsimulator treats couplings in the weak-coupling limit. Two equivalent 1H with J = 100 Hz give a
   spurious doublet. Couplings between like nuclei therefore carry a warning for this target.
+
+## Amendment: what Soprano is an oracle for
+
+Soprano is a convention reference for the items that cannot be derived from physics alone and
+cannot be tested against an angle-free truth: the zeta/2 of SIMPSON's `jcoupling`, the absence of a
+2*pi in `dipole`, Cq units, the index base, and the sign of the shift. It is **not** a reference
+for orientation. The oracle cannot catch an inverted rotation sense, and Soprano had two orientation
+bugs, both of which MagresView would have copied: the mrsimulator writers asked for active Euler
+angles where mrsimulator takes the SIMPSON (passive) numbers, and the edge-case handling zeroed the
+third angle of every axial tensor, which for passive angles is the azimuth, so every dipolar
+coupling lost its direction in the plane. The fix is being handled in the Soprano nmr-refactor PR
+(see the Soprano 2d-nmr-refactor PR).
+
+Orientation is therefore validated by an analytic static-powder spectrum built straight from the
+lab-frame tensors, with real SIMPSON and mrsimulator runs compared against it. That truth contains
+no Euler-angle convention, so it catches an inversion that every implementation under test shares.
+The harness lives in `scripts/verify-conventions/` and is run by hand; SIMPSON agrees to about 3%
+and mrsimulator to about 0.1%.

@@ -14,7 +14,7 @@ the site carrying an EFG tensor, but not on `include_efg`. Two combinations were
 both were wrong:
 
 **Cross-terms with EFG unticked.** The writer emitted `quadrupole_x_shift 4` for a site that had no
-`quadrupole 4 ...` line, because section 2 was skipped and section 5 was not. SIMPSON 6.0.1 refuses
+`quadrupole 4 ...` line, because section 2 was skipped and section 5 was not. SIMPSON 6.x refuses
 the file outright:
 
 ```
@@ -61,3 +61,8 @@ The invalid states become unreachable rather than merely discouraged.
   reading of that combination has been offered; if one emerges, it belongs under Advanced with its
   own justification.
 - This should be raised upstream with Soprano rather than left as a silent divergence.
+- Second-order quadrupole with both cross-terms was checked against exact diagonalisation of a
+  13C-14N pair (quadrupole, dipolar coupling and shift all acting). SIMPSON at order 2 with
+  `quadrupole_x_dipole` and `quadrupole_x_shift` agrees to 2.3% RMS; order 2 without the
+  cross-terms, or order 1, is off by 35%. The sign of Cq is physical: the spectra for +Cq and -Cq
+  with cross-terms are mirror images, so it is written as computed.
