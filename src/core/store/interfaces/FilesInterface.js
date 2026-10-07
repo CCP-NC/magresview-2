@@ -475,11 +475,21 @@ class FilesInterface extends BaseInterface {
     }
 
     /**
+     * How average groups enter the spin system. SIMPSON keeps every member as a
+     * spin with jump-averaged tensors, which only makes sense in one coupled
+     * file. mrsimulator cannot represent coupled equivalent spins, and report
+     * tables and per-site files have no couplings, so they get one site per group.
+     */
+    get averageGroupMode() {
+        return this.spinsysTarget === 'simpson' && !this.perSite ? 'expand' : 'collapse';
+    }
+
+    /**
      * Build a SpinSystem from a view. Shared by spin system export, the split
      * archive and the report tables, which differ only in which couplings they
      * ask for.
      */
-    _buildSystem(view, { includeD, includeJ }) {
+    _buildSystem(view, { includeD, includeJ, averageGroupMode = this.averageGroupMode }) {
         const app = this.state.app_viewer;
         const mname = app.modelName || 'model';
         const sourceInfo = app._model_sources?.[mname];
@@ -495,6 +505,7 @@ class FilesInterface extends BaseInterface {
             dipolarHomonuclear: this.dipolarHomonuclear,
             mergeByLabel: this.mergeByLabel,
             averageGroups: this.averageGroups,
+            averageGroupMode,
             sourceFilename,
             mergedFrom: sourceInfo?.mergedFrom || null,
             modelName: mname,

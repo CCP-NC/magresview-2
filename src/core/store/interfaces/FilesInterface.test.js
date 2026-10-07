@@ -541,3 +541,36 @@ describe('FilesInterface generatePreviewText', () => {
         expect(preview).toContain('spinsys {');
     });
 });
+
+describe('FilesInterface average groups', () => {
+    function ethanolApp() {
+        const text = fs.readFileSync(path.join(__dirname, '../../nmr/__fixtures__/ethanol.magres'), 'utf-8');
+        const s = new Loader().load(text, 'magres', 'ethanol');
+        const model = new Model(s['ethanol'], { useNMRActiveIsotopes: true });
+        const app = makeApp(model, { modelName: 'ethanol' });
+        app.selected = model.view(model.atoms.map(a => a.index));
+        return app;
+    }
+
+    const base = {
+        files_mode: 'spinsys',
+        files_averageGroups: 'CH3',
+        ms_references: { H: 30.0, C: 180.0, O: 200.0 },
+    };
+
+    it('keeps every methyl spin for a SIMPSON system file', () => {
+        const intf = makeInterface(ethanolApp(), { ...base, files_spinsys_target: 'simpson' });
+
+        expect(intf.averageGroupMode).toBe('expand');
+        expect(intf.spinSystem.sites.length).toBe(9);
+    });
+
+    it('collapses the group for mrsimulator and says what is lost', () => {
+        const intf = makeInterface(ethanolApp(), { ...base, files_spinsys_target: 'mrsimulator', files_includeD: true });
+
+        expect(intf.averageGroupMode).toBe('collapse');
+        expect(intf.spinSystem.sites.length).toBe(7);
+        const warning = intf.simplificationWarnings.find(w => /cannot represent coupled equivalent spins/.test(w.text));
+        expect(warning.level).toBe('warning');
+    });
+});
