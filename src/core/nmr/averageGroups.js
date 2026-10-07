@@ -96,12 +96,18 @@ export function averageMatrix3x3(matrices) {
 }
 
 /**
- * Compute tensor-averaged dipolar coupling between two sites (which may be averaged groups).
- * Per ADR-0008, computes the mean of the dipolar tensors from every pair of member positions.
+ * Compute the jump-averaged dipolar coupling between two sites, either of which may belong
+ * to an average group. Per ADR-0008 it is the mean of the dipolar tensors over every pair of
+ * distinct member atoms: all ordered pairs inside a group, member against external atom,
+ * or member against member for two groups. The tensor is averaged first and d read off after,
+ * so the result is generally not axial.
  */
 export function computeAveragedDipolarCoupling(site1, site2, model) {
-    const atoms1 = site1.atoms && site1.atoms.length > 0 ? site1.atoms : [{ xyz: site1.position, isotopeData: { gamma: site1.gamma } }];
-    const atoms2 = site2.atoms && site2.atoms.length > 0 ? site2.atoms : [{ xyz: site2.position, isotopeData: { gamma: site2.gamma } }];
+    const members = site => (site.memberAtoms && site.memberAtoms.length > 0
+        ? site.memberAtoms
+        : [{ xyz: site.position, isotopeData: { gamma: site.gamma } }]);
+    const atoms1 = members(site1);
+    const atoms2 = members(site2);
 
     const tensors = [];
     let sumR = 0;
@@ -109,7 +115,7 @@ export function computeAveragedDipolarCoupling(site1, site2, model) {
 
     for (const a1 of atoms1) {
         for (const a2 of atoms2) {
-            // Check for intra-group coupling
+            // A member is not coupled to itself
             if (a1 === a2 || (a1.index !== undefined && a1.index === a2.index)) {
                 continue;
             }

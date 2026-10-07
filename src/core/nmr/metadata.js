@@ -88,9 +88,13 @@ export function formatCalculationSummary(calcMeta) {
 export function getMergeNotes(meta) {
     if (!meta?.merging) return [];
     const notes = [];
+    const expanded = meta.merging.averageGroupMode === 'expand';
     for (const g of meta.merging.averageGroupMatches || []) {
+        const name = `average group '${g.pattern || meta.merging.averageGroups}' (${g.label}) for atoms [${g.atomIndices.join(', ')}]`;
         notes.push(
-            `Combined average group '${g.pattern || meta.merging.averageGroups}' (${g.label}) for atoms [${g.atomIndices.join(', ')}]. Intra-group couplings were dropped.`
+            expanded
+                ? `Kept ${name} as ${g.atomIndices.length} spins with jump-averaged (fast-rotation) tensors.`
+                : `Combined ${name} into one site (multiplicity ${g.atomIndices.length}). Intra-group couplings were dropped.`
         );
     }
     if (meta.merging.mergeByLabel) {
@@ -122,6 +126,7 @@ export function buildSpinSystemMetadata({
         gradients = {},
         mergeByLabel = false,
         averageGroups = null,
+        averageGroupMode = 'expand',
         sourceFilename = null,
         modelName = null,
         mergedFrom = null,
@@ -140,6 +145,7 @@ export function buildSpinSystemMetadata({
 
     const merging = {
         averageGroups: averageGroups || null,
+        averageGroupMode,
         averageGroupMatches: avgGroupMatches.map(g => ({
             pattern: g.pattern || averageGroups || null,
             label: g.map(a => a.crystLabel || a.label || `${a.element}${a.index + 1}`).join(','),
@@ -178,6 +184,9 @@ export function buildSpinSystemMetadata({
             position: s.position,
             isAverageGroup: Boolean(s.isAverageGroup),
             averageGroupPattern: s.averageGroupPattern || null,
+            averageGroupId: s.averageGroupId ?? null,
+            averageGroupSize: s.averageGroupSize ?? 1,
+            averageGroupMember: s.averageGroupMember ?? null,
             reference: s.reference,
             gradient: s.gradient,
         })),
@@ -383,7 +392,12 @@ export function formatSimpsonHeader(filename = 'system.spinsys', sys = null, set
             const posStr = site.position
                 ? ` at [${site.position.map(v => Number(v).toFixed(3)).join(', ')}] Å`
                 : '';
-            const avgStr = site.isAverageGroup ? ' [averaged group]' : '';
+            let avgStr = '';
+            if (site.isAverageGroup) {
+                avgStr = site.averageGroupMember !== null && site.averageGroupMember !== undefined
+                    ? ` [averaged group, member ${site.averageGroupMember + 1} of ${site.averageGroupSize}]`
+                    : ` [averaged group, multiplicity ${site.averageGroupSize}]`;
+            }
             const desc = [site.isotope, atomIdxStr ? `(${atomIdxStr}, label ${site.label})` : `label ${site.label}`]
                 .filter(Boolean)
                 .join(' ');

@@ -209,11 +209,47 @@ export function getSimplificationWarnings(sys, settings = {}) {
         }
     }
 
+    const groups = new Map();
     for (const site of averaged) {
-        warn(
-            `Site ${site.index + 1} (${site.label}) averaged to 1 spin. `
-            + 'Internal couplings dropped (fast-rotation limit for heteronuclear observation).'
-        );
+        const key = site.averageGroupId ?? site.label;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(site);
+    }
+
+    for (const members of groups.values()) {
+        const first = members[0];
+        const n = first.isExpandedGroupMember
+            ? first.averageGroupSize
+            : (first.atomIndices?.length || first.averageGroupSize || 1);
+        const name = `Average group ${first.averageGroupPattern ? `${first.averageGroupPattern} ` : ''}(${first.isotope}, `
+            + `${first.isExpandedGroupMember ? members.map(m => m.label).join(',') : first.label})`;
+
+        if (first.isExpandedGroupMember && s.target !== 'mrsimulator') {
+            note(
+                `${name} kept as ${n} spins with fast-rotation (jump-averaged) tensors, including `
+                + 'the couplings between its own spins. This is valid only if the hop rate is much '
+                + 'larger than the couplings (about 10^6 s^-1 against 10^4 Hz). It multiplies the '
+                + `spin system dimension by 2^${n} for spin-1/2 members.`
+            );
+        } else if (perSite) {
+            note(
+                `${name} written as one site (multiplicity ${n}). A per-site file has no couplings, `
+                + 'so averaging the group loses nothing.'
+            );
+        } else if (s.target === 'mrsimulator') {
+            warn(
+                `${name} collapsed to one spin for mrsimulator, which cannot represent coupled `
+                + 'equivalent spins. Lost: the coupling between the group\'s own spins (for a methyl '
+                + '1H-1H pair the residual is about +10.7 kHz), and every other spin now sees the '
+                + `group as one neighbour instead of ${n}, so its second moment is undercounted by a `
+                + `factor ${n}. Use the SIMPSON target to keep all ${n} spins.`
+            );
+        } else {
+            warn(
+                `${name} collapsed to one spin. Couplings between its own spins are dropped and `
+                + `every other spin sees the group as one neighbour instead of ${n}.`
+            );
+        }
     }
 
     if (s.averageGroups) {

@@ -12,7 +12,9 @@ import { buildSpinSystemMetadata } from './metadata';
  * Build a SpinSystem from an atom selection/view and configuration options.
  *
  * @param  {object|Array} view      CrystVis view, Model, or array of AtomImage objects
- * @param  {object}       [options] Configuration options
+ * @param  {object}       [options] Configuration options. `averageGroupMode` is 'expand' (default:
+ *                                 every member of an average group stays a spin, with jump-averaged
+ *                                 tensors) or 'collapse' (one site per group, no intra-group couplings).
  * @return {SpinSystem}             Constructed SpinSystem instance
  */
 export function buildSpinSystem(view, options = {}) {
@@ -25,6 +27,7 @@ export function buildSpinSystem(view, options = {}) {
         dipolarHomonuclear = false,
         mergeByLabel = false,
         averageGroups = null,
+        averageGroupMode = 'expand',
     } = options;
 
     let atoms = [];
@@ -69,36 +72,25 @@ export function buildSpinSystem(view, options = {}) {
     const groupedAtomIndices = new Set();
     const sites = [];
 
-    for (const group of avgGroupMatches) {
+    for (const [groupId, group] of avgGroupMatches.entries()) {
         group.forEach(a => groupedAtomIndices.add(a.index !== undefined ? a.index : a));
 
         // The consequences of averaging a group are a settings-level judgement,
         // reported by getSimplificationWarnings rather than recorded here.
         const labels = group.map(a => a.crystLabel || a.label || `${a.element}${a.index + 1}`);
-        const groupLabel = labels.join(',');
-
-        // Centroid position
-        const sumPos = [0, 0, 0];
-        for (const a of group) {
-            sumPos[0] += a.xyz[0] / group.length;
-            sumPos[1] += a.xyz[1] / group.length;
-            sumPos[2] += a.xyz[2] / group.length;
-        }
 
         // Arithmetic average of MS tensors
         let ms = null;
         const msList = group.map(a => a.getArrayValue ? a.getArrayValue('ms') : a.ms).filter(Boolean);
         if (msList.length === group.length) {
-            const avgM = averageMatrix3x3(msList.map(t => t._M || t.matrix || t));
-            ms = new TensorData(avgM);
+            ms = new TensorData(averageMatrix3x3(msList.map(t => t.data || t)));
         }
 
         // Arithmetic average of EFG tensors
         let efg = null;
         const efgList = group.map(a => a.getArrayValue ? a.getArrayValue('efg') : a.efg).filter(Boolean);
         if (efgList.length === group.length) {
-            const avgV = averageMatrix3x3(efgList.map(t => t._M || t.matrix || t));
-            efg = new TensorData(avgV);
+            efg = new TensorData(averageMatrix3x3(efgList.map(t => t.data || t)));
         }
 
         const rep = group[0];
@@ -106,15 +98,11 @@ export function buildSpinSystem(view, options = {}) {
         const el = rep.element;
         const ref = references[el] !== undefined ? references[el] : null;
         const grad = gradients[el] !== undefined ? gradients[el] : DEFAULT_GRADIENT;
+        const pattern = group.pattern || averageGroups || null;
 
-        sites.push(new Site({
-            index: sites.length,
+        const common = {
             isotope: `${rep.isotope || iData.isotope || ''}${el}`,
             element: el,
-            label: groupLabel,
-            atomIndices: group.map(a => a.index),
-            atoms: group,
-            position: sumPos,
             spin: iData.spin !== undefined ? iData.spin : 0.5,
             gamma: iData.gamma || 0,
             Q: iData.Q || 0,
@@ -123,8 +111,35 @@ export function buildSpinSystem(view, options = {}) {
             reference: ref,
             gradient: grad,
             isAverageGroup: true,
-            averageGroupPattern: group.pattern || averageGroups || null,
-        }));
+            averageGroupPattern: pattern,
+            averageGroupId: groupId,
+            averageGroupSize: group.length,
+            groupAtoms: group,
+        };
+
+        if (averageGroupMode === 'collapse') {
+            const centroid = [0, 1, 2].map(k => group.reduce((sum, a) => sum + a.xyz[k], 0) / group.length);
+            sites.push(new Site({
+                ...common,
+                index: sites.length,
+                label: labels.join(','),
+                atomIndices: group.map(a => a.index),
+                atoms: group,
+                position: centroid,
+            }));
+        } else {
+            group.forEach((a, member) => {
+                sites.push(new Site({
+                    ...common,
+                    index: sites.length,
+                    label: labels[member],
+                    atomIndices: [a.index],
+                    atoms: [a],
+                    position: Array.from(a.xyz),
+                    averageGroupMember: member,
+                }));
+            });
+        }
     }
 
     // Add remaining non-grouped atoms

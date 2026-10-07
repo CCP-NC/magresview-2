@@ -83,7 +83,7 @@ describe('getSimplificationWarnings', () => {
         expect(merge.text).toMatch(/Nothing is averaged/);
     });
 
-    it('warns that an averaged methyl is not a methyl spin system', () => {
+    it('warns that a collapsed methyl is not a methyl spin system', () => {
         const site = new Site({
             index: 0,
             isotope: '1H',
@@ -97,8 +97,8 @@ describe('getSimplificationWarnings', () => {
         const w = getSimplificationWarnings(sys, {});
 
         expect(w[0].level).toBe('warning');
-        expect(w[0].text).toMatch(/averaged to 1 spin/);
-        expect(w[0].text).toMatch(/fast-rotation limit for heteronuclear observation/);
+        expect(w[0].text).toMatch(/collapsed to one spin/);
+        expect(w[0].text).toMatch(/one neighbour instead of 3/);
     });
 
     it('warns when quadrupolar nuclei lose their quadrupole interaction', () => {

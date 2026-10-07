@@ -29,7 +29,7 @@
 - **Referencing gradient** — The per-element slope of the shielding-to-shift conversion, d&delta;/d&sigma; in δ = reference + gradient × σ. Conventionally −1; a fitted value expresses a linear calibration against experiment. Set alongside the shielding reference, and applied wherever a shift is shown: labels, colour scales, plots and exports.
   _Avoid_: slope, scaling factor.
 
-- **Average group** — A set of atoms that fast molecular motion exchanges, and which is therefore exported as a single site with averaged tensors. Identified by a pattern over bonded neighbours, such as CH3 or NH2.
+- **Average group** — A set of atoms that fast molecular motion exchanges, and whose tensors are therefore replaced by their average over the group. A coupled SIMPSON export keeps every member as its own site; mrsimulator, report tables and per-site files collapse the group to one site whose multiplicity is the group size (see ADR-0008). Identified by a pattern over bonded neighbours, such as CH3 or NH2.
   _Avoid_: functional group (too broad), methyl, rotor.
 
 - **Anisotropy (Δ)** — The anisotropy of a tensor in the Haeberlen convention, Δ = σzz − (σxx + σyy)/2, always 3/2 of the reduced anisotropy. Defined once for every tensor, a Coupling's included, so the same name never means two things. For a pure dipolar pair Δ = 3d.

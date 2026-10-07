@@ -551,11 +551,12 @@ describe('Soprano SIMPSON validation corpus (structures)', () => {
         expect(output).toContain('K-point grid: 1 1 1');
         // Exported sites and indices
         expect(output).toContain('# Exported sites:');
-        expect(output).toContain('[averaged group]');
-        // Merging and averaging notes
+        expect(output).toContain('[averaged group, member 1 of 3]');
+        // Merging and averaging notes: the methyl stays three spins, with its own couplings
         expect(output).toContain('# Merging and averaging:');
-        expect(output).toContain('Combined average group \'CH3\'');
-        expect(output).toContain('Intra-group couplings were dropped.');
+        expect(output).toContain('Kept average group \'CH3\'');
+        expect(output).toContain('as 3 spins with jump-averaged (fast-rotation) tensors.');
+        expect(output).not.toContain('Intra-group couplings were dropped.');
         // Referencing, with the direction of the gradient spelled out
         expect(output).toContain('# Shielding references, applied as delta = reference + gradient * sigma');
         expect(output).toContain('gradient is d(shift)/d(shielding)');
@@ -565,13 +566,15 @@ describe('Soprano SIMPSON validation corpus (structures)', () => {
         // Settings record
         expect(output).toContain('# Export settings:');
         expect(output).toContain('Dipolar couplings: yes');
-        // Warnings about the averaged methyl
+        // Notice about the averaged methyl
         expect(output).toContain('# WARNINGS:');
-        expect(output).toContain('averaged to 1 spin');
+        expect(output.replace(/\n#\s+/g, ' ')).toContain('kept as 3 spins with fast-rotation (jump-averaged) tensors');
+        expect(output).not.toContain('averaged to 1 spin');
         // Template
         expect(output).toContain('# Minimal SIMPSON driver');
         expect(output).toContain('source ethanol.spinsys');
         expect(output).toContain('crystal_file     rep100');
+        expect(output).toContain('dipole_check     false');
         expect(output).not.toContain('rep64');
         // Actual spinsys block
         expect(output).toContain('spinsys {');

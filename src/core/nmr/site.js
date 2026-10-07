@@ -23,6 +23,10 @@ export class Site {
         gradient = DEFAULT_GRADIENT,
         isAverageGroup = false,
         averageGroupPattern = null,
+        averageGroupId = null,
+        averageGroupSize = 1,
+        averageGroupMember = null,
+        groupAtoms = null,
     } = {}) {
         this.index = index;
         this.isotope = isotope;
@@ -40,6 +44,29 @@ export class Site {
         this.gradient = gradient ?? DEFAULT_GRADIENT;
         this.isAverageGroup = Boolean(isAverageGroup);
         this.averageGroupPattern = averageGroupPattern;
+        // Group metadata. In an expanded group every member is its own Site and
+        // averageGroupMember is its 0-based position in the group; a collapsed
+        // group is one Site with averageGroupMember null. groupAtoms is always the
+        // whole group, which is what couplings average over.
+        this.averageGroupId = averageGroupId;
+        this.averageGroupSize = averageGroupSize;
+        this.averageGroupMember = averageGroupMember;
+        this.groupAtoms = groupAtoms;
+    }
+
+    /**
+     * Whether this site is one member of an average group kept as separate spins
+     */
+    get isExpandedGroupMember() {
+        return this.isAverageGroup && this.averageGroupMember !== null;
+    }
+
+    /**
+     * The atoms whose tensors are averaged to give this site's couplings: the
+     * whole group for a group member, otherwise the site's own atoms.
+     */
+    get memberAtoms() {
+        return this.groupAtoms ?? this.atoms;
     }
 
     /**
