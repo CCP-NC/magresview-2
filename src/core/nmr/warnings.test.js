@@ -282,3 +282,26 @@ describe('SIMPSON template dipole_check override', () => {
         expect(template([site(0, '1H', H), site(1, '15N', N15)], -4000)).toContain('dipole_check     false');
     });
 });
+
+describe('mrsimulator non-axial dipolar warning', () => {
+    const H = index => new Site({ index, isotope: '1H', element: 'H', label: `H${index + 1}` });
+    const C = index => new Site({ index, isotope: '13C', element: 'C', label: `C${index + 1}` });
+    const dip = asymmetry => new Coupling({ type: 'D', site_i: 0, site_j: 1, coupling_constant: -20000, asymmetry });
+    const warnings = (couplings, settings) =>
+        getSimplificationWarnings(new SpinSystem({ sites: [C(0), H(1)], couplings }), { includeD: true, ...settings });
+
+    it('warns that eta is dropped when a written dipolar coupling is not axial', () => {
+        const w = warnings([dip(0.04)], { target: 'mrsimulator' }).find(x => /not axial/.test(x.text));
+
+        expect(w.level).toBe('warning');
+        expect(w.text).toMatch(/1 dipolar coupling\(s\)/);
+        expect(w.text).toMatch(/0\.04/);
+        expect(w.text).toMatch(/no asymmetry parameter/);
+    });
+
+    it('stays quiet for axial couplings, for SIMPSON, and when dipolar couplings are off', () => {
+        expect(textOf(warnings([dip(0.005)], { target: 'mrsimulator' }))).not.toMatch(/not axial/);
+        expect(textOf(warnings([dip(0.3)], { target: 'simpson' }))).not.toMatch(/not axial/);
+        expect(textOf(warnings([dip(0.3)], { target: 'mrsimulator', includeD: false }))).not.toMatch(/not axial/);
+    });
+});

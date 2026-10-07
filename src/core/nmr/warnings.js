@@ -11,6 +11,7 @@
  */
 
 import { parseAverageGroupPattern } from './averageGroups';
+import { DIPOLAR_ETA_THRESHOLD } from './constants';
 
 /**
  * Default export settings. Writers and the UI share this shape.
@@ -248,6 +249,19 @@ export function getSimplificationWarnings(sys, settings = {}) {
             warn(
                 `${name} collapsed to one spin. Couplings between its own spins are dropped and `
                 + `every other spin sees the group as one neighbour instead of ${n}.`
+            );
+        }
+    }
+
+    if (s.target === 'mrsimulator' && s.includeD) {
+        const nonAxial = (sys?.couplings || []).filter(c => c.type === 'D' && Math.abs(c.asymmetry) > DIPOLAR_ETA_THRESHOLD);
+        if (nonAxial.length > 0) {
+            const worst = Math.max(...nonAxial.map(c => Math.abs(c.asymmetry)));
+            warn(
+                `${nonAxial.length} dipolar coupling(s) are not axial (|eta| > 0.01, largest |eta| = ${worst.toFixed(2)}), `
+                + 'as happens after averaging over a rotating group. mrsimulator\'s dipolar tensor has no '
+                + 'asymmetry parameter, so eta is dropped and the line shape will be slightly off. '
+                + 'Use the SIMPSON target to keep it.'
             );
         }
     }

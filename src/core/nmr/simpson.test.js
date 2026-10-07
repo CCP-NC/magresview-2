@@ -295,6 +295,50 @@ describe('Soprano SIMPSON validation corpus', () => {
     });
 });
 
+describe('SIMPSON dipolar asymmetry', () => {
+    // Lab tensor with Haeberlen eigenvalues (14000, 26000, -40000): d = -20000, eta = 0.3
+    const nonAxial = new TensorData([[14000, 0, 0], [0, 26000, 0], [0, 0, -40000]]);
+    const axial = new TensorData([[10000, 0, 0], [0, 10000, 0], [0, 0, -20000]]);
+    const sites = [
+        new Site({ index: 0, isotope: '13C', element: 'C', gamma: 67.2828e6 }),
+        new Site({ index: 1, isotope: '1H', element: 'H', gamma: 267.522e6 }),
+    ];
+    const write = (tensor, asymmetry) => toSimpson(new SpinSystem({
+        sites,
+        couplings: [new Coupling({ type: 'D', site_i: 0, site_j: 1, tensor, coupling_constant: tensor.haeberlen_eigenvalues[2] / 2, asymmetry })],
+    }), { observed_nucleus: '13C', include_header: false });
+
+    it('writes eta through dipole_ave, the keyword SIMPSON accepts it on', () => {
+        // Verified against SIMPSON: a plain `dipole` with 7 fields is rejected by the input parser,
+        // and `dipole_ave N N aniso eta alpha beta gamma` reproduces the analytic powder spectrum (2.5% RMS).
+        const line = write(nonAxial, nonAxial.asymmetry).split('\n').find(l => l.startsWith('dipole'));
+        const parts = line.split(/\s+/);
+
+        expect(parts[0]).toBe('dipole_ave');
+        expect(parts.length).toBe(8);
+        expect(parseFloat(parts[3])).toBeCloseTo(-20000, 6);
+        expect(parseFloat(parts[4])).toBeCloseTo(0.3, 8);
+    });
+
+    it('keeps the six-field dipole line for an axial coupling', () => {
+        const line = write(axial, 0).split('\n').find(l => l.startsWith('dipole'));
+
+        expect(line.split(/\s+/).length).toBe(7);
+        expect(line.startsWith('dipole ')).toBe(true);
+    });
+
+    it('treats an asymmetry at or below 0.01 as axial', () => {
+        expect(write(axial, 0.01)).not.toContain('dipole_ave');
+        expect(write(axial, 0.011)).toContain('dipole_ave');
+    });
+
+    it('does not break the dipole_check override or cross-terms on a dipole_ave line', () => {
+        const out = write(nonAxial, nonAxial.asymmetry);
+        expect(out).toMatch(/^dipole_ave 1 2 /m);
+        expect(out).not.toContain('quadrupole_x_dipole');
+    });
+});
+
 describe('SIMPSON cross-term gating', () => {
 
     // A 13C-14N pair: the nitrogen is quadrupolar, so this is a system that

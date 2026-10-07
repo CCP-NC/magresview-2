@@ -2,6 +2,7 @@ import { createStoredZip } from '../../utils';
 import { Site } from './site';
 import { formatSimpsonHeader } from './metadata';
 import { crossTermsApply } from './warnings';
+import { DIPOLAR_ETA_THRESHOLD } from './constants';
 
 /**
  * Format a float for SIMPSON output.
@@ -156,8 +157,15 @@ export function toSimpson(sys, options = {}) {
                 angles = c.euler({ passive: true, degrees: true });
             }
 
+            // A tensor-averaged coupling is generally not axial. SIMPSON's `dipole`
+            // takes no asymmetry; the keyword that does is `dipole_ave`, which is
+            // `dipole` plus eta, so use it when eta matters.
+            const eta = c.asymmetry;
+            const keyword = Math.abs(eta) > DIPOLAR_ETA_THRESHOLD ? 'dipole_ave' : 'dipole';
+            const etaField = keyword === 'dipole_ave' ? `${formatFloat(eta, precision)} ` : '';
+
             lines.push(
-                `dipole ${idx1} ${idx2} ${formatFloat(d, precision)} ` +
+                `${keyword} ${idx1} ${idx2} ${formatFloat(d, precision)} ${etaField}` +
                 `${formatFloat(angles[0], precision)} ${formatFloat(angles[1], precision)} ${formatFloat(angles[2], precision)}`
             );
         }

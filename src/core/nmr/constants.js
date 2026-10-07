@@ -66,3 +66,9 @@ export const MAGRESVIEW_GIT_TAG = typeof __GIT_TAG__ !== 'undefined' ? __GIT_TAG
  */
 export const MAX_SPINSYS_COUPLED_ATOMS = 64;
 
+
+/**
+ * Asymmetry above which a dipolar coupling counts as non-axial. SIMPSON's `dipole`
+ * line then gets an explicit eta; mrsimulator's dipolar tensor has none, so it warns.
+ */
+export const DIPOLAR_ETA_THRESHOLD = 0.01;
