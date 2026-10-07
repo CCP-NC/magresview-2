@@ -106,65 +106,6 @@ function parseSpinsys(text) {
 }
 
 /**
- * Reconstruct a 3x3 lab tensor from passive ZYZ Euler angles in degrees and Haeberlen PAS evals.
- */
-function reconstructLabTensor(evals, alphaDeg, betaDeg, gammaDeg) {
-    const a = (alphaDeg * Math.PI) / 180;
-    const b = (betaDeg * Math.PI) / 180;
-    const g = (gammaDeg * Math.PI) / 180;
-
-    // Passive ZYZ rotation: R = Rz(g) * Ry(b) * Rz(a)
-    // T_lab = R^T * T_pas * R
-    const ca = Math.cos(a), sa = Math.sin(a);
-    const cb = Math.cos(b), sb = Math.sin(b);
-    const cg = Math.cos(g), sg = Math.sin(g);
-
-    const Rz_a = [
-        [ca, sa, 0],
-        [-sa, ca, 0],
-        [0, 0, 1]
-    ];
-    const Ry_b = [
-        [cb, 0, -sb],
-        [0, 1, 0],
-        [sb, 0, cb]
-    ];
-    const Rz_g = [
-        [cg, sg, 0],
-        [-sg, cg, 0],
-        [0, 0, 1]
-    ];
-
-    // Helper 3x3 multiply
-    function matMul(A, B) {
-        const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                for (let k = 0; k < 3; k++) {
-                    C[i][j] += A[i][k] * B[k][j];
-                }
-            }
-        }
-        return C;
-    }
-
-    const R = matMul(Rz_g, matMul(Ry_b, Rz_a));
-    const RT = [
-        [R[0][0], R[1][0], R[2][0]],
-        [R[0][1], R[1][1], R[2][1]],
-        [R[0][2], R[1][2], R[2][2]]
-    ];
-
-    const pas = [
-        [evals[0], 0, 0],
-        [0, evals[1], 0],
-        [0, 0, evals[2]]
-    ];
-
-    return matMul(RT, matMul(pas, R));
-}
-
-/**
  * Compare two floats within relative tolerance or absolute if near 0.
  */
 function assertClose(actual, expected, relTol = 1e-6, absTol = 1e-5, msg = '') {
@@ -550,8 +491,10 @@ describe('Soprano SIMPSON validation corpus (structures)', () => {
     });
 
     it('validates mrsimulator JSON output matches Soprano reference', () => {
-        // Test with test_01, test_03a, test_06, and ethanol
-        const ref01 = JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, 'test_01_mrsimulator.json'), 'utf-8')).data;
+        // Only the isotropic case is kept as a Soprano reference. Soprano's mrsimulator Euler
+        // angles are in the wrong sense (see ADR-0009), so orientation is covered by
+        // mrsimulator.test.js instead.
+        const ref01 = fixtures.test_01.mrsimulator;
         const ms01 = new TensorData([[-100, 0, 0], [0, -100, 0], [0, 0, -100]]);
         const s01 = new SpinSystem({ sites: [new Site({ index: 0, isotope: '13C', element: 'C', ms: ms01, reference: 0.0, gradient: -1.0 })] });
         const act01 = toMrsimulator(s01);

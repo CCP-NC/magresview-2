@@ -307,17 +307,12 @@ def generate_synthetic_fixtures():
         with open(spinsys_path, "w") as f:
             f.write(header + data["spinsys"])
 
-        json_path = os.path.join(OUTDIR, f"{name}_mrsimulator.json")
-        with open(json_path, "w") as f:
-            json.dump({
-                "header": {
-                    "name": name,
-                    "description": data["description"],
-                    "oracle": f"Soprano v{SOPRANO_VERSION}",
-                    "generated": DATE,
-                },
-                "data": data["mrsimulator"]
-            }, f, indent=2)
+    # Soprano's mrsimulator Euler angles are in the wrong sense (see ADR-0009), so only the
+    # isotropic test_01 reference is kept. Orientation is tested analytically in
+    # mrsimulator.test.js.
+    for name, data in fixtures.items():
+        if name != "test_01":
+            data.pop("mrsimulator", None)
 
     # Save corpus metadata for JS tests
     corpus_json_path = os.path.join(OUTDIR, "synthetic_corpus.json")

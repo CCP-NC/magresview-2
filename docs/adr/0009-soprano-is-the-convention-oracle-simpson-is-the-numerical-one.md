@@ -46,3 +46,17 @@ physics against SIMPSON itself, which is strictly stronger than agreeing with So
   shift sign of `shielding_symmetric.zeta` must be confirmed against mrsimulator before the feature
   is advertised. If Soprano is wrong, the fix belongs upstream in Soprano, not as a silent
   divergence here.
+
+## Resolution of the mrsimulator open items
+
+Checked against mrsimulator 1.0.0, SIMPSON, and an analytic static-powder spectrum built directly
+from lab-frame tensors (CSA + dipolar, CSA + J, CSA + EFG, with misaligned tensors):
+
+- `shielding_symmetric.zeta` does take the shielding sign. Confirmed.
+- mrsimulator takes the same Euler angle numbers as SIMPSON, in radians. The "active ZYZ radians"
+  this ADR originally inherited from Soprano is inverted: it disagreed with the analytic spectrum by
+  15-35% RMS, against 0.1% for the SIMPSON-sense angles. The writer now uses the SIMPSON sense.
+  Soprano's mrsimulator output very likely has the same inversion and should be reported upstream.
+- `zeta` is scaled by the referencing gradient, as the isotropic shift already was.
+- mrsimulator treats couplings in the weak-coupling limit. Two equivalent 1H with J = 100 Hz give a
+  spurious doublet. Couplings between like nuclei therefore carry a warning for this target.
