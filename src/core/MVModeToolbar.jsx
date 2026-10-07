@@ -78,8 +78,8 @@ const sidebars = [
     },
     {
         key: 'files',
-        label: 'Files',
-        title: 'Report files (9)',
+        label: 'Export',
+        title: 'Export (9)',
         icon: <FaFile />,
         accentVar: '--fwd-color-2'
     },

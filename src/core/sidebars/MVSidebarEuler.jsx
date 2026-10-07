@@ -440,7 +440,7 @@ function MVSidebarEuler(props) {
                 <FullTable configs={configs} />
                 <div className='mv-euler-cycle-row' style={{marginTop: '0.8em'}}>
                     <MVButton onClick={() => { copyContents(eulint.csvTable()); }}><FaCopy />&nbsp;Copy CSV</MVButton>
-                    <MVButton onClick={() => { saveContents('data:,' + eulint.csvTable(), 'euler_angles.csv'); }}><FaDownload />&nbsp;Download CSV</MVButton>
+                    <MVButton onClick={() => { saveContents(eulint.csvTable(), 'euler_angles.csv'); }}><FaDownload />&nbsp;Download CSV</MVButton>
                 </div>
             </MVModal>}
 
@@ -451,7 +451,7 @@ function MVSidebarEuler(props) {
             <MVButton onClick={() => { copyContents(eulint.txtReport()); }} disabled={!hasSel} style={{ width: '100%' }}>
                 <FaCopy />&nbsp;Copy report to clipboard
             </MVButton>
-            <MVButton onClick={() => { saveContents('data:,' + eulint.txtSelfAngleTable(), 'eulerTable.txt'); }} disabled={!(eulint.hasMSData && eulint.hasEFGData)} style={{ width: '100%', marginTop: '0.4em' }}>
+            <MVButton onClick={() => { saveContents(eulint.txtSelfAngleTable(), 'eulerTable.txt'); }} disabled={!(eulint.hasMSData && eulint.hasEFGData)} style={{ width: '100%', marginTop: '0.4em' }}>
                 <FaDownload />&nbsp;Download table of MS-to-EFG angles
             </MVButton>
         </div>

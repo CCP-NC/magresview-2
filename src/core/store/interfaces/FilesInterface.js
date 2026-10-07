@@ -1,38 +1,60 @@
 /**
  * MagresView 2.0
  *
- * A web interface to visualize and interact with computed NMR data in the Magres
- * file format.
- *
- * Author: Simone Sturniolo
- *
- * Copyright 2022 Science and Technology Facilities Council
- * This software is distributed under the terms of the MIT License
- * Please refer to the file LICENSE for the text of the license
- * 
+ * Export Interface (rebuilt on the unified SpinSystem model).
+ * Handles report tables and spin system simulator exports (SIMPSON, mrsimulator).
  */
 
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
-
-import { makeSelector, BaseInterface, getSel, getNMRData } from '../utils';
-import { tableRow, eulerFromRotation, dipolarCoupling, jCoupling } from '../../../utils';
+import { makeSelector, BaseInterface, referencingGradient } from '../utils';
+import {
+    isolatedSiteSystem,
+    buildSpinSystem,
+    generateReportTable,
+    toSimpson,
+    toSimpsonSplitZip,
+    toMrsimulator,
+    crossTermsApply,
+    getSimplificationWarnings,
+    MAX_SPINSYS_COUPLED_ATOMS,
+} from '../../nmr';
 
 const initialFilesState = {
-    files_seltype: 'ms',
-    files_includeJ: true,
-    files_includeD: true,
-    files_includeEFG: true,
+    files_mode: 'tables', // 'tables' | 'spinsys'
+    files_seltype: 'ms',  // 'ms' | 'efg' | 'dip' | 'isc'
+    files_spinsys_target: 'simpson', // 'simpson' | 'mrsimulator'
+    files_spinsys_scope: 'system', // 'system' (one coupled file) | 'site' (one per site)
     files_includeMS: true,
-    files_includeEuler: false,
-    files_quadrupole_order: 2,
-    files_mergeByLabel: false, // If true, merge results for all sites with the same label
-    files_multiplicity: {},
-    files_fileFormat: 'csv',
-    files_tabWidth: 16, // Width for the fixed-width format
-    files_precision: 5, // Number of decimal places for the floats
+    files_includeEFG: true,
+    files_includeD: false, // off by default for spinsys
+    files_includeJ: false, // off by default for spinsys
+    files_includeEuler: false, // for report tables
+    files_includeAngles: true, // for simulator export
+    files_msIsotropic: false,
+    files_quadrupole_order: 2, // 1 | 2; EFG unticked is what turns it off
+    files_mergeByLabel: false, // If true, keep only the first site of each label
+    files_averageGroups: '',
+    files_observedNucleus: '',
+    files_dipolarCutoff: null,
+    files_dipolarHomonuclear: false,
+    files_fileFormat: 'csv', // 'csv' | 'fixed' | 'tsv'
+    files_tabWidth: 16,      // Width for fixed-width format
+    files_precision: 5,      // Decimal places
 };
 
 class FilesInterface extends BaseInterface {
+
+    get mode() {
+        return this.state.files_mode || 'tables';
+    }
+
+    set mode(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_mode',
+            value: v,
+        });
+    }
 
     get fileType() {
         return this.state.files_seltype;
@@ -42,102 +64,108 @@ class FilesInterface extends BaseInterface {
         this.dispatch({
             type: 'set',
             key: 'files_seltype',
-            value: v
+            value: v,
         });
+    }
+
+    get spinsysTarget() {
+        return this.state.files_spinsys_target || 'simpson';
+    }
+
+    set spinsysTarget(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_spinsys_target',
+            value: v,
+        });
+    }
+
+    /**
+     * Whether we are exporting one coupled system or one isolated site at a time.
+     *
+     * This is the first choice the user makes in spin system mode because it
+     * decides which of the other options can mean anything: an isolated site
+     * has nothing to couple to and no relative orientation to preserve.
+     *
+     * @return {string} 'system' | 'site'
+     */
+    get spinsysScope() {
+        return this.state.files_spinsys_scope || 'system';
+    }
+
+    set spinsysScope(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_spinsys_scope',
+            value: v,
+        });
+    }
+
+    get perSite() {
+        return this.mode === 'spinsys' && this.spinsysScope === 'site';
+    }
+
+    /**
+     * Per-site SIMPSON export is a ZIP of one .spinsys per site, because a
+     * .spinsys file holds exactly one system. mrsimulator represents
+     * independent sites natively, so it stays a single JSON either way.
+     */
+    get isZipExport() {
+        return this.perSite && this.spinsysTarget === 'simpson';
     }
 
     get fileName() {
-        let app = this.state.app_viewer;
-        let mname = app.modelName;
-        let type = this.state.files_seltype;
-        const ext = this.state.files_fileFormat === 'csv' ? 'csv' : 'txt';
-        if (mname) {
-            return `mvtable_${mname}_${type}.${ext}`;
+        const app = this.state.app_viewer;
+        const mname = app?.modelName || 'model';
+
+        if (this.mode === 'spinsys') {
+            if (this.spinsysTarget === 'mrsimulator') {
+                return `${mname}_spinsys.json`;
+            }
+            return this.perSite ? `${mname}_spinsys.zip` : `${mname}.spinsys`;
         }
-        else {
-            return 'N/A';
-        }
+
+        const type = this.fileType;
+        const ext = this.fileFormat === 'fixed' ? 'txt' : this.fileFormat;
+        return `mvtable_${mname}_${type}.${ext}`;
     }
 
-    get fileValid() {
-        // Can we generate a file with these parameters?
-        let app = this.state.app_viewer;
-        if (!app || !app.model)
-            return false;
-
-        switch(this.state.files_seltype) {
-            case 'ms':
-                return this.hasMSData;
-            case 'efg':
-                return this.hasEFGData;
-            case 'isc':
-                return this.hasISCData;
-            case 'spinsys':
-                return (this.hasMSData && this.includeMS) || (this.hasEFGData && this.includeEFG) || this.includeD || (this.hasISCData && this.includeJ);
-            default:
-                break;
-        }
-
-        return true;
+    get mimeType() {
+        if (this.isZipExport) return 'application/zip';
+        if (this.mode === 'spinsys' && this.spinsysTarget === 'mrsimulator') return 'application/json';
+        if (this.mode === 'tables' && this.fileFormat === 'csv') return 'text/csv';
+        return 'text/plain';
     }
 
     get hasMSData() {
-        let app = this.state.app_viewer;
-        return (app && app.model && (app.model.hasArray('ms')));            
+        const app = this.state.app_viewer;
+        return Boolean(app?.model?.hasArray('ms'));
     }
 
     get hasEFGData() {
-        let app = this.state.app_viewer;
-        return (app && app.model && (app.model.hasArray('efg')));            
+        const app = this.state.app_viewer;
+        return Boolean(app?.model?.hasArray('efg'));
+    }
+
+    /**
+     * Whether the current selection contains at least one quadrupole-active nucleus
+     * (spin > 1/2 with an EFG tensor in the model).
+     */
+    get hasQuadrupolarNuclei() {
+        if (!this.hasEFGData) return false;
+        const sites = this.spinSystem?.sites;
+        if (!sites || sites.length === 0) return false;
+        return sites.some(s => s.isQuadrupoleActive);
     }
 
     get hasISCData() {
-        let app = this.state.app_viewer;
-        return (app && app.model && (app.model.hasArray('isc')));        
+        const app = this.state.app_viewer;
+        return Boolean(app?.model?.hasArray('isc'));
     }
 
     get hasCIFLabels() {
-        let app = this.state.app_viewer;
-        return (app && app.model && (app.model._has_cif_labels));            
-    }
-
-    get includeD() {
-        return this.state.files_includeD;
-    }
-
-    set includeD(v) {
-        this.dispatch({
-            type: 'update',
-            data: {
-                files_includeD: v
-            }
-        });
-    }
-
-    get includeJ() {
-        return this.state.files_includeJ;
-    }
-
-    set includeJ(v) {
-        this.dispatch({
-            type: 'update',
-            data: {
-                files_includeJ: v
-            }
-        });
-    }
-    
-    get includeEFG() {
-        return this.state.files_includeEFG;
-    }
-
-    set includeEFG(v) {
-        this.dispatch({
-            type: 'update',
-            data: {
-                files_includeEFG: v
-            }
-        });
+        const app = this.state.app_viewer;
+        return Boolean(app?.model?._has_cif_labels);
     }
 
     get includeMS() {
@@ -146,10 +174,51 @@ class FilesInterface extends BaseInterface {
 
     set includeMS(v) {
         this.dispatch({
-            type: 'update',
-            data: {
-                files_includeMS: v
-            }
+            type: 'set',
+            key: 'files_includeMS',
+            value: v,
+        });
+    }
+
+    get includeEFG() {
+        return !this.hasQuadrupolarNuclei ? false : this.state.files_includeEFG;
+    }
+
+    set includeEFG(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_includeEFG',
+            value: v,
+        });
+    }
+
+    /**
+     * Couplings are meaningless in per-site scope, so they read as off there
+     * rather than being merely hidden. Everything downstream — the coupling
+     * cost guard, the warnings, the writers — then agrees without each having
+     * to know about the scope switch.
+     */
+    get includeD() {
+        return this.perSite ? false : this.state.files_includeD;
+    }
+
+    set includeD(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_includeD',
+            value: v,
+        });
+    }
+
+    get includeJ() {
+        return (this.perSite || !this.hasISCData) ? false : this.state.files_includeJ;
+    }
+
+    set includeJ(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_includeJ',
+            value: v,
         });
     }
 
@@ -159,13 +228,68 @@ class FilesInterface extends BaseInterface {
 
     set includeEuler(v) {
         this.dispatch({
-            type: 'update',
-            data: {
-                files_includeEuler: v
-            }
+            type: 'set',
+            key: 'files_includeEuler',
+            value: v,
         });
     }
 
+    get includeAngles() {
+        return this.state.files_includeAngles ?? true;
+    }
+
+    set includeAngles(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_includeAngles',
+            value: v,
+        });
+    }
+
+    /**
+     * Second-order cross-terms are derived, never chosen.
+     *
+     * They are second-order objects, so they only belong with a second-order
+     * quadrupole; and SIMPSON hard-errors on a quadrupole_x_* line whose
+     * nucleus has no quadrupole line, which is what an independent checkbox
+     * used to let the user produce.
+     */
+    get includeCrossTerms() {
+        return crossTermsApply(this.includeEFG, this.spinSysQuadrupoleOrder);
+    }
+
+    get msIsotropic() {
+        return this.state.files_msIsotropic ?? false;
+    }
+
+    set msIsotropic(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_msIsotropic',
+            value: v,
+        });
+    }
+
+    get spinSysQuadrupoleOrder() {
+        return this.state.files_quadrupole_order ?? 2;
+    }
+
+    set spinSysQuadrupoleOrder(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_quadrupole_order',
+            value: v,
+        });
+    }
+
+    /**
+     * Order actually written. The EFG checkbox is the on/off switch, so
+     * unticking it means order 0 rather than a separate "0 (off)" entry in
+     * the order dropdown.
+     */
+    get effectiveQuadrupoleOrder() {
+        return this.includeEFG ? this.spinSysQuadrupoleOrder : 0;
+    }
 
     get mergeByLabel() {
         return this.state.files_mergeByLabel;
@@ -173,11 +297,80 @@ class FilesInterface extends BaseInterface {
 
     set mergeByLabel(v) {
         this.dispatch({
-            type: 'update',
-            data: {
-                files_mergeByLabel: v
-            }
+            type: 'set',
+            key: 'files_mergeByLabel',
+            value: v,
         });
+    }
+
+    get averageGroups() {
+        return this.state.files_averageGroups || '';
+    }
+
+    set averageGroups(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_averageGroups',
+            value: v,
+        });
+    }
+
+    get observedNucleus() {
+        return this.state.files_observedNucleus || '';
+    }
+
+    set observedNucleus(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_observedNucleus',
+            value: v,
+        });
+    }
+
+    get dipolarCutoff() {
+        return this.state.files_dipolarCutoff;
+    }
+
+    set dipolarCutoff(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_dipolarCutoff',
+            value: v,
+        });
+    }
+
+    get dipolarHomonuclear() {
+        return this.state.files_dipolarHomonuclear ?? false;
+    }
+
+    set dipolarHomonuclear(v) {
+        this.dispatch({
+            type: 'set',
+            key: 'files_dipolarHomonuclear',
+            value: v,
+        });
+    }
+
+    /**
+     * Referencing gradients, owned by the MS tab alongside the references
+     * themselves. Export reads them; it does not keep its own copy, because a
+     * file whose shifts disagree with the labels on screen would be worse than
+     * useless.
+     *
+     * Coerced to numbers here: the state holds raw text from the input field,
+     * so intermediate values like "-" must not reach the builder as NaN.
+     */
+    get gradients() {
+        const raw = this.state.ms_gradients || {};
+        const out = {};
+        for (const el of Object.keys(raw)) {
+            out[el] = referencingGradient(raw, el);
+        }
+        return out;
+    }
+
+    gradientFor(element) {
+        return referencingGradient(this.state.ms_gradients, element);
     }
 
     get fileFormat() {
@@ -186,10 +379,9 @@ class FilesInterface extends BaseInterface {
 
     set fileFormat(v) {
         this.dispatch({
-            type: 'update',
-            data: {
-                files_fileFormat: v
-            }
+            type: 'set',
+            key: 'files_fileFormat',
+            value: v,
         });
     }
 
@@ -199,10 +391,9 @@ class FilesInterface extends BaseInterface {
 
     set tabWidth(v) {
         this.dispatch({
-            type: 'update',
-            data: {
-                files_tabWidth: v
-            }
+            type: 'set',
+            key: 'files_tabWidth',
+            value: v,
         });
     }
 
@@ -212,558 +403,528 @@ class FilesInterface extends BaseInterface {
 
     set precision(v) {
         this.dispatch({
-            type: 'update',
-            data: {
-                files_precision: v
-            }
+            type: 'set',
+            key: 'files_precision',
+            value: v,
         });
     }
 
-
-    get spinSysQuadrupoleOrder() {
-        return this.state.files_quadrupole_order;
+    /**
+     * Whether the current settings actually ask for pairwise couplings.
+     * Everything else about a spin system is per-site and effectively free.
+     */
+    get couplingsRequested() {
+        return this.includeD || this.includeJ;
     }
 
-    set spinSysQuadrupoleOrder(v) {
-        this.dispatch({
-            type: 'update',
-            data: {
-                files_quadrupole_order: v
-            }
-        });
-    }
+    /**
+     * Why we can or cannot build a spin system from the current selection.
+     *
+     * Spin system export works on an explicit selection only. There is no
+     * fall back to "everything displayed": that is how a whole supercell used
+     * to end up in an O(N^2) dipolar coupling loop on every render.
+     *
+     * Note that size only disqualifies a selection when couplings are wanted.
+     * Sites are cheap at any N, so a large selection is still fine for the
+     * split archive and for per-site tables.
+     *
+     * @return {string} 'valid' | 'no_model' | 'none' | 'model_mismatch'
+     *                  | 'couplings_too_large'
+     */
+    get selectionStatus() {
+        const app = this.state.app_viewer;
+        if (!app || !app.model) return 'no_model';
 
-    get spinSysOptions() {
-        return {
-            includeD: this.state.files_includeD,
-            includeJ: this.state.files_includeJ,
-            includeEFG: this.state.files_includeEFG,
-            includeMS: this.state.files_includeMS,
-            quadrupoleOrder: this.spinSysQuadrupoleOrder
-        };
+        const sel = app.selected;
+        if (!sel || sel.length === 0) return 'none';
+
+        // A ModelView carries the model it was cut from. Switching models can
+        // leave one of these behind pointing at the model we just left.
+        if (sel.model !== app.model) return 'model_mismatch';
+
+        if (this.couplingsRequested && sel.length > MAX_SPINSYS_COUPLED_ATOMS) {
+            return 'couplings_too_large';
         }
-        
 
+        return 'valid';
+    }
 
+    get hasValidSelection() {
+        return this.selectionStatus === 'valid';
+    }
+
+    /**
+     * Whether we have a usable selection at all, couplings aside. True for the
+     * oversized case, because sites are still buildable there.
+     */
+    get hasUsableSelection() {
+        const status = this.selectionStatus;
+        return status === 'valid' || status === 'couplings_too_large';
+    }
+
+    get selectedCount() {
+        const app = this.state.app_viewer;
+        return app?.selected?.length || 0;
+    }
+
+    /**
+     * Largest selection we will compute couplings for, for UI copy.
+     */
+    get maxCoupledAtoms() {
+        return MAX_SPINSYS_COUPLED_ATOMS;
+    }
+
+    /**
+     * How average groups enter the spin system. SIMPSON keeps every member as a
+     * spin with jump-averaged tensors, which only makes sense in one coupled
+     * file. mrsimulator cannot represent coupled equivalent spins, and report
+     * tables and per-site files have no couplings, so they get one site per group.
+     */
+    get averageGroupMode() {
+        return this.spinsysTarget === 'simpson' && !this.perSite ? 'expand' : 'collapse';
+    }
+
+    /**
+     * Build a SpinSystem from a view. Shared by spin system export, the split
+     * archive and the report tables, which differ only in which couplings they
+     * ask for. Tables and the split archive pass 'collapse': they carry no
+     * couplings, so one row or file per group is exact.
+     */
+    _buildSystem(view, { includeD, includeJ, averageGroupMode = this.averageGroupMode }) {
+        const app = this.state.app_viewer;
+        const mname = app.modelName || 'model';
+        const sourceInfo = app._model_sources?.[mname];
+        const sourceFilename = sourceInfo?.fileName
+            || (sourceInfo?.extension ? `${mname}.${sourceInfo.extension}` : `${mname}.magres`);
+
+        return buildSpinSystem(view, {
+            references: this.state.ms_references || {},
+            gradients: this.gradients,
+            includeD,
+            includeJ,
+            dipolarCutoff: this.dipolarCutoff,
+            dipolarHomonuclear: this.dipolarHomonuclear,
+            mergeByLabel: this.mergeByLabel,
+            averageGroups: this.averageGroups,
+            averageGroupMode,
+            sourceFilename,
+            mergedFrom: sourceInfo?.mergedFrom || null,
+            modelName: mname,
+        });
+    }
+
+    /**
+     * The spin system behind the panel readout and the single-file export.
+     *
+     * Built for any usable selection, however large, because that is what
+     * feeds the isotope list and the shielding reference check. Couplings are
+     * included only when they are both wanted and affordable; past the cap the
+     * sites are still here, and it is fileValid that withholds the single-file
+     * export rather than this getter returning nothing.
+     *
+     * Report tables and the split archive do not come through here. They build
+     * their own systems on demand, so neither pays for couplings it will throw
+     * away.
+     *
+     * Cached per interface instance. useFilesInterface() constructs a fresh
+     * instance on every render, so this memoises within a render and no
+     * further: do not hold an instance across dispatches.
+     */
+    get spinSystem() {
+        if (this._spinSystem !== undefined) return this._spinSystem;
+
+        const withCouplings = this.selectionStatus === 'valid';
+
+        this._spinSystem = this.hasUsableSelection
+            ? this._buildSystem(this.state.app_viewer.selected, {
+                includeD: withCouplings && this.includeD,
+                includeJ: withCouplings && this.includeJ,
+            })
+            : null;
+
+        return this._spinSystem;
+    }
+
+    get missingReferences() {
+        return this.spinSystem?.missingReferences || [];
+    }
+
+    get warnings() {
+        return this.spinSystem?.warnings || [];
+    }
+
+    get dimension() {
+        return this.spinSystem?.dimension || 1;
+    }
+
+    get spinHalfEquivalent() {
+        return this.spinSystem?.spinHalfEquivalent || 0;
+    }
+
+    get siteCount() {
+        return this.spinSystem?.sites.length || 0;
+    }
+
+    /**
+     * Dimension of the biggest single site.
+     *
+     * In per-site scope this, not the product over every site, is what each
+     * file costs to simulate. Reporting 6e7 for a job that is really a few
+     * thousand two-level problems is worse than reporting nothing.
+     */
+    get largestSiteDimension() {
+        const sites = this.spinSystem?.sites || [];
+        if (sites.length === 0) return 1;
+        return Math.max(...sites.map(s => 2 * (s.spin ?? 0.5) + 1));
+    }
+
+    get feasibility() {
+        if (this.spinsysTarget === 'mrsimulator') {
+            return this.spinSystem?.mrsimulatorFeasibility || 'silent';
+        }
+        return this.spinSystem?.feasibility || 'silent';
+    }
+
+    get availableIsotopes() {
+        return this.spinSystem?.isotopes || [];
+    }
+
+    /**
+     * The full set of choices behind an export, in one object.
+     *
+     * Passed to the writers so the file header can state exactly what was
+     * asked for, and to getSimplificationWarnings so the panel and the file
+     * agree on the caveats.
+     */
+    get exportSettings() {
+        return {
+            scope: this.spinsysScope,
+            target: this.spinsysTarget,
+            includeMS: this.includeMS,
+            includeEFG: this.includeEFG,
+            includeD: this.includeD,
+            includeJ: this.includeJ,
+            quadrupoleOrder: this.effectiveQuadrupoleOrder,
+            includeCrossTerms: this.includeCrossTerms,
+            includeAngles: this.includeAngles,
+            msIsotropic: this.msIsotropic,
+            mergeByLabel: this.mergeByLabel,
+            averageGroups: this.averageGroups,
+            observedNucleus: this.observedNucleus,
+            dipolarHomonuclear: this.dipolarHomonuclear,
+        };
+    }
+
+    /**
+     * Warnings about the current combination of system and settings, shown in
+     * the panel and written into the exported file.
+     */
+    get simplificationWarnings() {
+        const sys = this.spinSystem;
+        if (!sys) return [];
+        return [
+            ...getSimplificationWarnings(sys, this.exportSettings),
+            ...(sys.warnings || []).map(text => ({ level: 'notice', text })),
+        ];
+    }
+
+    get fileValid() {
+        const app = this.state.app_viewer;
+        if (!app || !app.model) return false;
+
+        if (this.mode === 'tables') {
+            switch (this.fileType) {
+                case 'ms':
+                    return this.hasMSData;
+                case 'efg':
+                    return this.hasEFGData;
+                case 'dip':
+                    return true;
+                case 'isc':
+                    return this.hasISCData;
+                default:
+                    return false;
+            }
+        }
+
+        // A full spin system is one coupled system, so if couplings were asked
+        // for and we refused to compute them, the file would quietly be wrong.
+        // Withhold it rather than export something incomplete. Per-site export
+        // has no couplings by construction, so the cap does not apply and a few
+        // thousand sites remain perfectly exportable.
+        if (!this.perSite && this.selectionStatus !== 'valid') return false;
+        if (this.perSite && !this.hasUsableSelection) return false;
+
+        const sys = this.spinSystem;
+        if (!sys) return false;
+
+        // Hard block if missing shielding reference (ADR-0010)
+        if (!sys.canExport) return false;
+
+        // Must have at least one active tensor or coupling
+        const hasContent =
+            (this.hasMSData && this.includeMS) ||
+            (this.hasEFGData && this.includeEFG) ||
+            this.includeD ||
+            (this.hasISCData && this.includeJ);
+
+        return hasContent;
+    }
 
     generateFile() {
-
-        let contents = '';
-
-        // What are the atoms?
         const app = this.state.app_viewer;
-        let view = null;
+        if (!app || !app.model) return null;
 
-        if (app && app.model) {
-            view = getSel(app);
-        }
-        
-        if (!view) {
-            return null;
-        }
-
-        // get/update the multiplicities of the current selection
-        // note this can't be called after the view is merged!
-        let multiplicity = view.unique_labels_multiplicity;
-
-        // should we merge equivalent atoms?
-        if (this.mergeByLabel) {
-            view = view.uniqueSites();
-         }
-
-        switch(this.state.files_seltype) {
-
-            case 'ms':
-                contents = this._msMakeTable(view, multiplicity);
-                break;
-            case 'efg':
-                contents = this._efgMakeTable(view, multiplicity);
-                break;
-            case 'dip':
-                contents = this._dipMakeTable(view, multiplicity);
-                break;
-            case 'isc':
-                contents = this._iscMakeTable(view, multiplicity);
-                break;
-            case 'spinsys':
-                contents = this._spinsysMakeTable(view, this.spinSysOptions);
-                break;
-            default:
-                return null;
-        }
-
-        return contents;
-    }
-
-    _get_labels(view) {
-        // if we have CIF labels, use them
-        if (view._model._has_cif_labels) {
-            return view.atoms.map((a) => a.crystLabel);
-        }
-
-        // otherwise just use the element
-        return view.atoms.map((a) => a.element);
-    }
-
-    _get_indices(view) {
-        // The global index of the atom would be this:
-        // return view.atoms.map((a) => a.index);
-        // But we want the index within the species label
-        // to be more in line with the .magres specification
-        // we also want the indices to start at 1
-        
-        // if we have CIF labels, we'll use the label index
-        if (view._model._has_cif_labels) {
-            return view.atoms.map((a) => a.labelIndex + 1);
-        }
-        // otherwise use the species index
-        return view.atoms.map((a) => a.speciesIndex + 1);
-    }
-
-
-    // Table generators
-    _msMakeTable(view, multiplicity) {
-
-        const tabW = this.tabWidth;
-        const prec = this.precision;
-        const fileFormat = this.fileFormat;
-        const rowOptions = {width:tabW, precision:prec, format:fileFormat};
-        const conv = this.state.eul_convention;
-
-        let table = '# MS Table generated by MagresView 2\n';
-        if (this.includeEuler)
-            table += `# Euler angles convention: ${conv}\n`;
-
-        // Header
-        let header = ['Label', 'Isotope', 'No. in label']
-        if (this.mergeByLabel) {
-            header = header.concat(['Multiplicity']);
-        }
-        if (this.includeMS) { 
-            header = header.concat(['s_iso/ppm', 'Anisotropy/ppm', 'Asymmetry']);
-        }
-
-        if (this.includeEuler) {
-            header = header.concat(['alpha', 'beta', 'gamma']);
-        }
-        table += tableRow(header, rowOptions);
-
-        // Get the NMR data
-        const iso = getNMRData(view, 'iso', 'ms')[1];
-        const aniso = getNMRData(view, 'aniso', 'ms')[1];
-        const asymm = getNMRData(view, 'asymm', 'ms')[1];
-
-        // Euler angles
-        const euler = view.atoms.map((a) => {
-            const T = a.getArrayValue('ms');
-            return eulerFromRotation(T.haeberlen_eigenvectors, conv).map((x) => (x*180.0/Math.PI));
-        });
-
-        const species_labels = this._get_labels(view);
-        const indices = this._get_indices(view);
-
-
-        view.atoms.forEach((a, i) => {
-            let table_values = [
-                species_labels[i],
-                a.isotope + a.element,
-                indices[i],
-            ];
-
-            if (this.mergeByLabel) {
-                // if the multiplicity is not defined, throw an error
-                if (multiplicity[a.crystLabel] === undefined) {
-                    throw new Error(`Multiplicity of ${a.crystLabel} is not defined`);
-                }
-                table_values = table_values.concat([multiplicity[a.crystLabel]]);
+        if (this.mode === 'tables') {
+            // Tables keep the old behaviour: no selection means every displayed
+            // atom. That is affordable here because we only build on save, not
+            // on every render.
+            let view = app.selected;
+            if (!view || view.length === 0 || view.model !== app.model) {
+                view = app.displayed;
             }
+            if (!view) return null;
 
-            // MS data
-            if (this.includeMS) {
-                table_values = table_values.concat([iso[i], aniso[i], asymm[i]]);
-            }
-            
-            // Euler angles
-            if (this.includeEuler) {
-                table_values = table_values.concat(euler[i]);
-            }
-
-            table += tableRow(table_values, rowOptions);
-        });
-
-        return table;
-    }
-
-    _efgMakeTable(view, multiplicity) {
-
-        const tabW = this.tabWidth;
-        const prec = this.precision;
-        const fileFormat = this.fileFormat;
-        const rowOptions = {width:tabW, precision:prec, format:fileFormat};
-        const conv = this.state.eul_convention;
-
-        let table = '# EFG Table generated by MagresView 2\n';
-        if (this.includeEuler)
-            table += `# Euler angles convention: ${conv}\n`;
-
-        // Header
-        let header = ['Label', 'Isotope', 'No. in label']
-        if (this.mergeByLabel) {
-            header = header.concat(['Multiplicity']);
-        }
-        if (this.includeEFG) {
-            header = header.concat(['Vzz/au', 'Anisotropy/au', 'Asymmetry', 'Q/MHz']);
-        }
-
-        if (this.includeEuler) {
-            header = header.concat(['alpha', 'beta', 'gamma']);
-        }
-        table += tableRow(header, rowOptions);
-
-        // Get the NMR data
-        const Vzz = getNMRData(view, 'e_z', 'efg')[1];
-        const aniso = getNMRData(view, 'aniso', 'efg')[1];
-        const asymm = getNMRData(view, 'asymm', 'efg')[1];
-        const Q = getNMRData(view, 'Q', 'efg')[1]; // in MHz already
-
-        // Euler angles
-        const euler = view.atoms.map((a) => {
-            const T = a.getArrayValue('efg');
-            return eulerFromRotation(T.haeberlen_eigenvectors, conv).map((x) => (x*180.0/Math.PI));
-        });
-
-        const species_labels = this._get_labels(view);
-        const indices = this._get_indices(view);
-
-        view.atoms.forEach((a, i) => {
-            let table_values = [
-                species_labels[i],
-                a.isotope + a.element,
-                indices[i],
-            ];
-
-            if (this.mergeByLabel) {
-                // if the multiplicity is not defined, throw an error
-                if (multiplicity[a.crystLabel] === undefined) {
-                    throw new Error(`Multiplicity of ${a.crystLabel} is not defined`);
-                }
-                table_values = table_values.concat([multiplicity[a.crystLabel]]);
-            }
-
-            // EFG data
-            if (this.includeEFG) {
-                table_values = table_values.concat([Vzz[i], aniso[i], asymm[i], Q[i]]);
-            }    
-
-            // Euler angles
-            if (this.includeEuler) {
-                table_values = table_values.concat(euler[i]);
-            }
-
-            table += tableRow(table_values, rowOptions);
-        });
-
-        return table;
-    }
-
-    _dipMakeTable(view, multiplicity) {
-
-        const tabW = this.tabWidth;
-        const prec = this.precision;
-        const fileFormat = this.fileFormat;
-        const rowOptions = {width: tabW, precision: prec, format: fileFormat};
-
-        let table = '# Dipolar coupling table generated by MagresView 2\n';
-
-        // Header
-        let header = ['Label 1', 'Isotope 1', 'Index 1',
-                      'Label 2', 'Isotope 2', 'Index 2'];
-        if (this.mergeByLabel) {
-            header = header.concat(['Multiplicity 1', 'Multiplicity 2']);
-        }
-        header = header.concat(['D/kHz', 'r_x/Ang', 'r_y/Ang', 'r_z/Ang']);
-        table += tableRow(header, rowOptions);
-
-        const atoms = view.atoms;
-
-        const species_labels = this._get_labels(view);
-        const indices = this._get_indices(view);
-
-
-        atoms.forEach((a1, i) => {
-            atoms.slice(i+1).forEach((a2, j) => {
-
-                let [D, r] = dipolarCoupling(a1, a2);
-
-                // convert to kHz
-                D /= 1000.0;
-                let table_values = [
-                    species_labels[i],
-                    a1.isotope + a1.element,
-                    indices[i],
-                    species_labels[j],
-                    a2.isotope + a2.element,
-                    indices[j],
-                ];
-
-                if (this.mergeByLabel) {
-                    // if the multiplicity is not defined, throw an error
-                    if (multiplicity[a1.crystLabel] === undefined) {
-                        throw new Error(`Multiplicity of ${a1.crystLabel} is not defined`);
-                    }
-                    if (multiplicity[a2.crystLabel] === undefined) {
-                        throw new Error(`Multiplicity of ${a2.crystLabel} is not defined`);
-                    }
-                    table_values = table_values.concat([multiplicity[a1.crystLabel], multiplicity[a2.crystLabel]]);
-                }
-
-                table_values = table_values.concat([D, r[0], r[1], r[2]]);
-
-                // add row to table
-                table += tableRow(table_values, rowOptions);
+            const tableSys = this._buildSystem(view, {
+                includeD: this.fileType === 'dip',
+                includeJ: this.fileType === 'isc',
+                averageGroupMode: 'collapse',
             });
-        });
 
-        return table;
-    }
-
-    _iscMakeTable(view, multiplicity) {
-
-        const tabW = this.tabWidth;
-        const prec = this.precision;
-        const fileFormat = this.fileFormat;
-        const rowOptions = {width: tabW, precision: prec, format: fileFormat};
-
-        let table = '# J coupling table generated by MagresView 2\n';
-
-        // Header
-        let header = ['Label 1', 'Isotope 1', 'Index 1',
-                      'Label 2', 'Isotope 2', 'Index 2'];
-        if (this.mergeByLabel) {
-            header = header.concat(['Multiplicity 1', 'Multiplicity 2']);
-        }
-        header = header.concat(['J/Hz']);
-
-        // add header to table
-        table += tableRow(header, rowOptions);
-
-        const atoms = view.atoms;
-        const species_labels = this._get_labels(view);
-        const indices = this._get_indices(view);
-
-
-        atoms.forEach((a1, i) => {
-            atoms.slice(i+1).forEach((a2, j) => {
-
-                const J = jCoupling(a1, a2);
-
-                if(!J)
-                    return; // No data
-                let table_values = [
-                    species_labels[i],
-                    a1.isotope + a1.element,
-                    indices[i],
-                    species_labels[j],
-                    a2.isotope + a2.element,
-                    indices[j],
-                ];
-
-                if (this.mergeByLabel) {
-                    // if the multiplicity is not defined, throw an error
-                    if (multiplicity[a1.crystLabel] === undefined) {
-                        throw new Error(`Multiplicity of ${a1.crystLabel} is not defined`);
-                    }
-                    if (multiplicity[a2.crystLabel] === undefined) {
-                        throw new Error(`Multiplicity of ${a2.crystLabel} is not defined`);
-                    }
-                    table_values = table_values.concat([multiplicity[a1.crystLabel], multiplicity[a2.crystLabel]]);
-                }
-
-                table_values = table_values.concat([J]);
-
-                // add row to table
-                table += tableRow(table_values, rowOptions);
-            });
-        });
-
-        return table;
-    }
-
-    _spinsysMakeTable(view, options) {
-        // properties can contain 'shift', 'quadrupole', 'dipole' and 'jcoupling'
-        // Follow the soprano function here:
-        // https://github.com/CCP-NC/soprano/blob/master/soprano/calculate/nmr/simpson.py
-
-        const tabW = this.tabWidth;
-        const prec = this.precision;
-        const conv = this.state.eul_convention;
-        let table = '{spinsys\n';
-
-        // channels: show unique isotopes + element label
-        table += 'channels ';
-        const nuclei = view.atoms.map((a) => (a.isotope + a.element));
-        const isotopes = new Set(nuclei);
-        table += Array.from(isotopes).join('    ');
-        table += '\n'
-        
-        // nuclei
-        table += '    nuclei ';
-        table += nuclei.join('    ');
-        table += '\n'
-
-        if (options.includeMS) {
-
-            // if there is no MS data, throw warning and skip
-            if (!this.hasMSData) {
-                console.warn('No MS data found. Skipping MS data in spinsys table.');
-            } else {
-                // Get the NMR data
-                // isotropic shift
-                const msiso = getNMRData(view, 'iso', 'ms')[1];
-                // reduced anisotropy
-                const msaniso = getNMRData(view, 'reduced_aniso', 'ms')[1];
-                // asymmetry parameter
-                const msasymm = getNMRData(view, 'asymm', 'ms')[1];
-                // Euler angles
-                // Euler angles
-                const euler = view.atoms.map((a) => {
-                    const T = a.getArrayValue('ms');
-                    return eulerFromRotation(T.haeberlen_eigenvectors, conv).map((x) => (x*180.0/Math.PI));
-                });
-
-                view.atoms.forEach((a, i) => {
-                    table += tableRow([
-                        'shift',
-                        i + 1, // 1-indexed
-                        -msiso[i].toFixed(prec).toString()+'p',   // -isotropy (note minus sign!)
-                        -msaniso[i].toFixed(prec).toString()+'p', // -reduced anisotropy (note minus sign!)
-                        msasymm[i],  // asymmetry
-                        euler[i][0], // alpha
-                        euler[i][1], // beta
-                        euler[i][2], // gamma
-                    ], tabW, prec);
-                });
-            }
-        } // end shift
-
-        if (options.includeEFG) {
-            if (!this.hasEFGData) {
-                console.warn('No EFG data found. Skipping EFG data in spinsys table.');
-                alert('No EFG data found. Skipping EFG data in spinsys table.');
-            }
-            else {
-                // Get the NMR data
-                // quadrupolar coupling
-                const q_order = options.quadrupoleOrder;
-
-                
-                if (q_order > 0) {
-                    if (q_order >2) {
-                        console.warn('Warning: quadrupole order > 2 not supported')
-                    }
-
-                    const Q = getNMRData(view, 'Q', 'efg')[1]
-                    const efgasym = getNMRData(view, 'asymm', 'efg')[1];
-                    const efgeuler = view.atoms.map((a) => {
-                        const T = a.getArrayValue('efg');
-                        return eulerFromRotation(T.haeberlen_eigenvectors, conv).map((x) => (x*180.0/Math.PI));
-                    });
-
-                    view.atoms.forEach((a, i) => {
-                        let cq = Q[i]
-                        if (cq && cq !== 0.0) {
-                            table += tableRow([
-                                'quadrupole',
-                                i + 1, // 1-indexed
-                                q_order,
-                                cq * 1e6, // quadrupolar coupling TODO: what units?? Currently Hz
-                                efgasym[i],
-                                efgeuler[i][0], // alpha
-                                efgeuler[i][1], // beta
-                                efgeuler[i][2], // gamma
-                            ], tabW, prec);
-                        }
-                    });
-                }
-            }
-        }
-
-        if (options.includeD) {
-            const atoms = view.atoms;
-            atoms.forEach((a1, i) => {
-                atoms.slice(i+1).forEach((a2, j) => {
-                    let [D, r] = dipolarCoupling(a1, a2);
-                    // angles TODO: check convention soprano has the angles the other way round
-                    const a = Math.atan2(-r[1], -r[0]) % (2*Math.PI);
-                    const b = Math.acos(-r[2]) % (2*Math.PI);
-                    // convert to degrees
-                    const a_deg = a*180.0/Math.PI;
-                    const b_deg = b*180.0/Math.PI;
-
-                    // convert D from Hz to rad/s
-                    // soprano seems to do this, but MGV1 not...?
-                    // D *= 2*Math.PI;
-
-                    table += tableRow([
-                        'dipole',
-                        j + 1, // 1-indexed
-                        i + 1, // 1-indexed
-                        D,
-                        a_deg,
-                        b_deg,
-                        0.0,
-                    ], tabW, prec);
-                });
+            const multiplicity = view?.unique_labels_multiplicity || {};
+            return generateReportTable(tableSys, this.fileType, {
+                tabWidth: this.tabWidth,
+                precision: this.precision,
+                format: this.fileFormat,
+                includeEuler: this.includeEuler,
+                eulerConvention: this.state.eul_convention || 'zyz',
+                mergeByLabel: this.mergeByLabel,
+                multiplicity,
             });
         }
-        // TODO: what are the rest of the jcoupling columns ?
-        // if (options.includeJ) {
-            // if (!this.hasJData) {
-            //     console.warn('No J data found. Skipping J data in spinsys table.');
-            // }
-            // else {
-            //     const atoms = view.atoms;
-            //     atoms.forEach((a1, i) => {
-            //         atoms.slice(i+1).forEach((a2, j) => {
-            //             const J = jCoupling(a1, a2);
 
-            //             if(J) {
+        // Per-site SIMPSON export is a ZIP of single-site files.
+        if (this.isZipExport) return this.generateSplitZip();
 
-            //                 table += tableRow([
-            //                     'jcoupling',
-            //                     j + 1, // 1-indexed
-            //                     i + 1, // 1-indexed
-            //                     J
-            //                 ], tabW, prec);
-            //             }
-            //         });
-            //     });
-            // }
-        // }
+        const sys = this.spinSystem;
+        if (!sys) return null;
 
+        const settings = this.exportSettings;
 
+        if (this.spinsysTarget === 'mrsimulator') {
+            const data = toMrsimulator(sys, {
+                include_ms: this.includeMS,
+                include_efg: this.includeEFG,
+                include_dip: this.includeD,
+                include_j: this.includeJ,
+                include_angles: this.includeAngles,
+                ms_isotropic: this.msIsotropic,
+                settings,
+            });
+            return JSON.stringify(data, null, 2);
+        }
 
+        return toSimpson(sys, {
+            observed_nucleus: this.observedNucleus || null,
+            q_order: this.effectiveQuadrupoleOrder,
+            include_ms: this.includeMS,
+            include_efg: this.includeEFG,
+            include_dip: this.includeD,
+            include_j: this.includeJ,
+            include_angles: this.includeAngles,
+            ms_isotropic: this.msIsotropic,
+            precision: this.precision,
+            filename: this.fileName,
+            settings,
+        });
+    }
 
+    generateSplitZip() {
+        const app = this.state.app_viewer;
+        if (!app || !app.model) return null;
+        if (!this.hasUsableSelection) return null;
 
-        // add closing bracket
-        table += '}';
+        // Every file in the archive holds a single site, and toSimpsonSplitZip
+        // drops couplings anyway, so never pay for the pairwise loop here.
+        const sys = this._buildSystem(app.selected, { includeD: false, includeJ: false, averageGroupMode: 'collapse' });
 
-        return table;
+        const mname = app.modelName || 'model';
+        return toSimpsonSplitZip(sys, mname, {
+            observed_nucleus: this.observedNucleus || null,
+            q_order: this.effectiveQuadrupoleOrder,
+            include_ms: this.includeMS,
+            include_efg: this.includeEFG,
+            include_angles: this.includeAngles,
+            ms_isotropic: this.msIsotropic,
+            precision: this.precision,
+            settings: { ...this.exportSettings, scope: 'site' },
+        });
+    }
+
+    /**
+     * Generate the preview text for the current export configuration.
+     * Unlike generateFile() which produces a Uint8Array ZIP for per-site SIMPSON,
+     * this always returns a human-readable text string suitable for live modal display.
+     *
+     * @return {string} Generated file content or explanatory placeholder text
+     */
+    generatePreviewText() {
+        const app = this.state.app_viewer;
+        if (!app || !app.model) {
+            return '# No model loaded.';
+        }
+
+        if (this.mode === 'tables') {
+            let view = app.selected;
+            if (!view || view.length === 0 || view.model !== app.model) {
+                view = app.displayed;
+            }
+            if (!view) return '# No atoms displayed or selected.';
+
+            const tableSys = this._buildSystem(view, {
+                includeD: this.fileType === 'dip',
+                includeJ: this.fileType === 'isc',
+                averageGroupMode: 'collapse',
+            });
+
+            return generateReportTable(tableSys, this.fileType, {
+                tabWidth: this.tabWidth,
+                precision: this.precision,
+                format: this.fileFormat,
+                includeEuler: this.includeEuler,
+                mergeByLabel: this.mergeByLabel,
+                multiplicity: view?.unique_labels_multiplicity || {},
+            });
+        }
+
+        // spinsys mode
+        if (!this.hasUsableSelection) {
+            return '# No atoms selected.\n# Select the atoms you want in the spin system to see the generated output.';
+        }
+
+        if (this.selectionStatus === 'model_mismatch') {
+            return '# Selection belongs to a different model.\n# Select atoms in the currently active model.';
+        }
+
+        if (this.missingReferences.length > 0) {
+            return (
+                `# Export blocked (ADR-0010):\n` +
+                `# Missing shielding reference for element(s): ${this.missingReferences.join(', ')}.\n` +
+                `# Set references in the MS tab to generate chemical shifts.`
+            );
+        }
+
+        if (!this.perSite && this.selectionStatus === 'couplings_too_large') {
+            return (
+                `# Couplings too large:\n` +
+                `# ${this.selectedCount} atoms selected exceeds the ${this.maxCoupledAtoms}-atom limit for computing couplings.\n` +
+                `# Turn couplings off or switch to 'One file per site' to simulate.`
+            );
+        }
+
+        // Per-site SIMPSON preview: generate the .spinsys text for each site
+        if (this.isZipExport) {
+            const sys = this._buildSystem(app.selected, { includeD: false, includeJ: false, averageGroupMode: 'collapse' });
+            if (!sys || !sys.canExport) return '# Cannot generate spin system.';
+
+            const mname = app.modelName || 'model';
+            const options = {
+                observed_nucleus: this.observedNucleus || null,
+                q_order: this.effectiveQuadrupoleOrder,
+                include_ms: this.includeMS,
+                include_efg: this.includeEFG,
+                include_angles: this.includeAngles,
+                ms_isotropic: this.msIsotropic,
+                precision: this.precision,
+                settings: { ...this.exportSettings, scope: 'site' },
+            };
+
+            const sites = sys.sites || [];
+            if (sites.length === 0) return '# No sites to export.';
+
+            const files = [];
+            for (let i = 0; i < sites.length; i++) {
+                const origSite = sites[i];
+                const singleSys = isolatedSiteSystem(sys, origSite);
+
+                const safeLabel = origSite.label.replace(/[^a-zA-Z0-9_-]/g, '_');
+                const filename = `${mname}_${safeLabel}.spinsys`;
+                const content = toSimpson(singleSys, {
+                    ...options,
+                    filename,
+                    include_dip: false,
+                    include_j: false,
+                    settings: { ...(options.settings || {}), scope: 'site' },
+                });
+
+                if (sites.length > 1) {
+                    files.push(
+                        `# ==============================================================================\n` +
+                        `# Archive file ${i + 1} of ${sites.length}: ${filename}\n` +
+                        `# ==============================================================================\n\n` +
+                        content
+                    );
+                } else {
+                    files.push(content);
+                }
+            }
+            return files.join('\n\n');
+        }
+
+        const sys = this.spinSystem;
+        if (!sys) return '# Cannot build spin system.';
+
+        const settings = this.exportSettings;
+
+        if (this.spinsysTarget === 'mrsimulator') {
+            const data = toMrsimulator(sys, {
+                include_ms: this.includeMS,
+                include_efg: this.includeEFG,
+                include_dip: this.includeD,
+                include_j: this.includeJ,
+                include_angles: this.includeAngles,
+                ms_isotropic: this.msIsotropic,
+                settings,
+            });
+            return JSON.stringify(data, null, 2);
+        }
+
+        return toSimpson(sys, {
+            observed_nucleus: this.observedNucleus || null,
+            q_order: this.effectiveQuadrupoleOrder,
+            include_ms: this.includeMS,
+            include_efg: this.includeEFG,
+            include_dip: this.includeD,
+            include_j: this.includeJ,
+            include_angles: this.includeAngles,
+            ms_isotropic: this.msIsotropic,
+            precision: this.precision,
+            filename: this.fileName,
+            settings,
+        });
     }
 }
 
 // Hook for interface
 function useFilesInterface() {
-    let state = useSelector(makeSelector('files', ['app_viewer', 
-                                                   'app_default_displayed', 
-                                                   'eul_convention']), 
-                            shallowEqual);
-    let dispatcher = useDispatch();
-
-    let intf = new FilesInterface(state, dispatcher);
-
-    return intf;
+    const state = useSelector(
+        makeSelector('files', [
+            'app_viewer',
+            'app_default_displayed',
+            'eul_convention',
+            'ms_references',
+            'ms_gradients',
+            // app_viewer is a stable mutable instance, so a selection change
+            // is invisible to shallowEqual unless we watch the view itself.
+            // Without this, selectionStatus never refreshes and the panel goes
+            // on claiming nothing is selected.
+            'sel_selected_view',
+        ]),
+        shallowEqual
+    );
+    const dispatcher = useDispatch();
+    return new FilesInterface(state, dispatcher);
 }
 
 export default useFilesInterface;
-export { initialFilesState };
+export { initialFilesState, FilesInterface };

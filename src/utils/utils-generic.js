@@ -128,12 +128,30 @@ function mergeOnly(a, b) {
 }
 
 /**
+ * Helper to escape CSV fields according to RFC 4180
+ *
+ * @param  {any} v Field value
+ * @return {String}  Escaped field
+ */
+function escapeCSVField(v) {
+    if (v === null || v === undefined) {
+        return '';
+    }
+    const str = String(v);
+    if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+}
+
+/**
  * Make a single row of an ASCII table with a fixed field width
  * 
  * @param  {Array}  values      Values to include in the row
  * @param  {Object} options     Options for the table
  *                               - width: Width of each field of the row (default: 20) 
  *                               - precision: Digits used for numerical values (default: 5)
+ *                               - format: 'fixed', 'csv', or 'tsv'
  * 
  * @return {String}        Compiled row
  */
@@ -144,21 +162,25 @@ function tableRow(values, options) {
         format: 'fixed' // or CSV or Tab separated
     };
     let {width, precision, format} = mergeOnly(defaults, options);
+    format = (format || 'fixed').toLowerCase();
 
     return values.reduce((s, v) => {        
         if (Number.isFinite(v) && !Number.isInteger(v)) {
             v = v.toFixed(precision);
         }
+        else if (v === null || v === undefined) {
+            v = '';
+        }
         else {
             v = v.toString();
         }
-        const ns = width-v.length;
+        const ns = width - v.length;
 
         if (format === 'csv') {
-            return s + ',' + v;
+            return s + ',' + escapeCSVField(v);
         }
         else if (format === 'fixed') {
-            return s + ' '.repeat(ns > 0? ns : 0) + v;
+            return s + ' '.repeat(ns > 0 ? ns : 0) + v;
         }
         else if (format === 'tsv') {
             return s + '\t' + v;
@@ -184,34 +206,80 @@ function csvRow(values, precision=5) {
         if (Number.isFinite(v) && !Number.isInteger(v)) {
             v = v.toFixed(precision);
         }
+        else if (v === null || v === undefined) {
+            v = '';
+        }
         else {
             v = v.toString();
         }
-        return s + ',' + v;
+        return s + ',' + escapeCSVField(v);
     }, '').slice(1) + '\n';
 }
 
 /**
- * Download a file
- * 
- * @param  {String} data     The data content of the file, must be a valid data URL
- * @param  {[type]} filename The name of the file to download
+ * Infer MIME type from file extension
  */
-function saveContents(data, filename) {
-    let mimeType = 'text/plain';
-    let encodedData;
+function inferMimeType(filename) {
+    if (!filename) return 'text/plain;charset=utf-8';
+    const ext = filename.split('.').pop().toLowerCase();
+    switch (ext) {
+        case 'csv': return 'text/csv;charset=utf-8';
+        case 'json': return 'application/json;charset=utf-8';
+        case 'zip': return 'application/zip';
+        case 'png': return 'image/png';
+        case 'cif':
+        case 'xyz':
+        case 'magres':
+        case 'spinsys':
+        case 'in':
+        case 'txt':
+        default:
+            return 'text/plain;charset=utf-8';
+    }
+}
 
-    if (data.startsWith('data:image/png;base64,')) {
-        mimeType = 'image/png';
-        encodedData = data;
+/**
+ * Download a file using Blob and URL.createObjectURL
+ * 
+ * @param  {String|Blob|Uint8Array|ArrayBuffer} data The data content of the file
+ * @param  {String} filename The name of the file to download
+ * @param  {String} [mimeType] Optional MIME type
+ */
+function saveContents(data, filename, mimeType) {
+    let blob;
+    if (data instanceof Blob) {
+        blob = data;
+    } else if (typeof data === 'string' && data.startsWith('data:image/')) {
+        // Base64 data URL (e.g. from canvas .toDataURL())
+        const parts = data.split(',');
+        const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+        const bstr = atob(parts[1]);
+        const u8arr = new Uint8Array(bstr.length);
+        for (let i = 0; i < bstr.length; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+        }
+        blob = new Blob([u8arr], { type: mime });
+    } else if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+        const mime = mimeType || inferMimeType(filename);
+        blob = new Blob([data], { type: mime });
     } else {
-        encodedData = `data:${mimeType},${encodeURIComponent(data)}`;
+        const mime = mimeType || inferMimeType(filename);
+        blob = new Blob([data], { type: mime });
     }
 
-    const download = document.createElement('a');
-    download.setAttribute('download', filename);
-    download.setAttribute('href', encodedData);
-    download.click();
+    if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+        const url = URL.createObjectURL(blob);
+        const download = document.createElement('a');
+        download.setAttribute('download', filename);
+        download.setAttribute('href', url);
+        download.style.display = 'none';
+        document.body.appendChild(download);
+        download.click();
+        document.body.removeChild(download);
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
 }
 
 /**

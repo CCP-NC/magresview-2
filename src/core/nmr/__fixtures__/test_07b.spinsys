@@ -1,0 +1,12 @@
+# ==============================================================================
+# Test Case: test_07b
+# Description: J-coupling anisotropic zeta=200 Hz, beta=90.0
+# Oracle: Soprano v0.12
+# Generated: 2026-09-22 11:00:36
+# Invocation: ISCoupling(0, 1, '1H', '13C', tensor=NMRTensor(J))
+# ==============================================================================
+spinsys {
+channels 13C 1H
+nuclei 1H 13C
+jcoupling 1 2 0.000000 100.000000 0.000000 90.000000 90.000000 0.000000
+}

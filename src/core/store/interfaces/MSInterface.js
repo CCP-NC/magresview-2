@@ -16,6 +16,8 @@
 
 import { Events } from '../listeners';
 import CScaleInterface, { makeCScaleSelector } from './CScaleInterface';
+import { referencingGradient } from '../utils';
+import { DEFAULT_GRADIENT } from '../../nmr/constants';
 import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 
 const initialMSState = {
@@ -24,14 +26,19 @@ const initialMSState = {
     ms_ellipsoids_scale: 0.05,
     ms_labels_type: 'none',
     ms_references: {},
+    // Per-element slope of the shielding-to-shift conversion. Lives next to
+    // the references because it is the other half of the same calibration:
+    // delta = reference + gradient * sigma.
+    ms_gradients: {},
     ms_precision: 2,
     ms_show_ref_table: false,
 };
 
-// Update any new references for chemical shifts
-function msSetReferences(state, refs=null) {
+// Update the references and gradients used for chemical shifts
+function msSetReferences(state, refs=null, grads=null) {
 
     let new_refs = {};
+    let new_grads = {};
 
     // Default behaviour if refs is null is to clear everything,
     // otherwise we update the existing table.
@@ -40,12 +47,17 @@ function msSetReferences(state, refs=null) {
             ...state.ms_references,
             ...refs
         };
+        new_grads = {
+            ...state.ms_gradients,
+            ...(grads || {})
+        };
     }
 
     // We then update the state and refresh the ms labels, in case any changes
     // are needed
     return {
         ms_references: new_refs,
+        ms_gradients: new_grads,
         listen_update: [Events.MS_LABELS, Events.CSCALE, Events.PLOTS_RECALC]
     };
 }
@@ -116,16 +128,36 @@ class MSInterface extends CScaleInterface {
         return Object.fromEntries(elements.map((el) => [el, refs[el] || '']));
     }
 
-    updateReferenceTable(data) {
+    /**
+     * Gradients for the same elements as referenceTable, defaulting to -1 so
+     * the modal always shows the value that will actually be applied.
+     */
+    get gradientTable() {
+
+        if (!this.state.app_viewer || !this.state.app_viewer.model)
+            return {};
+
+        const elements = [...new Set(this.state.app_viewer.model.symbols)];
+        const grads = this.state.ms_gradients || {};
+        return Object.fromEntries(elements.map(
+            (el) => [el, grads[el] === undefined || grads[el] === '' ? String(DEFAULT_GRADIENT) : grads[el]]
+        ));
+    }
+
+    updateReferenceTable(data, gradients=null) {
         this.dispatch({
             type: 'call',
             function: msSetReferences,
-            arguments: [data]
+            arguments: [data, gradients]
         });
     }
 
     getReference(el) {
         return this.state.ms_references[el] || '';
+    }
+
+    getGradient(el) {
+        return referencingGradient(this.state.ms_gradients, el);
     }
 
     get showRefTable() {
@@ -164,4 +196,4 @@ function useMSInterface() {
 }
 
 export default useMSInterface;
-export { initialMSState, msSetReferences };
+export { initialMSState, msSetReferences, MSInterface };

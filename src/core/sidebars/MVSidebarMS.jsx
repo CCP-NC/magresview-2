@@ -34,6 +34,7 @@ function MVReferenceTable(props) {
 
     const msint = useMSInterface();
     const [ refTable, setRefTable ] = useState(msint.referenceTable);
+    const [ gradTable, setGradTable ] = useState(msint.gradientTable);
 
     // We store a copy of the reference list internally; it only gets set on
     // the interface once we click OK. This is to avoid needless expensive 
@@ -45,26 +46,47 @@ function MVReferenceTable(props) {
 
     useEffect(() => {
         setRefTable(intRef.current.referenceTable);
+        setGradTable(intRef.current.gradientTable);
     }, [props.display]);
 
     const elements = _.keys(refTable).sort();
 
     return (
-    <MVModal title='References for chemical shifts, by element (ppm)' display={props.display} hasOverlay={true}
+    <MVModal title='Chemical shift referencing, by element' display={props.display} hasOverlay={true}
              draggable={true}
-             onClose={props.close} onAccept={() => { msint.updateReferenceTable(refTable); props.onAccept?.(); props.close(); }}>
+             onClose={props.close}
+             onAccept={() => { msint.updateReferenceTable(refTable, gradTable); props.onAccept?.(); props.close(); }}>
         <div className='mv-msref-table'>
+            <p className='mv-msref-formula'>
+                &delta; = reference + gradient &times; &sigma;
+            </p>
+            <div className='mv-msref-table-row mv-msref-table-head'>
+                <div className='mv-msref-table-el'>Element</div>
+                <div className='mv-msref-table-ref'>Reference (ppm)</div>
+                <div className='mv-msref-table-grad'>Gradient d&delta;/d&sigma;</div>
+            </div>
             {elements.map((el, i) => {
                 const ref = refTable[el];
 
                 return (<div key={i} className='mv-msref-table-row'>
                             <div className='mv-msref-table-el'>{el}</div>
                             <div className='mv-msref-table-ref'>
-                                <MVText value={ref} onChange={(v) => { setRefTable({...refTable, [el]: v}) }} size={5}/>
+                                <MVText value={ref} onChange={(v) => { setRefTable({...refTable, [el]: v}) }} size={7}
+                                        filter='[\-]*[0-9]*(?:\.[0-9]*)?'/>
+                            </div>
+                            <div className='mv-msref-table-grad'>
+                                <MVText value={gradTable[el] ?? ''} size={7}
+                                        onChange={(v) => { setGradTable({...gradTable, [el]: v}) }}
+                                        filter='[\-]*[0-9]*(?:\.[0-9]*)?'/>
                             </div>
                         </div>);
             })}
         </div>
+        <p className='mv-msref-note'>
+            The gradient is &minus;1 unless you are deliberately recalibrating a computed
+            shielding scale against experiment. It applies everywhere shifts are shown:
+            labels, colour scales, plots and exports.
+        </p>
     </MVModal>);
 }
 
@@ -87,7 +109,7 @@ function MVSidebarMS(props) {
                       onChange={(s) => { msint.ellipsoidScale = s; }} disabled={!msint.hasEllipsoids}>Ellipsoid scale</MVRange>
                 <div className='mv-ms-btn-row'>
                     <MVButton onClick={() => { msint.ellipsoidScale = 0; }} disabled={!msint.hasEllipsoids}>Auto scale</MVButton>
-                    <MVButton onClick={() => { msint.showRefTable = true; }}>Set References</MVButton>
+                    <MVButton onClick={() => { msint.showRefTable = true; }}>Referencing</MVButton>
                 </div>
              <MVReferenceTable display={msint.showRefTable || !!props.refTableOpen}
                  close={() => { msint.showRefTable = false; props.onRefTableClose?.(); }}/>

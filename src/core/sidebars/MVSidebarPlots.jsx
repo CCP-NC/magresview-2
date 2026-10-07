@@ -118,7 +118,7 @@ function MVSidebarPlots(props) {
                 <span>Shift (use references)</span>
                 <MVTooltip tooltipText={tooltip_plots_shifts} />
             </div>
-            <MVButton onClick={() => { msint.showRefTable = true; }}>Set References</MVButton>
+            <MVButton onClick={() => { msint.showRefTable = true; }}>Referencing</MVButton>
             <span className='sep-1' />
             {/* <div className='mv-sidebar-block'>
                 Background spectrum image

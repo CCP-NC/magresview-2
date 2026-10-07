@@ -1,0 +1,14 @@
+# ==============================================================================
+# Test Case: test_08
+# Description: Quadrupole-dipole cross-term (13C-14N)
+# Oracle: Soprano v0.12
+# Generated: 2026-09-22 11:00:36
+# Invocation: SpinSystem([C1, N1], [dip]) with quadrupole on N1
+# ==============================================================================
+spinsys {
+channels 13C 14N
+nuclei 13C 14N
+quadrupole 2 2 556902.4772770321 0.7188375778342959 0.0 13.438698391000925 90.0
+dipole 1 2 -660.200000 90.000000 0.000000 0.000000
+quadrupole_x_dipole 2 1
+}

@@ -1,0 +1,5 @@
+spinsys {
+channels 13C
+nuclei 13C
+shift 1 0.0p 300.0p 0.5 0.0 90.0 90.0
+}

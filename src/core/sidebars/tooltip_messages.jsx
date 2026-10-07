@@ -102,7 +102,7 @@ export const tooltip_plots_shifts = <div>
     <p>
         If no reference is set for the current element when you switch to Shift mode,
         you will be prompted to enter one. You can also update references at any time
-        using the <b>Set References</b> button below.
+        using the <b>Referencing</b> button below.
     </p>
 </div>
 
@@ -118,22 +118,52 @@ export const tooltip_plots_elements = <div>
 </div>
 
 
-// --- Report files sidebar ---
+// --- Export sidebar ---
 export const tooltip_files_merge = <div>
     <p>
-        If checked, sites with the same crystallographic label will 
-        be merged into one entry in the output file. 
+        Keeps the first site carrying each crystallographic label and throws away the
+        rest. Nothing is averaged. Sites that share a label usually have different
+        tensor orientations, and you cannot combine those into one tensor.
     </p>
-    {/* <p>
-        If no crystallographic labels were present in the loaded file, 
-        then they will have been generated automatically based on the site index, 
-        so this option won't do anything.
-    </p> */}
     <p>
-        The multiplicity of each label is given in the output file.
-        Note: This checks for multiplicity within the current selection only. 
+        Dropping sites leaves holes in the coupling network, so turn dipolar and J
+        couplings off before you use this.
+    </p>
+    <p>
+        Label multiplicities go into the output file, counted over the current
+        selection only.
     </p>
 </div>
+
+export const tooltip_files_scope = <div>
+    <p>
+        A full spin system is one file holding every selected nucleus, coupled together.
+    </p>
+    <p>
+        One file per site gives each nucleus its own file with no couplings. Use it for
+        independent single-spin simulations, or when the whole system is too big to
+        simulate. For SIMPSON you get a ZIP with one .spinsys per site.
+    </p>
+</div>
+
+export const tooltip_files_average_groups = <div>
+    <p>
+        Treats a fast-rotating group such as a methyl as the time average of its
+        Hamiltonian. For SIMPSON every member stays a spin, each with motion-averaged
+        tensors, so the group keeps its own homonuclear coupling (the residual for
+        CH<sub>3</sub> is −½ of the rigid value) and an observed carbon still sees three
+        protons. This is valid only when the hop rate is much larger than the couplings,
+        and it multiplies the simulation cost by 2<sup>n</sup>.
+    </p>
+    <p>
+        mrsimulator cannot represent coupled equivalent spins, so there, in report
+        tables and in per-site files, the group collapses to one site with averaged
+        tensors. In a coupled file that loses the coupling inside the group and makes
+        every other spin see one neighbour instead of n.
+    </p>
+</div>
+
+
 
 export const tooltip_files_precision = <div>
     <p>

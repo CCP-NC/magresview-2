@@ -29,10 +29,11 @@ function colorScaleListener(state) {
         // Split in prefix and mode
         const [, prefix, mode] = cstype.match(/^([^_]*)_(.*)$/);
         const ref_table = state[prefix + '_references'];
+        const grad_table = state[prefix + '_gradients'];
 
         next_greyed = displayed.xor(next_view);
 
-        const nmrdata = getNMRData(next_view, mode, prefix, ref_table);
+        const nmrdata = getNMRData(next_view, mode, prefix, ref_table, grad_table);
         const values = nmrdata[1];
 
         // if there any any null values, reset colors and throw error

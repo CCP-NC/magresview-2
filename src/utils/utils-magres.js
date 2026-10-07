@@ -56,6 +56,22 @@ export function getCalculationMetadata(model) {
 }
 
 /**
+ * Extract the raw calculation block string from a Model or Atoms object, if available.
+ *
+ * @param  {Model|Object} model
+ * @return {string|null}
+ */
+export function getCalculationRaw(model) {
+    if (!model) return null;
+    const info = model._atoms_base?.info || model.info || {};
+    const rawCalc = info['magres-blocks']?.calculation || info.magresblock_calculation || info.calculation;
+    if (!rawCalc) return null;
+    if (typeof rawCalc === 'string') return rawCalc.trim();
+    if (Array.isArray(rawCalc)) return rawCalc.join('\n').trim();
+    return null;
+}
+
+/**
  * Helper to parse pseudopotential entries into a Map of species -> definition.
  * Supports CASTEP (e.g. "H 1|0.6|...") and QE-GIPAW (e.g. "Si.pbe-tm-gipaw.UPF").
  *

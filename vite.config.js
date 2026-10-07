@@ -4,11 +4,21 @@ import svgr from 'vite-plugin-svgr'
 import commonjs from 'vite-plugin-commonjs';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import resolve from '@rollup/plugin-node-resolve';
+import { execSync } from 'child_process';
 
-
+let gitCommit = '';
+let gitTag = '';
+try {
+  gitCommit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  gitTag = execSync('git describe --tags --always', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+} catch (e) {}
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __GIT_COMMIT__: JSON.stringify(gitCommit),
+    __GIT_TAG__: JSON.stringify(gitTag),
+  },
   base: './', // Relative paths for GitHub Pages
   resolve: {
     // crystcif-parse v0.3.0 uses mathjs v15 (same as top-level); dedupe collapses

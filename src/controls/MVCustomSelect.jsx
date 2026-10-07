@@ -9,10 +9,13 @@ import { chainClasses } from '../utils';
 
 function MVCustomSelectOption(props) {
 
-    const onClick = props.onClick || (() => {});
+    const onClick = props.disabled ? undefined : (props.onClick || (() => {}));
 
     return (
-        <div className='mv-control mv-cselect-opt' onClick={onClick}>
+        <div
+            className={chainClasses('mv-control', 'mv-cselect-opt', props.disabled ? 'mv-cselect-opt-disabled' : null)}
+            onClick={onClick}
+        >
             {props.icon? props.icon : <span></span>}
             {props.children}
         </div>
@@ -76,7 +79,12 @@ function MVCustomSelect(props) {
             onMouseLeave={() => setShow(false)}
         >
             {options.map((o, i) =>
-                cloneElement(o, { key: i, onClick: () => { setShow(false); onSelect(values[i]); } })
+                cloneElement(o, {
+                    key: i,
+                    onClick: o.props.disabled
+                        ? undefined
+                        : () => { setShow(false); onSelect(values[i]); }
+                })
             )}
         </div>,
         document.body

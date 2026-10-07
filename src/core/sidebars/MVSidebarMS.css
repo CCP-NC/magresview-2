@@ -34,3 +34,36 @@
 
     padding-right: 5px;
 }
+
+.mv-msref-table-grad {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Column headers, so the second field is not a mystery number box. */
+.mv-msref-table-head {
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--mid-color-1);
+    font-size: 0.82em;
+    color: var(--mid-color-2);
+}
+
+.mv-msref-table-head .mv-msref-table-el {
+    font-weight: 600;
+    font-size: 1em;
+}
+
+.mv-msref-formula {
+    margin: 0 0 0.6em;
+    font-size: 0.95em;
+    color: var(--mid-color-3);
+}
+
+.mv-msref-note {
+    max-width: 30em;
+    margin: 0.8em 0 0;
+    font-size: 0.82em;
+    line-height: 1.45;
+    color: var(--mid-color-2);
+}

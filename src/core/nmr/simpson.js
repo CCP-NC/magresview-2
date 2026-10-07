@@ -1,0 +1,309 @@
+import { createStoredZip } from '../../utils';
+import { Site } from './site';
+import { formatSimpsonHeader } from './metadata';
+import { crossTermsApply } from './warnings';
+import { DIPOLAR_ETA_THRESHOLD } from './constants';
+
+/**
+ * Format a float for SIMPSON output.
+ * If precision is specified, formats to fixed decimal places.
+ * Otherwise prints clean representation ensuring decimal point for whole numbers.
+ */
+function formatFloat(val, precision = null) {
+    const num = Number(val);
+    if (!Number.isFinite(num)) return '0.0';
+
+    if (precision !== null && precision !== undefined) {
+        return num.toFixed(precision);
+    }
+
+    if (Number.isInteger(num)) {
+        return `${num}.0`;
+    }
+
+    // Clean up float representation (e.g. 89.99999999999999 -> 90.0)
+    const rounded = Number(num.toPrecision(12));
+    if (Number.isInteger(rounded)) {
+        return `${rounded}.0`;
+    }
+    return rounded.toString();
+}
+
+/**
+ * Convert a SpinSystem to a SIMPSON .spinsys format string.
+ *
+ * @param  {SpinSystem} sys     The SpinSystem model
+ * @param  {object}     options Formatting and inclusion options
+ * @return {string}             SIMPSON spinsys block
+ */
+export function toSimpson(sys, options = {}) {
+    if (!sys.canExport) {
+        const missing = sys.missingReferences.join(', ');
+        throw new Error(`Cannot export spin system: missing shielding reference for element(s): ${missing}`);
+    }
+
+    const {
+        observed_nucleus = null,
+        q_order = 2,
+        include_ms = true,
+        include_efg = true,
+        include_dip = true,
+        include_j = true,
+        include_angles = true,
+        include_ms_angles = null,
+        include_efg_angles = null,
+        include_dipolar_angles = null,
+        include_jcoupling_angles = null,
+        ms_isotropic = false,
+        precision = null,
+        include_header = true,
+        filename = 'system.spinsys',
+        settings = null,
+    } = options;
+
+    // Cross-terms are derived, not chosen. See crossTermsApply().
+    const include_cross_terms = crossTermsApply(include_efg, q_order);
+
+    const useMsAngles = include_ms_angles !== null ? include_ms_angles : include_angles;
+    const useEfgAngles = include_efg_angles !== null ? include_efg_angles : include_angles;
+    const useDipAngles = include_dipolar_angles !== null ? include_dipolar_angles : include_angles;
+    const useJAngles = include_jcoupling_angles !== null ? include_jcoupling_angles : include_angles;
+
+    const nuclei = sys.sites.map(s => s.isotope);
+    const uniqueNuclei = Array.from(new Set(nuclei)).sort();
+
+    let channels;
+    if (observed_nucleus) {
+        if (!nuclei.includes(observed_nucleus)) {
+            throw new Error(`Observed nucleus ${observed_nucleus} not found in the list of nuclei`);
+        }
+        channels = [observed_nucleus, ...uniqueNuclei.filter(iso => iso !== observed_nucleus)];
+    } else {
+        channels = uniqueNuclei;
+    }
+
+    const lines = [];
+    if (include_header) {
+        lines.push(formatSimpsonHeader(filename, sys, {
+            ...(settings || {}),
+            target: 'simpson',
+            includeMS: include_ms,
+            includeEFG: include_efg,
+            includeD: include_dip,
+            includeJ: include_j,
+            quadrupoleOrder: include_efg ? q_order : 0,
+            includeCrossTerms: include_cross_terms,
+            includeAngles: include_angles,
+            msIsotropic: ms_isotropic,
+            observedNucleus: observed_nucleus || '',
+        }));
+    }
+
+    lines.push('spinsys {');
+    lines.push(`channels ${channels.join(' ')}`);
+    lines.push(`nuclei ${nuclei.join(' ')}`);
+
+    // 1. Shift lines
+    if (include_ms) {
+        for (const site of sys.sites) {
+            if (!site.ms) continue;
+            const idx = site.index + 1;
+            const iso = site.shift_iso;
+            const aniso = ms_isotropic ? 0 : site.shift_reduced_anisotropy;
+            const asymm = ms_isotropic ? 0 : site.shift_asymmetry;
+
+            let angles = [0.0, 0.0, 0.0];
+            if (useMsAngles && !ms_isotropic) {
+                angles = site.msEuler({ passive: true, degrees: true });
+            }
+
+            lines.push(
+                `shift ${idx} ${formatFloat(iso, precision)}p ${formatFloat(aniso, precision)}p ${formatFloat(asymm, precision)} ` +
+                `${formatFloat(angles[0], precision)} ${formatFloat(angles[1], precision)} ${formatFloat(angles[2], precision)}`
+            );
+        }
+    }
+
+    // 2. Quadrupole lines
+    if (include_efg) {
+        for (const site of sys.sites) {
+            if (!site.efg || !site.isQuadrupoleActive || q_order <= 0) continue;
+            const idx = site.index + 1;
+            const Cq = site.Cq;
+            const eta = site.efg_asymmetry;
+
+            let angles = [0.0, 0.0, 0.0];
+            if (useEfgAngles) {
+                angles = site.efgEuler({ passive: true, degrees: true });
+            }
+
+            lines.push(
+                `quadrupole ${idx} ${q_order} ${formatFloat(Cq, precision)} ${formatFloat(eta, precision)} ` +
+                `${formatFloat(angles[0], precision)} ${formatFloat(angles[1], precision)} ${formatFloat(angles[2], precision)}`
+            );
+        }
+    }
+
+    // 3. Dipolar lines
+    if (include_dip) {
+        for (const c of sys.couplings) {
+            if (c.type !== 'D') continue;
+            const idx1 = c.site_i + 1;
+            const idx2 = c.site_j + 1;
+            const d = c.coupling_constant;
+
+            let angles = [0.0, 0.0, 0.0];
+            if (useDipAngles) {
+                angles = c.euler({ passive: true, degrees: true });
+            }
+
+            // A tensor-averaged coupling is generally not axial. SIMPSON's `dipole`
+            // takes no asymmetry; the keyword that does is `dipole_ave`, which is
+            // `dipole` plus eta, so use it when eta matters.
+            const eta = c.asymmetry;
+            const keyword = Math.abs(eta) > DIPOLAR_ETA_THRESHOLD ? 'dipole_ave' : 'dipole';
+            const etaField = keyword === 'dipole_ave' ? `${formatFloat(eta, precision)} ` : '';
+
+            lines.push(
+                `${keyword} ${idx1} ${idx2} ${formatFloat(d, precision)} ${etaField}` +
+                `${formatFloat(angles[0], precision)} ${formatFloat(angles[1], precision)} ${formatFloat(angles[2], precision)}`
+            );
+        }
+    }
+
+    // 4. J-coupling lines
+    if (include_j) {
+        for (const c of sys.couplings) {
+            if (c.type !== 'J') continue;
+            const idx1 = c.site_i + 1;
+            const idx2 = c.site_j + 1;
+            const jIso = c.coupling_constant;
+            // SIMPSON expects zeta / 2
+            const jAniso = c.reduced_anisotropy / 2.0;
+            const jAsymm = c.asymmetry;
+
+            let angles = [0.0, 0.0, 0.0];
+            if (useJAngles) {
+                angles = c.euler({ passive: true, degrees: true });
+            }
+
+            lines.push(
+                `jcoupling ${idx1} ${idx2} ${formatFloat(jIso, precision)} ${formatFloat(jAniso, precision)} ${formatFloat(jAsymm, precision)} ` +
+                `${formatFloat(angles[0], precision)} ${formatFloat(angles[1], precision)} ${formatFloat(angles[2], precision)}`
+            );
+        }
+    }
+
+    // 5. Cross-terms.
+    // A quadrupole_x_* line referring to a nucleus with no quadrupole line is a
+    // fatal SIMPSON error, so this must track exactly the sites that emitted one
+    // in section 2.
+    if (include_cross_terms) {
+        const siteHasQuadrupole = s => s.efg !== null && s.isQuadrupoleActive;
+
+        if (include_dip) {
+            for (const c of sys.couplings) {
+                if (c.type !== 'D') continue;
+                const s1 = sys.sites[c.site_i];
+                const s2 = sys.sites[c.site_j];
+                if (siteHasQuadrupole(s1)) {
+                    lines.push(`quadrupole_x_dipole ${c.site_i + 1} ${c.site_j + 1}`);
+                }
+                if (siteHasQuadrupole(s2)) {
+                    lines.push(`quadrupole_x_dipole ${c.site_j + 1} ${c.site_i + 1}`);
+                }
+            }
+        }
+
+        for (const s of sys.sites) {
+            if (siteHasQuadrupole(s) && s.ms !== null) {
+                lines.push(`quadrupole_x_shift ${s.index + 1}`);
+            }
+        }
+    }
+
+    lines.push('}');
+    lines.push('');
+
+    return lines.join('\n');
+}
+
+/**
+ * Wrap one site as a stand-alone one-site spin system, for the per-site split export.
+ * An average group arrives already collapsed to one site, so it gets one file whose
+ * metadata states its multiplicity.
+ *
+ * @param  {SpinSystem} sys      The parent SpinSystem (supplies the shared metadata)
+ * @param  {Site}       origSite The site to isolate
+ * @return {object}              SpinSystem-like object with a single site
+ */
+export function isolatedSiteSystem(sys, origSite) {
+    const isolatedSite = new Site({
+        ...origSite,
+        index: 0,
+    });
+
+    return {
+        sites: [isolatedSite],
+        couplings: [],
+        warnings: [],
+        missingReferences: [],
+        canExport: true,
+        metadata: {
+            ...sys.metadata,
+            exportedIndices: origSite.atomIndices || [],
+            sites: [
+                {
+                    siteIndex: 0,
+                    label: origSite.label,
+                    isotope: origSite.isotope,
+                    element: origSite.element,
+                    atomIndices: origSite.atomIndices || [],
+                    position: origSite.position,
+                    isAverageGroup: Boolean(origSite.isAverageGroup),
+                    averageGroupPattern: origSite.averageGroupPattern || null,
+                    averageGroupSize: origSite.averageGroupSize ?? 1,
+                    reference: origSite.reference,
+                    gradient: origSite.gradient,
+                }
+            ],
+        },
+        dimension: 2 * (isolatedSite.spin ?? 0.5) + 1,
+        spinHalfEquivalent: Math.log2(2 * (isolatedSite.spin ?? 0.5) + 1),
+    };
+}
+
+/**
+ * Split export: generate a ZIP file containing one .spinsys file per site.
+ *
+ * @param  {SpinSystem} sys      The SpinSystem model
+ * @param  {string}     modelName Name of the model (for filename prefixes)
+ * @param  {object}     options  SIMPSON writer options
+ * @return {Uint8Array}          Stored ZIP binary data
+ */
+export function toSimpsonSplitZip(sys, modelName = 'model', options = {}) {
+    if (!sys.canExport) {
+        const missing = sys.missingReferences.join(', ');
+        throw new Error(`Cannot export spin system: missing shielding reference for element(s): ${missing}`);
+    }
+
+    const zipFiles = {};
+
+    for (const origSite of sys.sites) {
+        const singleSys = isolatedSiteSystem(sys, origSite);
+
+        const safeLabel = origSite.label.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `${modelName}_${safeLabel}.spinsys`;
+        const content = toSimpson(singleSys, {
+            ...options,
+            filename,
+            include_dip: false,
+            include_j: false,
+            settings: { ...(options.settings || {}), scope: 'site' },
+        });
+
+        zipFiles[filename] = content;
+    }
+
+    return createStoredZip(zipFiles);
+}

@@ -1,0 +1,12 @@
+# ==============================================================================
+# Test Case: test_05b
+# Description: Dipolar 1H-13C splitting 60.5kHz, beta=90.0
+# Oracle: Soprano v0.12
+# Generated: 2026-09-22 11:00:36
+# Invocation: DipolarCoupling(0, 1, '1H', '13C', tensor=NMRTensor(D))
+# ==============================================================================
+spinsys {
+channels 13C 1H
+nuclei 1H 13C
+dipole 1 2 -30210.667268 90.000000 90.000000 0.000000
+}
